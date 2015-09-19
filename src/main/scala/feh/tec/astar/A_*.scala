@@ -21,7 +21,7 @@ trait A_*[T] {
    * @param initial The initial state.
    * @return `Some(solution)` or `None` if the solution wasn't found.
    */
-  def search(initial: T): Result = searchInner(initial, 0, SortedPossibilities.empty, new HashSet)
+  def search(initial: T): Result = searchInner(initial, 0, SortedPossibilities.empty[Heuristic, T], new HashSet)
 
   /** Lists the next possible states.*/
   def transformations: T => Seq[T]
@@ -41,6 +41,8 @@ trait A_*[T] {
 
 
   // Implemented
+
+  implicit def heuristicContainer: HeuristicContainer[T, Heuristic] = HeuristicContainer(heuristic)
 
   protected type Decide = PartialFunction[ExtractedOpt, Result]
 
@@ -75,13 +77,17 @@ trait A_*[T] {
 
 object A_*{
 
+  case class HeuristicContainer[T, H](h: T => H) extends (T => H){
+    def apply(v: T) = h(v)
+  }
+
   object SortedPossibilities{
-    def empty[H, T](implicit ord: Ordering[H], heuristic: T => H) =
+    def empty[H, T](implicit ord: Ordering[H], heuristic: HeuristicContainer[T, H]) =
       new SortedPossibilities(new TreeMap[H, List[T]]())
   }
 
   class SortedPossibilities[H, T](val underlying: SortedMap[H, List[T]])
-                                 (implicit ord: Ordering[H], heuristic: T => H)
+                                 (implicit ord: Ordering[H], heuristic: HeuristicContainer[T, H])
   {
 
     def +(ts: T*) = ++(ts)
