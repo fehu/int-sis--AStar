@@ -1,7 +1,9 @@
 package feh.tec.astar
 
+import feh.util._
+
 import scala.collection.SortedMap
-import scala.collection.immutable.{HashSet, SortedSet}
+import scala.collection.immutable.{HashSet, TreeMap}
 
 /** A* abstract algorithm. */
 trait A_*[T] {
@@ -19,7 +21,7 @@ trait A_*[T] {
    * @param initial The initial state.
    * @return `Some(solution)` or `None` if the solution wasn't found.
    */
-  def search(initial: T): Result
+  def search(initial: T): Result = searchInner(initial, 0, SortedPossibilities.empty, new HashSet)
 
   /** Lists the next possible states.*/
   def transformations: T => Seq[T]
@@ -73,6 +75,11 @@ trait A_*[T] {
 
 object A_*{
 
+  object SortedPossibilities{
+    def empty[H, T](implicit ord: Ordering[H], heuristic: T => H) =
+      new SortedPossibilities(new TreeMap[H, List[T]]())
+  }
+
   class SortedPossibilities[H, T](val underlying: SortedMap[H, List[T]])
                                  (implicit ord: Ordering[H], heuristic: T => H)
   {
@@ -81,7 +88,7 @@ object A_*{
 
     def ++(ts: Seq[T]) = new SortedPossibilities(insert(ts.toList, underlying))
 
-    def insert(ts: List[T], into: SortedMap[H, List[T]]): SortedMap[H, List[T]] = ts match {
+    protected def insert(ts: List[T], into: SortedMap[H, List[T]]): SortedMap[H, List[T]] = ts match {
       case Nil       => into
       case t :: tail =>
         val h  = heuristic(t)
@@ -90,14 +97,41 @@ object A_*{
         insert(tail, mp)
     }
 
+    def replace(h: H, by: List[T]) = new SortedPossibilities( underlying + (h -> by) )
+
     def head       = underlying.head
     def headOption = underlying.headOption
-    def tail       = underlying.tail
+    def tail       = new SortedPossibilities(underlying.tail)
 
     def last       = underlying.last
     def lastOption = underlying.lastOption
-    def init       = underlying.init
+    def init       = new SortedPossibilities(underlying.init)
 
+  }
+
+  protected trait MinMaxHeuristic[T]{
+    self: A_*[T] =>
+
+    def _extractTheBest: SortedPossibilities[Heuristic, T] => ((Heuristic, List[T])) => (T, SortedPossibilities[Heuristic, T]) =
+      open => {
+        case (_, best :: Nil) => best -> open
+        case (h, best) =>
+          val Some((chosen, rest)) = best.randomPop
+          val newOpen = open.replace(h, rest.toList)
+          chosen -> newOpen
+      }
+  }
+
+  trait MinimizingHeuristic[T] extends MinMaxHeuristic[T]{
+    self: A_*[T] =>
+
+    protected def extractTheBest(open: SortedPossibilities[Heuristic, T]) = open.headOption.map{ _extractTheBest(open.tail) }
+  }
+
+  trait MaximizingHeuristic[T] extends MinMaxHeuristic[T]{
+    self: A_*[T] =>
+
+    protected def extractTheBest(open: SortedPossibilities[Heuristic, T]) = open.lastOption.map{ _extractTheBest(open.init) }
   }
 
 }

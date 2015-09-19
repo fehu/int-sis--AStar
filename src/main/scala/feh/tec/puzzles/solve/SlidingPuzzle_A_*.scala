@@ -20,3 +20,23 @@ trait SlidingPuzzle_A_*[Piece] extends A_*[SlidingPuzzleInstance[Piece]]{
 
 
 }
+
+object SlidingPuzzle_A_*{
+
+//  def
+
+  class MinimizingHeuristic[Piece, H](_heuristic: SlidingPuzzleInstance[Piece] => H)
+                                     (implicit val heuristicOrdering: Ordering[H])
+    extends SlidingPuzzle_A_*[Piece]
+    with A_*.MinimizingHeuristic[SlidingPuzzleInstance[Piece]]
+  {
+    type Heuristic = H
+    type Error     = Throwable
+
+    implicit def heuristic = _heuristic
+
+    protected def error = new Exception(_)
+
+  }
+
+}

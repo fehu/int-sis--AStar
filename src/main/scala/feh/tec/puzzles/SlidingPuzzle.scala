@@ -57,6 +57,12 @@ trait SlidingPuzzleInstance[Piece] extends Equals{
   def generation: Long
 }
 
+object SlidingPuzzleInstance{
+  def apply[Piece](puzzle: SlidingPuzzle[Piece],
+                   listRows: Seq[Seq[Option[Piece]]]): SlidingPuzzleInstance[Piece] =
+    new GenericSlidingPuzzleInstance(puzzle, listRows, None, 0)
+}
+
 object SlidingPuzzle{
 
   /** `(x, y)` */
