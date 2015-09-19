@@ -7,7 +7,7 @@ import feh.tec.puzzles.SlidingPuzzleInstance
 import scala.util.Success
 
 /** Implements `transformations` for [[SlidingPuzzleInstance]] */
-trait SlidingPuzzle_A_* extends A_*[SlidingPuzzleInstance]{
+trait SlidingPuzzle_A_*[Piece] extends A_*[SlidingPuzzleInstance[Piece]]{
 
   /** Lists the next possible states. */
   def transformations =
