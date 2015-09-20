@@ -5,15 +5,15 @@ import feh.util._
 import scala.annotation.tailrec
 import scala.collection.SortedMap
 import scala.collection.immutable.{HashSet, TreeMap}
+import scala.util.{Failure, Success, Try}
 
 /** A* abstract algorithm. */
 trait A_*[T] {
   import A_*._
 
   type Heuristic
-  type Error
 
-  type Result = Either[T, Error]
+  type Result = Try[T]
 
   implicit def heuristicOrdering: Ordering[Heuristic]
 
@@ -22,7 +22,10 @@ trait A_*[T] {
    * @param initial The initial state.
    * @return `Some(solution)` or `None` if the solution wasn't found.
    */
-  def search(initial: T): Result = searchInner(initial, 0, SortedPossibilities.empty[Heuristic, T], new HashSet)
+  def search(initial: T): Result = searchInner(initial, 0, SortedPossibilities.empty[Heuristic, T], new HashSet) match {
+    case SearchInnerReturn(res) => res
+    case _: SearchInnerRecCall  => Failure(new Exception("`SearchInnerRecCall` should never escape `searchInner`"))
+  }
 
   /** Lists the next possible states.*/
   def transformations: T => Seq[T]
@@ -31,10 +34,6 @@ trait A_*[T] {
 
   def isSolution: T => Boolean
 
-
-
-
-  protected def error: String => Error
 
   protected type ExtractedOpt = Option[(T, SortedPossibilities[Heuristic, T])]
 
@@ -45,74 +44,98 @@ trait A_*[T] {
 
   implicit def heuristicContainer: HeuristicContainer[T, Heuristic] = HeuristicContainer(heuristic)
 
-  protected type Decide = PartialFunction[ExtractedOpt, Result]
+  protected type Decide = PartialFunction[ExtractedOpt, SearchInnerResult]
 
-//  protected def searchInnerExtraLogic: Decide = Map()
+  protected def searchInnerExtraLogic: Decide = Map()
 
   var searchDebugEach: Option[Int] = None
   var searchPrintBestEach: Option[Int] = None
+
+  /** Exists because Scala cwnnot optimize @tailrec for f => g => f => ... */
+  protected trait SearchInnerResult
+  protected case class SearchInnerRecCall(state: T,
+                                          count: Long,
+                                          open: SortedPossibilities[Heuristic, T],
+                                          closed: HashSet[T]) extends SearchInnerResult
+  protected case class SearchInnerReturn( result: Result)     extends SearchInnerResult
+
+  protected def searchInnerError = SearchInnerReturn.apply _ compose Failure.apply compose (new AStarException(_: String))
 
   @tailrec
   protected final def searchInner(state: T,
                                   count: Long,
                                   open: SortedPossibilities[Heuristic, T],
-                                  closed: HashSet[T]): Result = {
+                                  closed: HashSet[T]): SearchInnerResult = {
     val newStates = transformations(state)
     val newOpen   = open ++ newStates
 
-//    def decisionLogic: Decide = {
-//      case Some((best, _)) if isSolution(best) => Left(best)
-//      case Some((best, opn))                   => searchInner(best, count + 1, opn, closed + state)
-//      case None                                => Right(error("no solution was found in the whole search tree"))
-//    }
+    def decisionLogic: Decide = {
+      case Some((best, _)) if isSolution(best) => SearchInnerReturn(Success(best))
+      case Some((best, opn))                   => SearchInnerRecCall(best, count + 1, opn, closed + state)
+      case None                                => searchInnerError("no solution was found in the whole search tree")
+    }
 
-//    def makeDecision = decisionLogic orElse searchInnerExtraLogic
-
-//    makeDecision lift extract(newOpen) getOrElse Right(error("ExtractedOpt not matched"))
+    def makeDecision = decisionLogic orElse searchInnerExtraLogic
 
     def extract(from: SortedPossibilities[Heuristic, T]): ExtractedOpt = extractTheBest(from) match{
       case Some((best, opn)) if closed contains best => extract(opn)
       case other                                     => other
     }
 
-    val extracted = extract(newOpen)
+    val extracted = Try{extract(newOpen)}
 
-    // print DEBUG
-    searchDebugEach.withFilter(count % _ == 0) foreach (_ => println(
-    s"""At search call $count:
-       |  searching at $state
-       |
-       |  open: $open
-       |  closed: $closed
-       |
-       |  new open: $newStates
-       |  best: ${extracted.map(_._1).orNull}
-       |  best heuristic: ${extracted.map(_._1 |> heuristic).orNull}
-       |  resulting open: ${extracted.map(_._2).orNull}
-     """.stripMargin
-    ))
+    //    _printEach(count, state, open, closed, newStates, extracted.toOption.flatten, extracted.map(_._1 |> heuristic).orNull)
 
-    // print Best
-    searchPrintBestEach.withFilter(count % _ == 0) foreach (_ => println(
-    s""" Reporint on call $count:
-       |  best: ${extracted.map(_._1).orNull}
-       |  heuristic: ${extracted.map(_._1 |> heuristic).orNull}
-     """.stripMargin
-    ))
-
-    extracted match {
-      case Some((best, _)) if isSolution(best) => Left(best)
-      case Some((best, opn))                   => searchInner(best, count + 1, opn, closed + state)
-      case None                                => Right(error("no solution was found in the whole search tree"))
+    extracted map makeDecision.lift/*extract(newOpen)*/ match {
+      case Success(Some(res@SearchInnerReturn(_)))            => res
+      case Success(Some(SearchInnerRecCall(s, c, opn, clsd))) => searchInner(s, c, opn, clsd)
+      case Success(None)                                      => searchInnerError("ExtractedOpt not matched")
+      case Failure(fail)                                      => SearchInnerReturn(Failure(fail))
     }
-  }
+}
 
+
+//  protected def _printEach(count: Long, state: Any, open: Any, closed: Any,
+//                           newStates: Any, extracted: Option[(Any, Any)], bestHeuristic: Any) =
+//  {
+//    // print DEBUG
+//    searchDebugEach.withFilter(count % _ == 0) foreach (_ => println(
+//      s"""At search call $count:
+//                                 |  searching at $state
+//          |
+//          |  open: $open
+//          |  closed: $closed
+//          |
+//          |  new open: $newStates
+//          |  best: ${extracted.map(_._1).orNull}
+//          |  best heuristic: $bestHeuristic
+//          |  resulting open: ${extracted.map(_._2).orNull}
+//     """.stripMargin
+//    ))
+//
+//    // print Best
+//    searchPrintBestEach.withFilter(count % _ == 0) foreach (_ => println(
+//      s""" Reporint on call $count:
+//                                    |  best: ${extracted.map(_._1).orNull}
+//          |  heuristic: $bestHeuristic
+//     """.stripMargin
+//    ))
+//  }
 }
 
 object A_*{
 
   case class HeuristicContainer[T, H](h: T => H) extends (T => H){
     def apply(v: T) = h(v)
+  }
+
+
+  protected case class AStarException(msg: String) extends  Exception(msg){
+    override def toString = "A* Exception: " + msg
+  }
+
+  protected case class AStarImplementationError(msg: String) extends RuntimeException(msg){
+    override def toString = "A* Implementation Error: " + msg
   }
 
   object SortedPossibilities{

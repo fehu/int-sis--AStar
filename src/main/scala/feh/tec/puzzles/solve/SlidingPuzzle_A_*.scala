@@ -32,10 +32,6 @@ object SlidingPuzzle_A_*{
     with A_*.MinimizingHeuristic[SlidingPuzzleInstance[Piece]]
   {
     type Heuristic = H
-    type Error     = Throwable
-
-    protected def error = new Exception(_)
-
   }
 
   object Heuristics{

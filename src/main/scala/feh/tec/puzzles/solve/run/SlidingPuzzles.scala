@@ -8,13 +8,13 @@ object SlidingPuzzle_Example1 extends App{
   import feh.tec.puzzles.solve.SlidingPuzzle_A_*._
 
   val puzzle = new SlidingPuzzleInt3x3v2
-  val initial = puzzle.randomInstance
+//  val initial = puzzle.randomInstance
 
-//  val initial = List(
-//    List(Some(2), Some(8), Some(3)),
-//    List(None   , Some(1), Some(4)),
-//    List(Some(7), Some(6), Some(5))
-//  ) |> (SlidingPuzzleInstance(puzzle, _))
+  val initial = List(
+    List(Some(2), Some(8), Some(3)),
+    List(None   , Some(1), Some(4)),
+    List(Some(7), Some(6), Some(5))
+  ) |> (SlidingPuzzleInstance(puzzle, _))
 
   println(initial)
 

@@ -8,6 +8,10 @@
 
 - [ ] Should return solutions tree on both success and error (for analysis)
 
+- [ ] Visualize solutions tree:
+    - [ ] for a result
+    - [ ] during execution (?)
+
 - [ ] Write Tests for:
     - [ ] instance operations
     - [ ] heuristics
