@@ -26,12 +26,25 @@ trait SlidingPuzzle[Piece] {
   def solution: SlidingPuzzleInstance[Piece]
 
   def randomInstance: SlidingPuzzleInstance[Piece]
+
+
+  trait SolutionRapidAccess {
+    /** The opposite of `asMap`, but contains only pieces.
+     */
+    def piecePositions: Map[Piece, Coordinate]
+  }
+
+  val SolutionRapidAccess: SolutionRapidAccess = new SolutionRapidAccess{
+    lazy val piecePositions = solution.asMap.collect{
+      case (coord, Some(piece)) => piece -> coord
+    }
+  }
 }
 
 /**
- * Coordinates begin in left-upper corner, starting from 1.
+ * Coordinates begin in left-upper corner, starting from 0.
  */
-trait SlidingPuzzleInstance[Piece] extends Equals{
+trait SlidingPuzzleInstance[Piece]{
 
   val puzzle: SlidingPuzzle[Piece]
 
@@ -41,6 +54,8 @@ trait SlidingPuzzleInstance[Piece] extends Equals{
   def pieceAt(c: Coordinate): Option[Piece]
 
   def listRows: Seq[Seq[Option[Piece]]]
+
+  def asMap: Map[Coordinate, Option[Piece]]
 
   def emptyPositions: Seq[Coordinate]
 
@@ -55,6 +70,12 @@ trait SlidingPuzzleInstance[Piece] extends Equals{
 
   /** Number of parents until root. */
   def generation: Long
+
+  override def equals(obj: scala.Any) = obj match {
+    case that: SlidingPuzzleInstance[_] => that.listRows == this.listRows
+  }
+
+  override def hashCode() = listRows.hashCode()
 }
 
 object SlidingPuzzleInstance{
@@ -71,6 +92,9 @@ object SlidingPuzzle{
   implicit class CoordinateWrapper(c: Coordinate){
     def x = c._1
     def y = c._2
+
+    def +(c2: Coordinate) = (c.x + c2.x, c.y + c2.y)
+    def -(c2: Coordinate) = (c.x - c2.x, c.y - c2.y)
   }
 
   sealed trait Direction
@@ -104,17 +128,18 @@ object SlidingPuzzle{
       coord =>
         dir =>
           PartialFunction.condOpt(dir){
-            case Direction.North if coord.y != 1             => (coord.x, coord.y - 1)
-            case Direction.East  if coord.x != puzzle.width  => (coord.x + 1, coord.y)
-            case Direction.South if coord.y != puzzle.height => (coord.x, coord.y + 1)
-            case Direction.West  if coord.x != 1             => (coord.x - 1, coord.y)
+            case Direction.North if coord.y != 0                => (coord.x, coord.y - 1)
+            case Direction.East  if coord.x != puzzle.width -1  => (coord.x + 1, coord.y)
+            case Direction.South if coord.y != puzzle.height -1 => (coord.x, coord.y + 1)
+            case Direction.West  if coord.x != 0                => (coord.x - 1, coord.y)
           }
 
   /** Immutable puzzle state. */
-  case class GenericSlidingPuzzleInstance[Piece](puzzle: SlidingPuzzle[Piece],
-                                                 listRows: Seq[Seq[Option[Piece]]],
-                                                 parentInstance: Option[SlidingPuzzleInstance[Piece]],
-                                                 generation: Long ) extends SlidingPuzzleInstance[Piece]
+  class GenericSlidingPuzzleInstance[Piece](val puzzle: SlidingPuzzle[Piece],
+                                            val listRows: Seq[Seq[Option[Piece]]],
+                                            val parentInstance: Option[SlidingPuzzleInstance[Piece]],
+                                            val generation: Long )
+    extends SlidingPuzzleInstance[Piece]
   {
     /**
      * @return Some(piece) if there is a piece at `c=(x, y)` or `None` if it's an empty space.
@@ -133,11 +158,15 @@ object SlidingPuzzle{
       val newRows = updateListRows(Map( from -> None,
                                         to   -> Some(piece)
                                       ))
-      copy(listRows = newRows,
-           parentInstance = Some(this),
-           generation = generation + 1
-      )
+      new GenericSlidingPuzzleInstance(puzzle, newRows, Some(this), generation + 1)
     }
+
+    lazy val asMap = listRows.zipWithIndex.flatMap{
+      case (row, y) =>
+        row.zipWithIndex.map{
+          case (v, x) => (x, y) -> v
+        }
+    }.toMap
 
     lazy val emptyPositions = for{ (row, y) <- listRows.zipWithIndex
                                    (None,x) <- row.zipWithIndex
@@ -156,6 +185,7 @@ object SlidingPuzzle{
         }
     }
 
+    override def toString = listRows.toString()
   }
   
 }

@@ -2,6 +2,7 @@ package feh.tec.astar
 
 import feh.util._
 
+import scala.annotation.tailrec
 import scala.collection.SortedMap
 import scala.collection.immutable.{HashSet, TreeMap}
 
@@ -26,7 +27,7 @@ trait A_*[T] {
   /** Lists the next possible states.*/
   def transformations: T => Seq[T]
 
-  implicit def heuristic: T => Heuristic
+  def heuristic: T => Heuristic
 
   def isSolution: T => Boolean
 
@@ -46,31 +47,38 @@ trait A_*[T] {
 
   protected type Decide = PartialFunction[ExtractedOpt, Result]
 
-  protected def searchInnerExtraLogic: Decide = Map()
+//  protected def searchInnerExtraLogic: Decide = Map()
 
 
 
-  protected def searchInner(state: T,
+  @tailrec
+  protected final def searchInner(state: T,
                             count: Long,
                             open: SortedPossibilities[Heuristic, T],
                             closed: HashSet[T]): Result = {
     val newStates = transformations(state)
     val newOpen   = open ++ newStates
 
-    def decisionLogic: Decide = {
-      case Some((best, _)) if isSolution(best) => Left(best)
-      case Some((best, opn))                   => searchInner(best, count + 1, opn, closed + state)
-      case None                                => Right(error("no solution was found in the whole search tree"))
-    }
+//    def decisionLogic: Decide = {
+//      case Some((best, _)) if isSolution(best) => Left(best)
+//      case Some((best, opn))                   => searchInner(best, count + 1, opn, closed + state)
+//      case None                                => Right(error("no solution was found in the whole search tree"))
+//    }
 
-    def makeDecision = decisionLogic orElse searchInnerExtraLogic
+//    def makeDecision = decisionLogic orElse searchInnerExtraLogic
+
+//    makeDecision lift extract(newOpen) getOrElse Right(error("ExtractedOpt not matched"))
 
     def extract(from: SortedPossibilities[Heuristic, T]): ExtractedOpt = extractTheBest(from) match{
       case Some((best, opn)) if closed contains best => extract(opn)
       case other                                     => other
     }
 
-    makeDecision lift extract(newOpen) getOrElse Right(error("ExtractedOpt not matched"))
+    extract(newOpen) match {
+      case Some((best, _)) if isSolution(best) => Left(best)
+      case Some((best, opn))                   => searchInner(best, count + 1, opn, closed + state)
+      case None                                => Right(error("no solution was found in the whole search tree"))
+    }
   }
 
 }
