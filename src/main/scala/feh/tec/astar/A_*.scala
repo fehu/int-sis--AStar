@@ -11,7 +11,6 @@ trait A_*[T] {
   import A_*._
 
   type Heuristic
-  type Error
 
   type Result = Either[T, Error]
 
@@ -49,13 +48,14 @@ trait A_*[T] {
 
 //  protected def searchInnerExtraLogic: Decide = Map()
 
-
+  var searchDebugEach: Option[Int] = None
+  var searchPrintBestEach: Option[Int] = None
 
   @tailrec
   protected final def searchInner(state: T,
-                            count: Long,
-                            open: SortedPossibilities[Heuristic, T],
-                            closed: HashSet[T]): Result = {
+                                  count: Long,
+                                  open: SortedPossibilities[Heuristic, T],
+                                  closed: HashSet[T]): Result = {
     val newStates = transformations(state)
     val newOpen   = open ++ newStates
 
@@ -74,7 +74,32 @@ trait A_*[T] {
       case other                                     => other
     }
 
-    extract(newOpen) match {
+    val extracted = extract(newOpen)
+
+    // print DEBUG
+    searchDebugEach.withFilter(count % _ == 0) foreach (_ => println(
+    s"""At search call $count:
+       |  searching at $state
+       |
+       |  open: $open
+       |  closed: $closed
+       |
+       |  new open: $newStates
+       |  best: ${extracted.map(_._1).orNull}
+       |  best heuristic: ${extracted.map(_._1 |> heuristic).orNull}
+       |  resulting open: ${extracted.map(_._2).orNull}
+     """.stripMargin
+    ))
+
+    // print Best
+    searchPrintBestEach.withFilter(count % _ == 0) foreach (_ => println(
+    s""" Reporint on call $count:
+       |  best: ${extracted.map(_._1).orNull}
+       |  heuristic: ${extracted.map(_._1 |> heuristic).orNull}
+     """.stripMargin
+    ))
+
+    extracted match {
       case Some((best, _)) if isSolution(best) => Left(best)
       case Some((best, opn))                   => searchInner(best, count + 1, opn, closed + state)
       case None                                => Right(error("no solution was found in the whole search tree"))
@@ -120,6 +145,8 @@ object A_*{
     def last       = underlying.last
     def lastOption = underlying.lastOption
     def init       = new SortedPossibilities(underlying.init)
+
+    override def toString() = underlying.toString()
 
   }
 
