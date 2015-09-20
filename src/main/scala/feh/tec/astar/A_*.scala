@@ -11,6 +11,7 @@ trait A_*[T] {
   import A_*._
 
   type Heuristic
+  type Error
 
   type Result = Either[T, Error]
 
