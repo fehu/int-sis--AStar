@@ -24,12 +24,12 @@ trait SlidingPuzzle_A_*[Piece] extends A_*[SlidingPuzzleInstance[Piece]]{
 
 object SlidingPuzzle_A_*{
 
-  /** An A* algorithm for [[feh.tec.puzzles.SlidingPuzzle]], maximizing the given heuristic
+  /** An A* algorithm for [[feh.tec.puzzles.SlidingPuzzle]], minimizing the given heuristic
     */
-  class MaximizingHeuristic[Piece, H](val heuristic: SlidingPuzzleInstance[Piece] => H)
+  class MinimizingHeuristic[Piece, H](val heuristic: SlidingPuzzleInstance[Piece] => H)
                                      (implicit val heuristicOrdering: Ordering[H])
     extends SlidingPuzzle_A_*[Piece]
-    with A_*.MaximizingHeuristic[SlidingPuzzleInstance[Piece]]
+    with A_*.MinimizingHeuristic[SlidingPuzzleInstance[Piece]]
   {
     type Heuristic = H
     type Error     = Throwable
@@ -75,7 +75,7 @@ object SlidingPuzzle_A_*{
   }
 
   object Solve{
-    /** Solves a [[feh.tec.puzzles.SlidingPuzzle]] using [[MaximizingHeuristic]]
+    /** Solves a [[feh.tec.puzzles.SlidingPuzzle]] using [[MinimizingHeuristic]]
      *  where heuristic = f - g
      *        f = [[Heuristics.Double.HasSingleEmpty.manhattanDistanceToSolutionSum]]
      *        g = [[Heuristics.Double.solutionLength]]
@@ -85,7 +85,7 @@ object SlidingPuzzle_A_*{
       val g = Heuristics.Double.solutionLength
       val heristic = (x: SlidingPuzzleInstance[Piece]) => f(x) + g(x)
 
-      new MaximizingHeuristic[Piece, Double](heristic)
+      new MinimizingHeuristic[Piece, Double](heristic)
     }
 
     //(initial: SlidingPuzzleInstance[Piece])
