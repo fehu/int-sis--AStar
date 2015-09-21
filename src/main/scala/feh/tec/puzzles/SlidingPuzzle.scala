@@ -116,11 +116,20 @@ object SlidingPuzzle{
   }
 
   implicit class SlidingPuzzleInstanceOps[Piece](val inst: SlidingPuzzleInstance[Piece]){
+
     def neighbouringPiecesCoordinates(c: Coordinate): Seq[(Direction, Coordinate)] = {
       val dirs = Direction.North :: Direction.East :: Direction.South :: Direction.West :: Nil
       dirs.zipMap(neighbourRelatively(inst.puzzle)(c)).collect{ case (dir, Some(cor)) => dir -> cor }
     }
 
+    def pathFromRoot = Y[SlidingPuzzleInstance[Piece], List[SlidingPuzzleInstance[Piece]]](
+      rec =>
+        piece =>
+          piece.parentInstance match {
+            case Some(parent) => piece :: rec(parent)
+            case None         => Nil
+          }
+    )(inst).reverse
   }
 
   def neighbourRelatively: SlidingPuzzle[_] => Coordinate => Direction => Option[Coordinate] =
@@ -185,7 +194,12 @@ object SlidingPuzzle{
         }
     }
 
-    override def toString = listRows.toString()
+    override lazy val toString = listRows
+      .map(
+        _.map(
+          _.map(_.toString).getOrElse(" ")
+        ).mkString("[", ", ", "]")
+      ).mkString("[", ", ", "]")
   }
   
 }

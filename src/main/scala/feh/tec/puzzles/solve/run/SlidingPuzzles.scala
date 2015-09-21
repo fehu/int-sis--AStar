@@ -1,8 +1,9 @@
 package feh.tec.puzzles.solve.run
 
 import feh.tec.puzzles.solve.SlidingPuzzle_A_*.Solve
-import feh.tec.puzzles.{SlidingPuzzleInt3x3v1, SlidingPuzzleInstance, SlidingPuzzleInt3x3v2}
+import feh.tec.puzzles.{SlidingPuzzleInt3x3v1, SlidingPuzzleInt3x3v2}
 import feh.util._
+import feh.tec.puzzles.SlidingPuzzle._
 
 object SlidingPuzzle_Example1 extends App{
   import feh.tec.puzzles.solve.SlidingPuzzle_A_*._
@@ -27,6 +28,12 @@ object SlidingPuzzle_Example1 extends App{
   val res = solver.search(initial)
 
   println(res)
+
+  res.left.foreach{
+    _.pathFromRoot.zipWithIndex.foreach{
+      case (i, inst) => println(s"\t$i:\t $inst")
+    }
+  }
 
 }
 
