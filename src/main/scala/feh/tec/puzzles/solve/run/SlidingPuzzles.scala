@@ -30,7 +30,7 @@ object SlidingPuzzle_Example1 extends App{
   println(res)
 
   res.foreach{
-    _.pathFromRoot.zipWithIndex.foreach{ case (i, inst) => println(s"\t$i:\t $inst") }
+    _.pathFromRoot.zipWithIndex.foreach{ case (inst, i) => println(s"\t$i:\t $inst") }
   }
 
 }
@@ -38,13 +38,13 @@ object SlidingPuzzle_Example1 extends App{
 object SlidingPuzzle_Example2 extends App{
   val puzzle = new SlidingPuzzleInt3x3v1
 
-  val initial = puzzle.randomInstance
+//  val initial = puzzle.randomInstance
 
-//  val initial = List(
-//    List(Some(8), Some(7), None),
-//    List(Some(5), Some(2), Some(6)),
-//    List(Some(4), Some(3), Some(1))
-//  )|> (SlidingPuzzleInstance(puzzle, _))
+  val initial = List(
+    List(Some(8), Some(7), None),
+    List(Some(5), Some(2), Some(6)),
+    List(Some(4), Some(3), Some(1))
+  )|> (SlidingPuzzleInstance(puzzle, _))
 
   val solver = Solve.solver_v1[Int]
 
