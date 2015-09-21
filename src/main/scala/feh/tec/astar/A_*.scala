@@ -46,7 +46,7 @@ trait A_*[T] {
 
   protected type Decide = Long => PartialFunction[ExtractedOpt, SearchInnerResult]
 
-  protected def searchInnerExtraLogic: Decide = Map()
+  protected def searchInnerExtraLogic: Decide = _ => Map()
 
   var searchDebugEach: Option[Int] = None
   var searchPrintBestEach: Option[Int] = None
