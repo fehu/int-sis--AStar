@@ -6,8 +6,8 @@ import feh.util._
 import scala.util.Try
 
 /** An abstract sliding puzzle.
- * @see <url>https://en.wikipedia.org/wiki/Sliding_puzzle</url>
- * @see <url>http://mypuzzle.org/sliding</url>
+ * @see [[https://en.wikipedia.org/wiki/Sliding_puzzle]]
+ * @see [[http://mypuzzle.org/sliding]]
  */
 trait SlidingPuzzle[Piece] {
 
