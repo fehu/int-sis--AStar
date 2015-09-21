@@ -44,22 +44,28 @@ trait A_*[T] {
 
   implicit def heuristicContainer: HeuristicContainer[T, Heuristic] = HeuristicContainer(heuristic)
 
-  protected type Decide = PartialFunction[ExtractedOpt, SearchInnerResult]
+  protected type Decide = Long => PartialFunction[ExtractedOpt, SearchInnerResult]
 
   protected def searchInnerExtraLogic: Decide = Map()
 
   var searchDebugEach: Option[Int] = None
   var searchPrintBestEach: Option[Int] = None
 
-  /** Exists because Scala cwnnot optimize @tailrec for f => g => f => ... */
+  /** Exists because Scala cannot optimize @tailrec for f => g => f => ... */
   protected trait SearchInnerResult
   protected case class SearchInnerRecCall(state: T,
                                           count: Long,
-                                          open: SortedPossibilities[Heuristic, T],
-                                          closed: HashSet[T]) extends SearchInnerResult
-  protected case class SearchInnerReturn( result: Result)     extends SearchInnerResult
+                                          open: SortedPossibilities[Heuristic, T]) extends SearchInnerResult
+  protected case class SearchInnerReturn( result: Result                         ) extends SearchInnerResult
 
   protected def searchInnerError = SearchInnerReturn.apply _ compose Failure.apply compose (new AStarException(_: String))
+
+  protected final def decisionLogic: Decide = count => {
+    case Some((best, _)) if isSolution(best) => SearchInnerReturn(Success(best))
+    case Some((best, opn))                   => SearchInnerRecCall(best, count + 1, opn)
+    case None                                => searchInnerError("no solution was found in the whole search tree")
+  }
+
 
   @tailrec
   protected final def searchInner(state: T,
@@ -69,13 +75,8 @@ trait A_*[T] {
     val newStates = transformations(state)
     val newOpen   = open ++ newStates
 
-    def decisionLogic: Decide = {
-      case Some((best, _)) if isSolution(best) => SearchInnerReturn(Success(best))
-      case Some((best, opn))                   => SearchInnerRecCall(best, count + 1, opn, closed + state)
-      case None                                => searchInnerError("no solution was found in the whole search tree")
-    }
 
-    def makeDecision = decisionLogic orElse searchInnerExtraLogic
+    def makeDecision = searchInnerExtraLogic(count) orElse decisionLogic(count)
 
     def extract(from: SortedPossibilities[Heuristic, T]): ExtractedOpt = extractTheBest(from) match{
       case Some((best, opn)) if closed contains best => extract(opn)
@@ -86,11 +87,11 @@ trait A_*[T] {
 
     //    _printEach(count, state, open, closed, newStates, extracted.toOption.flatten, extracted.map(_._1 |> heuristic).orNull)
 
-    extracted map makeDecision.lift/*extract(newOpen)*/ match {
-      case Success(Some(res@SearchInnerReturn(_)))            => res
-      case Success(Some(SearchInnerRecCall(s, c, opn, clsd))) => searchInner(s, c, opn, clsd)
-      case Success(None)                                      => searchInnerError("ExtractedOpt not matched")
-      case Failure(fail)                                      => SearchInnerReturn(Failure(fail))
+    extracted map makeDecision.lift match {
+      case Success(Some(res@SearchInnerReturn(_)))      => res
+      case Success(Some(SearchInnerRecCall(s, c, opn))) => searchInner(s, c, opn, closed + state)
+      case Success(None)                                => searchInnerError("ExtractedOpt not matched")
+      case Failure(fail)                                => SearchInnerReturn(Failure(fail))
     }
 }
 
