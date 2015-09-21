@@ -72,7 +72,9 @@ trait SlidingPuzzleInstance[Piece]{
   def generation: Long
 
   override def equals(obj: scala.Any) = obj match {
-    case that: SlidingPuzzleInstance[_] => that.listRows == this.listRows
+    case that: SlidingPuzzleInstance[_] =>
+      this.puzzle   == that.puzzle &&
+      this.listRows == that.listRows
   }
 
   override def hashCode() = listRows.hashCode()
