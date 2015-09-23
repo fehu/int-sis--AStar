@@ -33,13 +33,13 @@ trait SlidingPuzzleInstanceSpec[Impl[_] <: SlidingPuzzleInstance[_]] extends Spe
    provide a piece at the given coordinate  $test_pieceAt
    provide a Map representation             $test_asMap
    provide the empty positions              $test_emptyPositions
-   be able to move a piece                  $test_tryMove
+   be able to move a piece:                 $test_tryMove
    be immutable                             $test_immutable
    know the parent instance                 $test_parentInstance
    know its "generation"                    $test_generation
    equals another instance if and only if
      1. has the same pieces configuration
-     2. reference the same puzzle           $test_equals
+     2. is an instance of the same puzzle   $test_equals
 """
 
   def test_pieceAt = prop{
@@ -75,7 +75,7 @@ trait SlidingPuzzleInstanceSpec[Impl[_] <: SlidingPuzzleInstance[_]] extends Spe
                   lazy val incorrectPieces = (inst.pieceAt(pieceCor) must beNone) :| "tried to move empty space" ||
                                              (inst.pieceAt(eCor) must beSome)     :| "tried to move into a piece"
 
-                  outOfBoard.iff{
+                  outOfBoard.iff{ // TODO ???
                     case _ if isOut => Prop.passed
                     case prop       => incorrectPieces
                   }
@@ -116,9 +116,32 @@ trait SlidingPuzzleInstanceSpec[Impl[_] <: SlidingPuzzleInstance[_]] extends Spe
       case Direction.West  => (x-1, y)
     }
   }
-  
 
-  def test_immutable: Fragments      = todo
+  /** no method should change an instance
+   * tests only `tryMove`
+   */
+  def test_immutable = prop {
+    data: InstanceData =>
+      val inst = instanceFromData(data)
+      val y   = Gen.choose(0, inst.puzzle.height).sample.get
+      val x   = Gen.choose(0, inst.puzzle.width).sample.get
+      val dir = Gen.oneOf(Direction.all.toSeq).sample.get
+
+      inst.tryMove(x -> y, dir)
+      inst mustEqual instanceFromData(data)
+  }
+
+//      Gen.choose(0, inst.puzzle.height).flatMap{
+//        y =>
+//          Gen.choose(0, inst.puzzle.width).flatMap{
+//            x => Gen.oneOf(Direction.all.toSeq).map{
+//              dir =>
+//                inst.tryMove(x -> y, dir)
+//                inst === instanceFromData(data)
+//            }
+//          }
+//      }
+//  }
   def test_parentInstance: Fragments = todo
   def test_generation: Fragments     = todo
   def test_equals: Fragments         = todo
