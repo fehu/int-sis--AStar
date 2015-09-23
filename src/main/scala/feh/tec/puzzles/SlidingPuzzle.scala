@@ -106,6 +106,8 @@ object SlidingPuzzle{
     case object East  extends Direction
     case object South extends Direction
     case object West  extends Direction
+
+    def all = Set(Direction.North, Direction.East, Direction.South, Direction.West)
   }
 
   implicit class DirectionOps(dir: Direction){
@@ -120,7 +122,7 @@ object SlidingPuzzle{
   implicit class SlidingPuzzleInstanceOps[Piece](val inst: SlidingPuzzleInstance[Piece]){
 
     def neighbouringPiecesCoordinates(c: Coordinate): Seq[(Direction, Coordinate)] = {
-      val dirs = Direction.North :: Direction.East :: Direction.South :: Direction.West :: Nil
+      val dirs = Direction.all.toList
       dirs.zipMap(neighbourRelatively(inst.puzzle)(c)).collect{ case (dir, Some(cor)) => dir -> cor }
     }
 
@@ -155,7 +157,11 @@ object SlidingPuzzle{
     /**
      * @return Some(piece) if there is a piece at `c=(x, y)` or `None` if it's an empty space.
      */
-    def pieceAt(c: (Int, Int)) = listRows(c.y)(c.x)
+    def pieceAt(c: (Int, Int)) = {
+      assert(c.y >=0 && c.y < puzzle.height, "y is out of range in " + c)
+      assert(c.x >=0 && c.x < puzzle.width,  "x is out of range in " + c)
+      listRows(c.y)(c.x)
+    }
 
     /** Try to move a piece `from` in the direction `dir`.
       *
