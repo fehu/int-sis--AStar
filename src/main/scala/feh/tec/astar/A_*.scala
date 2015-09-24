@@ -162,6 +162,7 @@ object A_*{
     }
 
     def replace(h: H, by: List[T]) = new SortedPossibilities( underlying + (h -> by) )
+    def remove(h: H*) = new SortedPossibilities( underlying -- h )
 
     def head       = underlying.head
     def headOption = underlying.headOption
@@ -180,7 +181,7 @@ object A_*{
 
     def _extractTheBest: SortedPossibilities[Heuristic, T] => ((Heuristic, List[T])) => (T, SortedPossibilities[Heuristic, T]) =
       open => {
-        case (_, best :: Nil) => best -> open
+        case (h, best :: Nil) => best -> open.remove(h)
         case (h, best) =>
           val Some((chosen, rest)) = best.randomPop
           val newOpen = open.replace(h, rest.toList)
