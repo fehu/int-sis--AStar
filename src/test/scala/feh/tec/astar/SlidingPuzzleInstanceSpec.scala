@@ -2,17 +2,15 @@ package feh.tec.astar
 
 import feh.tec.astar.SlidingPuzzleInstanceSpec.InstanceData
 import feh.tec.puzzles.SlidingPuzzle.{Coordinate, Direction, GenericSlidingPuzzleInstance}
-import feh.tec.puzzles.{SlidingPuzzleInt3x3v1, SlidingPuzzle, SlidingPuzzleInstance}
-import org.scalacheck.{Prop, Gen, Arbitrary}
+import feh.tec.puzzles.{SlidingPuzzle, SlidingPuzzleInstance, SlidingPuzzleInt3x3v1}
+import feh.util._
+import org.scalacheck.{Arbitrary, Gen, Prop}
 import org.specs2._
 import org.specs2.specification.core.Fragments
-import feh.util._
 
 import scala.language.{existentials, higherKinds}
-import scala.util.{Failure, Success, Try}
+import scala.util.{Failure, Success}
 
-
-// TODO: Use ScalaCheck
 
 /** An abstract test specification for [[SlidingPuzzleInstance]] implementations.
  */
@@ -75,7 +73,7 @@ trait SlidingPuzzleInstanceSpec[Impl[_] <: SlidingPuzzleInstance[_]] extends Spe
                   lazy val incorrectPieces = (inst.pieceAt(pieceCor) must beNone) :| "tried to move empty space" ||
                                              (inst.pieceAt(eCor) must beSome)     :| "tried to move into a piece"
 
-                  outOfBoard.iff{ // TODO ???
+                  outOfBoard.iff{
                     case _ if isOut => Prop.passed
                     case prop       => incorrectPieces
                   }
@@ -131,18 +129,18 @@ trait SlidingPuzzleInstanceSpec[Impl[_] <: SlidingPuzzleInstance[_]] extends Spe
       inst mustEqual instanceFromData(data)
   }
 
-//      Gen.choose(0, inst.puzzle.height).flatMap{
-//        y =>
-//          Gen.choose(0, inst.puzzle.width).flatMap{
-//            x => Gen.oneOf(Direction.all.toSeq).map{
-//              dir =>
-//                inst.tryMove(x -> y, dir)
-//                inst === instanceFromData(data)
-//            }
-//          }
-//      }
-//  }
-  def test_parentInstance: Fragments = todo
+  def test_parentInstance = prop{
+    inst: Impl[_] =>
+
+      val empty = inst.emptyPositions.head
+      val children = Direction.all.toList
+        .flatMap(d => inst.tryMove(dirFrom(d, empty), d.opposite).toOption.asInstanceOf[Option[Impl[_]]])
+
+      forall(children){
+        _.parentInstance === Some(inst)
+      }.iff(children.nonEmpty)
+  }
+
   def test_generation: Fragments     = todo
   def test_equals: Fragments         = todo
 }
