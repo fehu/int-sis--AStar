@@ -22,3 +22,5 @@
     - [ ] instance operations
     - [ ] heuristics
     - [ ] solver (with hardcoded initial)
+
+- [ ] Tests: visualize underlying props
