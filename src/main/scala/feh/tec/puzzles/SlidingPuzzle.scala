@@ -131,7 +131,7 @@ object SlidingPuzzle{
         piece =>
           piece.parentInstance match {
             case Some(parent) => piece :: rec(parent)
-            case None         => Nil
+            case None         => piece :: Nil
           }
     )(inst).reverse
   }
