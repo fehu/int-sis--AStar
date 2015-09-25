@@ -24,3 +24,5 @@
     - [ ] solver (with hardcoded initial)
 
 - [ ] Tests: visualize underlying props
+
+- [ ] guard also the history in form of movements

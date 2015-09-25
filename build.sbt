@@ -16,10 +16,17 @@ libraryDependencies += "feh.util" %% "util" % "1.0.9-SNAPSHOT"
 
 // Test Libraries
 
-libraryDependencies += "org.specs2" %% "specs2-core" % "3.6.4" % "test"
+libraryDependencies ++= List(
+  "org.specs2" %% "specs2-core",
+  "org.specs2" %% "specs2-html",
+  "org.specs2" %% "specs2-scalacheck"
+).map(_ % "3.6.4" % "test")
 
-libraryDependencies += "org.specs2" %% "specs2-scalacheck" % "3.6.4"  % "test"
-
-// Misc
+// Scaladoc Options
 
 scalacOptions in (Compile, doc) ++= Seq("-diagrams", "-diagrams-max-classes", "50", "-diagrams-max-implicits", "20")
+
+// Test Options
+
+testOptions in Test += Tests.Argument(Some(TestFrameworks.Specs2), List("console", "html"))
+

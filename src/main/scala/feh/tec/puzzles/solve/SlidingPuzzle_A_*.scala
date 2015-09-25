@@ -64,6 +64,9 @@ object SlidingPuzzle_A_*{
             dPieces.sum + dEmpty
           }
 
+        def correctRows[Piece]: SlidingPuzzleInstance[Piece] => Double = ???
+        def correctCols[Piece]: SlidingPuzzleInstance[Piece] => Double = ???
+
       }
 
     }
