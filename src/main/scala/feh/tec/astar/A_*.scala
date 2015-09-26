@@ -24,7 +24,7 @@ trait A_*[T] {
    */
   def search(initial: T): Result = searchInner(initial, 0, SortedPossibilities.empty[Heuristic, T], new HashSet) match {
     case SearchInnerReturn(res) => res
-    case _: SearchInnerRecCall  => Failure(new Exception("`SearchInnerRecCall` should never escape `searchInner`"))
+    case _: SearchInnerRecCall  => implementationError("`SearchInnerRecCall` should never escape `searchInner`")
   }
 
   /** Lists the next possible states.*/
@@ -48,6 +48,8 @@ trait A_*[T] {
 
   protected def searchInnerExtraLogic: Decide = _ => Map()
 
+  protected def implementationError = Failure.apply _ compose (AStarImplementationError(_: String))
+
   var searchDebugEach: Option[Int] = None
   var searchPrintBestEach: Option[Int] = None
 
@@ -58,12 +60,14 @@ trait A_*[T] {
                                           open: SortedPossibilities[Heuristic, T]) extends SearchInnerResult
   protected case class SearchInnerReturn( result: Result                         ) extends SearchInnerResult
 
-  protected def searchInnerError = SearchInnerReturn.apply _ compose Failure.apply compose (new AStarException(_: String))
+  protected def searchInnerError = SearchInnerReturn.apply _ compose Failure.apply compose (AStarException(_: String))
 
   protected final def decisionLogic: Decide = count => {
     case Some((best, _)) if isSolution(best) => SearchInnerReturn(Success(best))
     case Some((best, opn))                   => SearchInnerRecCall(best, count + 1, opn)
-    case None                                => searchInnerError("no solution was found in the whole search tree")
+    case None                                => searchInnerError("no solution was found in the whole search tree "  ++
+                                                                s"($count nodes were open)"
+                                                                )
   }
 
   protected def listParents: T => Seq[T]
@@ -83,16 +87,15 @@ trait A_*[T] {
       case other                                     => other
     }
 
-    val extracted    = Try{extract(newOpen)}
+    val extracted    = extract(newOpen)
     val makeDecision = Seq(searchInnerExtraLogic, decisionLogic).map(_(count)).reduceLeft(_ orElse _)
 
     //    _printEach(count, state, open, closed, newStates, extracted.toOption.flatten, extracted.map(_._1 |> heuristic).orNull)
 
-    extracted map makeDecision.lift match {
-      case Success(Some(res@SearchInnerReturn(_)))      => res
-      case Success(Some(SearchInnerRecCall(s, c, opn))) => searchInner(s, c, opn, closed + state)
-      case Success(None)                                => searchInnerError("ExtractedOpt not matched")
-      case Failure(fail)                                => SearchInnerReturn(Failure(fail))
+    makeDecision lift extracted match {
+      case Some(res@SearchInnerReturn(_))      => res
+      case Some(SearchInnerRecCall(s, c, opn)) => searchInner(s, c, opn, closed + state)
+      case None                                => SearchInnerReturn(implementationError("ExtractedOpt not matched"))
     }
 }
 
@@ -180,7 +183,7 @@ object A_*{
   protected trait MinMaxHeuristic[T]{
     self: A_*[T] =>
 
-    def _extractTheBest: SortedPossibilities[Heuristic, T] => ((Heuristic, List[T])) => (T, SortedPossibilities[Heuristic, T]) =
+    def _extractTheBest: (=> SortedPossibilities[Heuristic, T]) => ((Heuristic, List[T])) => (T, SortedPossibilities[Heuristic, T]) =
       open => {
         case (h, best :: Nil) => best -> open.remove(h)
         case (h, best) =>
