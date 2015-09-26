@@ -14,3 +14,6 @@ This project uses [simple build tool (SBT)](http://www.scala-sbt.org/).
 
 [Using SBT](http://www.scala-sbt.org/0.13/tutorial/)
 
+---
+
+See [**dev** branch](https://github.com/fehu/int-sis--AStar/tree/dev) for the latest changes.
