@@ -19,7 +19,7 @@ trait SlidingPuzzle_A_*[Piece] extends A_*[SlidingPuzzleInstance[Piece]]{
 
   def isSolution = inst => inst == inst.puzzle.solution
 
-
+  protected def listParents = _.pathFromRoot
 }
 
 object SlidingPuzzle_A_*{

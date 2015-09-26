@@ -66,24 +66,25 @@ trait A_*[T] {
     case None                                => searchInnerError("no solution was found in the whole search tree")
   }
 
+  protected def listParents: T => Seq[T]
+
 
   @tailrec
   protected final def searchInner(state: T,
                                   count: Long,
                                   open: SortedPossibilities[Heuristic, T],
                                   closed: HashSet[T]): SearchInnerResult = {
-    val newStates = transformations(state)
+    val parents   = listParents(state).toSet
+    val newStates = transformations(state) filterNot parents.contains
     val newOpen   = open ++ newStates
-
-
-    def makeDecision = searchInnerExtraLogic(count) orElse decisionLogic(count)
 
     def extract(from: SortedPossibilities[Heuristic, T]): ExtractedOpt = extractTheBest(from) match{
       case Some((best, opn)) if closed contains best => extract(opn)
       case other                                     => other
     }
 
-    val extracted = Try{extract(newOpen)}
+    val extracted    = Try{extract(newOpen)}
+    val makeDecision = Seq(searchInnerExtraLogic, decisionLogic).map(_(count)).reduceLeft(_ orElse _)
 
     //    _printEach(count, state, open, closed, newStates, extracted.toOption.flatten, extracted.map(_._1 |> heuristic).orNull)
 
