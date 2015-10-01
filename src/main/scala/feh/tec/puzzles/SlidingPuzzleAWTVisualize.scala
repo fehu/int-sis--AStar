@@ -3,7 +3,8 @@ package feh.tec.puzzles
 import java.awt.{Graphics, Color, Dimension}
 import javax.swing.{ScrollPaneConstants, JScrollPane, JPanel, JFrame}
 
-import feh.tec.astar.{AwtHelper, History, AWTVisualizeHistory}
+import feh.tec.astar.vis.AWTVisualizeHistory
+import feh.tec.astar.{AwtHelper, History}
 
 trait SlidingPuzzleAWTVisualize[Piece] {
   outer: AWTVisualizeHistory[SlidingPuzzleInstance[Piece]] =>
