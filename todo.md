@@ -10,17 +10,20 @@
       Works for: `[[7, 5, 6], [1, 8, 3], [4,  , 2]]` (1900+ calls) 
                  `[[2,  , 5], [4, 3, 7], [6, 8, 1]]` (300+ calls)
 
-- [ ] Should have an option to return full solution search history on both success and error (for analysis)
+- [x] Should have an option to return full solution search history on both success and error (for analysis)
+- [ ] maximum history size configuration
 
-- [ ] Should provide a description for generated `transformations`
+- [x] Should provide a description for generated `transformations`
 
-- [ ] Visualize solutions tree:
-    - [ ] for a result
+- [x] Visualize solutions tree:
+    - [x] for a result
     - [ ] during execution (?)
+    - [x] optimize drawing (+-)
+    - [ ] use another drawing engine (GTGE)
 
 - [ ] Write Tests for:
-    - [ ] instance operations
+    - [x] instance operations
     - [ ] heuristics
     - [ ] solver (with hardcoded initial)
 
-- [ ] guard also the history in form of movements
+- [x] examples generation for heuristics testing
