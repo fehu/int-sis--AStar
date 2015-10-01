@@ -50,6 +50,27 @@ object SlidingPuzzle_A_*{
 
       def solutionLength: SlidingPuzzleInstance[_] => Double = _.generation
 
+      def correctlySet: SlidingPuzzleInstance[_] => Double =
+        inst => (
+          for {
+            (c, iv) <- inst.asMap
+            sv = inst.puzzle.solution.asMap(c)
+            if sv == iv
+          } yield 1
+        ).sum
+
+      def correctRowsAndCols: SlidingPuzzleInstance[_] => Double =
+        inst => correctRows(inst) + correctCols(inst)
+
+      def correctRows: SlidingPuzzleInstance[_] => Double =
+        inst => correctRowsInner(inst.listRows, inst.puzzle.solution.listRows)
+
+      def correctCols: SlidingPuzzleInstance[_] => Double =
+        inst => correctRowsInner(inst.listRows.transpose, inst.puzzle.solution.listRows.transpose)
+
+      protected def correctRowsInner(rows: Seq[Seq[Option[Any]]], srows: Seq[Seq[Option[Any]]]) =
+        rows.zip(srows).count(==)
+
       object HasSingleEmpty{
 
         def manhattanDistanceToSolutionSum[Piece]: SlidingPuzzleInstance[Piece] => Double =

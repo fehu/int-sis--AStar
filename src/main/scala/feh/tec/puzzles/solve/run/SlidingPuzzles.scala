@@ -78,11 +78,25 @@ object H{
     Heuristics.Double.HasSingleEmpty.manhattanDistanceToSolutionSum(x) + 0.5 * Heuristics.Double.solutionLength(x)
   )
 
+  /** heuristic = f + 0.5 * g - h - k
+    *        f = [[feh.tec.puzzles.solve.SlidingPuzzle_A_*.Heuristics.Double.HasSingleEmpty.manhattanDistanceToSolutionSum]]
+    *        g = [[feh.tec.puzzles.solve.SlidingPuzzle_A_*.Heuristics.Double.solutionLength]]
+    *        h = [[feh.tec.puzzles.solve.SlidingPuzzle_A_*.Heuristics.Double.correctlySet]]
+    *        k = [[feh.tec.puzzles.solve.SlidingPuzzle_A_*.Heuristics.Double.correctRowsAndCols]]
+    */
+  def _03[T] = Solve.minimizing[T, Double](x =>
+    Heuristics.Double.HasSingleEmpty.manhattanDistanceToSolutionSum(x)
+      + 0.5 * Heuristics.Double.solutionLength(x)
+      - Heuristics.Double.correctlySet(x)
+      - Heuristics.Double.correctRowsAndCols(x)
+  )
 }
 
 
 
 import feh.tec.puzzles.solve.run.SlidingPuzzleExamples._
+
+
 
 object SlidingPuzzle_Example1_H01 extends App{
   Example1.withSolver(H._01).run()
@@ -92,6 +106,17 @@ object SlidingPuzzle_Example1_H02 extends App{
   Example1.withSolver(H._02).run()
 }
 
+object SlidingPuzzle_Example1_H03 extends App{
+  Example1.withSolver(H._03).run()
+}
+
+
+
+
 object SlidingPuzzle_Example2_H02 extends App{
   Example2.withSolver(H._02).run()
+}
+
+object SlidingPuzzle_Example2_H03 extends App{
+  Example2.withSolver(H._03).run()
 }
