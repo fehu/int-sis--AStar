@@ -1,5 +1,7 @@
 package feh.tec.puzzles.solve.run
 
+import java.awt.Dimension
+
 import feh.tec.astar.AwtHelper._
 import feh.tec.astar.History
 import feh.tec.puzzles._
@@ -8,9 +10,11 @@ import feh.tec.puzzles.solve.SlidingPuzzle_A_*.{Heuristics, Solve}
 import feh.tec.puzzles.vis.{FrameVisualization, GenericSlidingPuzzleAWTVisualize}
 import feh.util._
 
+import scala.language.reflectiveCalls
+
 object SlidingPuzzles{
-  def exampleFor[T](puzzle: SlidingPuzzle[T], initial: SlidingPuzzleInstance[T] = null) = new {
-    def withSolver(solver: SlidingPuzzle_A_*[T]) = SlidingPuzzleExample(puzzle, Option(initial), solver)
+  def swingExampleFor[T](puzzle: SlidingPuzzle[T], initial: SlidingPuzzleInstance[T] = null) = new {
+    def withSolver(solver: SlidingPuzzle_A_*[T]) = SlidingPuzzleExample.swingFrame(puzzle, Option(initial), solver)
   }
 }
 
@@ -25,21 +29,33 @@ object HistoryTreeShowConf{
 
 case class SlidingPuzzleExample[T](puzzle: SlidingPuzzle[T],
                                    initial: Option[SlidingPuzzleInstance[T]],
-                                   solver: SlidingPuzzle_A_*[T])
+                                   solver: SlidingPuzzle_A_*[T],
+                                   visualize: ((Dimension => Unit) => GenericSlidingPuzzleAWTVisualize[T]) =>
+                                                History[SlidingPuzzleInstance[T]] =>
+                                                {def open()}
+                                    )
 {
   def solve = solver.search(initial getOrElse puzzle.randomInstance)
-  def showTree(h: History[SlidingPuzzleInstance[T]], conf: HistoryTreeShowConf) = new FrameVisualization(
-    new GenericSlidingPuzzleAWTVisualize(puzzle, conf.cellSize, solver.heuristic, conf.dh, conf.dv, _),
-    h
-  )
+  def pVis(conf: HistoryTreeShowConf) =
+    new GenericSlidingPuzzleAWTVisualize(puzzle, conf.cellSize, solver.heuristic, conf.dh, conf.dv, _: Dimension => Unit)
+
+  def showTree(h: History[SlidingPuzzleInstance[T]], conf: HistoryTreeShowConf) = visualize(pVis(conf))(h)
 
   def run(conf: HistoryTreeShowConf = HistoryTreeShowConf.default) = showTree(solve._2, conf).open()
+}
+
+object SlidingPuzzleExample{
+  def swingFrame[T] = SlidingPuzzleExample[T](
+    _: SlidingPuzzle[T],
+    _: Option[SlidingPuzzleInstance[T]],
+    _: SlidingPuzzle_A_*[T],
+    f => h => new FrameVisualization(f, h))
 }
 
 object SlidingPuzzleExamples{
 
   lazy val Example1Puzzle = new SlidingPuzzleInt3x3v2
-  lazy val Example1 = SlidingPuzzles.exampleFor(
+  lazy val Example1 = SlidingPuzzles.swingExampleFor(
     Example1Puzzle,
     List(
       List(Some(2), Some(8), Some(3)),
@@ -49,7 +65,7 @@ object SlidingPuzzleExamples{
   )
 
   lazy val Example2Puzzle = new SlidingPuzzleInt3x3v1
-  lazy val Example2 = SlidingPuzzles.exampleFor(
+  lazy val Example2 = SlidingPuzzles.swingExampleFor(
     Example2Puzzle,
     List(
       List(Some(8), Some(7), None),
