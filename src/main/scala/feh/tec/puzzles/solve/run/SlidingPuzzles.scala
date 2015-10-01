@@ -1,11 +1,13 @@
 package feh.tec.puzzles.solve.run
 
-import java.awt.{Dimension, Point}
+import java.awt.{Dimension, Graphics}
+import javax.swing.{JFrame, JPanel}
 
-import feh.tec.astar.{VisualizeNode, HistoryEntry, VisualizeHistory}
+import feh.tec.astar.AwtHelper._
+import feh.tec.astar.HistoryEntry
 import feh.tec.puzzles.SlidingPuzzle._
 import feh.tec.puzzles.solve.SlidingPuzzle_A_*.Solve
-import feh.tec.puzzles.{SlidingPuzzleInstance, SlidingPuzzleInt3x3v1, SlidingPuzzleInt3x3v2}
+import feh.tec.puzzles.{GenericSlidingPuzzleAWTVisualize, SlidingPuzzleInstance, SlidingPuzzleInt3x3v1, SlidingPuzzleInt3x3v2}
 import feh.util._
 
 object SlidingPuzzle_Example1 extends App{
@@ -37,26 +39,35 @@ object SlidingPuzzle_Example1 extends App{
     case HistoryEntry(parent, children) => println(s"$parent\t===>\t ${children.mkString(", ")}")
   }
 
-  val vh = new VisualizeHistory[SlidingPuzzleInstance[Int]]{
-    lazy val drawNode: VisualizeNode[HNode] = new VisualizeNode[HNode]{
-      def draw(node: HNode) = ???
-      def size = 50 -> 50
+  val cellSize = 30 -> 30
+  val dh = 10
+  val dv = 10
+
+  val vh = new GenericSlidingPuzzleAWTVisualize(puzzle, cellSize, solver.heuristic, dh, dv){
+    protected def setCanvasSize(dim: Dimension): Unit = {
+      println("size = " + dim)
+      frame.panel.setMinimumSize(dim)
+      frame.panel.setPreferredSize(dim)
+      frame.pack()
     }
-
-    protected def heuristic = solver.heuristic
-    protected def depthOf = _.generation.toInt
-    protected def description = _.description
-
-    def distanceBetweenH = 20
-    def distanceBetweenV = 30
-
-    protected def setCanvasSize(dim: Dimension) = ???
-    protected def drawArrow(from: Point, to: Point) = ???
   }
+
+
+  val frame: JFrame {val panel: JPanel} = new JFrame(){
+    setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE)
+
+    val panel = new JPanel{
+      override def paint(g: Graphics): Unit = {
+        vh.drawHistory(g, res._2)
+      }
+    }
+    setContentPane(panel)
+  }
+
+  frame.setVisible(true)
 
   lazy val aTree = vh.abstractHistoryTree(res._2)
   vh.setPositions(aTree)
-
   println()
   aTree.Debug.listTree()
 

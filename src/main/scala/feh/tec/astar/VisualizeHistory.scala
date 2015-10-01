@@ -8,7 +8,7 @@ import feh.util._
 trait VisualizeHistory[T] extends AwtHelper{
   vis =>
 
-  val drawNode: VisualizeNode[HNode]
+  val drawNode: VisualizeNode
 
   def distanceBetweenH: Int
   def distanceBetweenV: Int
@@ -22,7 +22,7 @@ trait VisualizeHistory[T] extends AwtHelper{
 
   /** Draws the history tree.
    */
-  def drawHistory(h: History[T]) = {
+  def drawHistory(h: History[T]): Unit = {
     val tr = setPositions(abstractHistoryTree(h))
     
     val deepestN = tr.root.deepChildrenLeafs
@@ -36,14 +36,16 @@ trait VisualizeHistory[T] extends AwtHelper{
     // draw arrows
     tr.byDepth.toList.sortBy(_._1).foreach {
       case (_, nodes) => nodes.foreach{
-        node => node.children.foreach(child => drawArrow(node.position, child.position))
+        node => node.children.foreach(child => drawArrow(shiftFullDown compose shiftRight apply  node.position,
+                                                         shiftRight apply child.position))
       }
     }
   }
   
-  protected def shiftLeft(p: Point): Point = p.x - drawNode.size.width/2 -> p.y
-  protected def shiftRight(p: Point): Point = p.x + drawNode.size.width/2 -> p.y
-    
+  protected def shiftLeft: Point => Point     = p => p.x - drawNode.size.width/2 -> p.y
+  protected def shiftRight: Point => Point    = p => p.x + drawNode.size.width/2 -> p.y
+  protected def shiftFullDown: Point => Point = p => p.x -> (p.y + drawNode.size.height)
+
   def setPositions(tr: HistoryTree[HNode]): tr.type = {
     // resolve the `deepChildrenLeafs`
     tr.byDepth.toList.sortBy(-_._1).foreach{
@@ -68,7 +70,7 @@ trait VisualizeHistory[T] extends AwtHelper{
       n * drawNode.size.width + (n - 1) * distanceBetweenH
     }
     def pointsInMiddle(nodes: Seq[HNode], relTo: HNode): Seq[Point] = {
-      val y = relTo.position.y + distanceBetweenV
+      val y = relTo.position.y + drawNode.size.height + distanceBetweenV
       val firstX = relTo.position.x - totalWidth(relTo) / 2
 
       ((List.empty[Point], firstX) /: nodes){
@@ -76,18 +78,18 @@ trait VisualizeHistory[T] extends AwtHelper{
           val (x, newXAcc) = xMiddle(totalWidth(node), xacc)
 
           ((x -> y : Point) :: acc) -> newXAcc
-      }._1
+      }._1.reverse
     }
-    def xMiddle(width: Int, acc: Int): (Int, Int) = acc + width / 2 -> (acc + width)
+    def xMiddle(width: Int, acc: Int): (Int, Int) = acc + width / 2 -> (acc + width + distanceBetweenH)
 
-    tr.root.positionUpd(totalWidth(tr.root) / 2 -> 0)
+    tr.root.positionUpd(shiftLeft(totalWidth(tr.root) / 2 -> 0))
 
     tr.byDepth.toList.sortBy(_._1).foreach{
       case (_, nodes) => nodes.foreach{
         node =>
           val children = node.children.toSeq
           children.zip(pointsInMiddle(children, node)).foreach{
-            case (child, point) => child.positionUpd(shiftLeft(point))
+            case (child, point) => child.positionUpd(point)
           }
       }
     }
@@ -221,20 +223,27 @@ trait VisualizeHistory[T] extends AwtHelper{
                                  s", deepChildrenLeafs=$deepChildrenLeafs"
   }
 
+  
+  trait VisualizeNode{
+
+    /** Draws the node.
+      */
+    def draw(node: HNode)
+
+    /** The size of visualization.
+      */
+    def size: Dimension
+
+  }
 
 
 }
 
-trait VisualizeNode[Node]{
+abstract class AWTVisualizeHistory[T] extends VisualizeHistory[T]{
+  protected val graphicsState = new ScopedState[Option[java.awt.Graphics]](None)
+  protected def graphics = graphicsState.get.orNull
 
-  /** Draws the node.
-    */
-  def draw(node: Node)
+  def drawHistory(g: java.awt.Graphics, h: History[T]): Unit = graphicsState.doWith(Some(g)){ drawHistory(h) }
 
-  /** The size of visualization.
-   */
-  def size: Dimension
-
+  protected def drawArrow(from: Point, to: Point) = graphics.drawLine(from.x, from.y, to.x, to.y) // todo
 }
-
-//abstract class AWT

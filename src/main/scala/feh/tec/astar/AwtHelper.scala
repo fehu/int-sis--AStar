@@ -8,3 +8,5 @@ trait AwtHelper {
   implicit def intPairIsPoint(p: (Int, Int)): Point = new Point(p._1, p._2)
   implicit def intPairIsDimension(p: (Int, Int)): Dimension = new Dimension(p._1, p._2)
 }
+
+object AwtHelper extends AwtHelper
