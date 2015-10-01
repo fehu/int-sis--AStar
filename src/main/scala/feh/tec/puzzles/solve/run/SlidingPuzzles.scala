@@ -123,5 +123,5 @@ object SlidingPuzzle_Example1_H02 extends App{
 }
 
 object SlidingPuzzle_Example2_H02 extends App{
-  Example2.withVisualization(Visualization.gtge).withSolver(H._02).run()
+  Example2.withVisualization(Visualization.swing).withSolver(H._02).run()
 }
