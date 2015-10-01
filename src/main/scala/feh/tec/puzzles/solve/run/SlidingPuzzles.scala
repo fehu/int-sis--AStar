@@ -1,6 +1,6 @@
 package feh.tec.puzzles.solve.run
 
-import feh.tec.astar.HistoryEntry
+import feh.tec.astar.{VisualizeState, History, VisualizeHistory, HistoryEntry}
 import feh.tec.puzzles.solve.SlidingPuzzle_A_*.Solve
 import feh.tec.puzzles.{SlidingPuzzleInstance, SlidingPuzzleInt3x3v1, SlidingPuzzleInt3x3v2}
 import feh.util._
@@ -22,8 +22,6 @@ object SlidingPuzzle_Example1 extends App{
 
   val solver = Solve.solver_v1[Int]
 
-//  solver.searchDebugEach = Some(10000)
-
   val res = solver.search(initial)
 
 //  println(res)
@@ -36,6 +34,21 @@ object SlidingPuzzle_Example1 extends App{
   res._2.get.foreach{
     case HistoryEntry(parent, children) => println(s"$parent\t===>\t ${children.mkString(", ")}")
   }
+
+  val vh = new VisualizeHistory[SlidingPuzzleInstance[Int]]{
+    lazy val drawState: VisualizeState[SlidingPuzzleInstance[Int]] = null
+
+    protected def heuristic = solver.heuristic
+    protected def depthOf = _.generation.toInt
+    protected def description = _.description
+
+    def drawHistory(h: History[SlidingPuzzleInstance[Int]]) = ???
+  }
+
+  lazy val aTree = vh.abstractHistoryTree(res._2)
+
+  println()
+  aTree.Debug.listTree()
 
 }
 
