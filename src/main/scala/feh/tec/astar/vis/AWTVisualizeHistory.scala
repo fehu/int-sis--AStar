@@ -1,6 +1,6 @@
 package feh.tec.astar.vis
 
-import java.awt.{Graphics, Point}
+import java.awt.Point
 
 import feh.tec.astar.{VisualizeHistory, History}
 import feh.util.ScopedState
@@ -11,7 +11,6 @@ import scala.collection.mutable
 abstract class AWTVisualizeHistory[T] extends VisualizeHistory[T]{
   protected val graphicsState = new ScopedState[Option[java.awt.Graphics]](None)
   protected def graphics = graphicsState.get.orNull
-  def withGraphics[R](g: Graphics) = graphicsState.doWith[R](Option(g)) _
 
   def drawHistory(g: java.awt.Graphics, h: History[T]): Unit = {
     if (!historyCache.contains(h))  graphicsState.doWith(Some(g)){ drawHistoryPrepare(getHCache(h)) }

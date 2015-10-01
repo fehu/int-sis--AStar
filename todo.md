@@ -19,11 +19,7 @@
     - [x] for a result
     - [ ] during execution (?)
     - [x] optimize drawing (+-)
-    - [x] use another drawing engine (GTGE)
-    - [ ] use viewports in GTGE impl
-    - [ ] refactor: the API of VisualizeHistory suggests it encapsulates opening the window and the drawing,
-                    but it's used as renderer; that causes program structure problems 
-    
+    - [ ] use another drawing engine (GTGE)
 
 - [ ] Write Tests for:
     - [x] instance operations

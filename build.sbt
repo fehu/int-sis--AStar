@@ -29,5 +29,3 @@ scalacOptions in (Compile, doc) ++= Seq("-diagrams", "-diagrams-max-classes", "5
 // Test Options
 
 testOptions in Test += Tests.Argument(Some(TestFrameworks.Specs2), List("console", "html"))
-
-unmanagedJars in Compile +=  baseDirectory.value / "libs" / "GTGE" / "golden_0_2_3.jar"
