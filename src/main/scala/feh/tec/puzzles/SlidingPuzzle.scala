@@ -48,6 +48,8 @@ trait SlidingPuzzleInstance[Piece]{
 
   val puzzle: SlidingPuzzle[Piece]
 
+  def description: String
+
   /**
    * @return Some(piece) if there is a piece at `c=(x, y)` or `None` if it's an empty space.
    */
@@ -82,8 +84,13 @@ trait SlidingPuzzleInstance[Piece]{
 
 object SlidingPuzzleInstance{
   def apply[Piece](puzzle: SlidingPuzzle[Piece],
+                   description: String,
                    listRows: Seq[Seq[Option[Piece]]]): SlidingPuzzleInstance[Piece] =
-    new GenericSlidingPuzzleInstance(puzzle, listRows, None, 0)
+    new GenericSlidingPuzzleInstance(puzzle, listRows, None, description, 0)
+
+  def initial[Piece](puzzle: SlidingPuzzle[Piece],
+                     listRows: Seq[Seq[Option[Piece]]]): SlidingPuzzleInstance[Piece] =
+    apply(puzzle, "initial", listRows)
 }
 
 object SlidingPuzzle{
@@ -151,6 +158,7 @@ object SlidingPuzzle{
   class GenericSlidingPuzzleInstance[Piece](val puzzle: SlidingPuzzle[Piece],
                                             val listRows: Seq[Seq[Option[Piece]]],
                                             val parentInstance: Option[SlidingPuzzleInstance[Piece]],
+                                            val description: String,
                                             val generation: Long )
     extends SlidingPuzzleInstance[Piece]
   {
@@ -175,7 +183,7 @@ object SlidingPuzzle{
       val newRows = updateListRows(Map( from -> None,
                                         to   -> Some(piece)
                                       ))
-      new GenericSlidingPuzzleInstance(puzzle, newRows, Some(this), generation + 1)
+      new GenericSlidingPuzzleInstance(puzzle, newRows, Some(this), dir.opposite.toString, generation + 1)
     }
 
     lazy val asMap = listRows.zipWithIndex.flatMap{
@@ -202,12 +210,14 @@ object SlidingPuzzle{
         }
     }
 
-    override lazy val toString = listRows
-      .map(
-        _.map(
-          _.map(_.toString).getOrElse(" ")
+    override lazy val toString =
+      description + "\t: " +
+      listRows
+        .map(
+          _.map(
+            _.map(_.toString).getOrElse(" ")
+          ).mkString("[", ", ", "]")
         ).mkString("[", ", ", "]")
-      ).mkString("[", ", ", "]")
   }
   
 }

@@ -15,7 +15,7 @@ object SlidingPuzzle_Example1 extends App{
     List(Some(2), Some(8), Some(3)),
     List(None   , Some(1), Some(4)),
     List(Some(7), Some(6), Some(5))
-  ) |> (SlidingPuzzleInstance(puzzle, _))
+  ) |> (SlidingPuzzleInstance.initial(puzzle, _))
 
   println(initial)
 
@@ -27,11 +27,11 @@ object SlidingPuzzle_Example1 extends App{
 
   val res = solver.search(initial)
 
-  println(res)
+//  println(res)
 
-  res.foreach{
+  res.map{
     _.pathFromRoot.zipWithIndex.foreach{ case (inst, i) => println(s"\t$i:\t $inst") }
-  }
+  } getOrElse println(res)
 
 }
 
@@ -44,7 +44,7 @@ object SlidingPuzzle_Example2 extends App{
     List(Some(8), Some(7), None),
     List(Some(5), Some(2), Some(6)),
     List(Some(4), Some(3), Some(1))
-  )|> (SlidingPuzzleInstance(puzzle, _))
+  )|> (SlidingPuzzleInstance.initial(puzzle, _))
 
   val solver = Solve.solver_v1[Int]
 

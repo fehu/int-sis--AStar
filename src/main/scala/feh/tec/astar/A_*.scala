@@ -34,6 +34,8 @@ trait A_*[T] {
 
   def isSolution: T => Boolean
 
+  def description: T => String
+
 
   protected type ExtractedOpt = Option[(T, SortedPossibilities[Heuristic, T])]
 

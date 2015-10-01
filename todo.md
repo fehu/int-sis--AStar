@@ -12,15 +12,13 @@
 
 - [ ] Should have an option to return full solution search history on both success and error (for analysis)
 
-- [ ] Should provide a description for generated `transformations`
+- [x] Should provide a description for generated `transformations`
 
 - [ ] Visualize solutions tree:
     - [ ] for a result
     - [ ] during execution (?)
 
 - [ ] Write Tests for:
-    - [ ] instance operations
+    - [x] instance operations
     - [ ] heuristics
     - [ ] solver (with hardcoded initial)
-
-- [ ] guard also the history in form of movements

@@ -8,12 +8,12 @@ abstract class GenericSlidingPuzzle[Piece](val width: Int,
                                            val emptySpaces: Int,
                                            solutionRows: List[List[Option[Piece]]]) extends SlidingPuzzle[Piece]
 {
-  lazy val solution = SlidingPuzzleInstance(this, solutionRows)
+  lazy val solution = SlidingPuzzleInstance(this, "solution", solutionRows)
 
   def randomInstance = {
     val flat = solutionRows.flatten.randomOrder
     val rows = for (i <- 0 until height) yield flat.slice(i * width, i * width + width)
-    SlidingPuzzleInstance(this, rows)
+    SlidingPuzzleInstance.initial(this, rows)
   }
 }
 

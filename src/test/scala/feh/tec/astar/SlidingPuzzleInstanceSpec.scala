@@ -221,7 +221,7 @@ object GenericSlidingPuzzleInstanceSpecExample1{
     pzl =>
       data =>
         val rows = data.groupBy(_._1._2).mapValues(_.toList.sortBy(_._1._1).map(_._2)).toList.sortBy(_._1).map(_._2)
-        new GenericSlidingPuzzleInstance[Int](pzl, rows.asInstanceOf[Seq[Seq[Option[Int]]]], None, 0)
+        new GenericSlidingPuzzleInstance[Int](pzl, rows.asInstanceOf[Seq[Seq[Option[Int]]]], None, "test root", 0)
   }
 
 
