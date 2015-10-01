@@ -23,13 +23,22 @@ trait VisualizeHistory[T] extends AwtHelper{
   /** Draws the history tree.
    */
   def drawHistory(h: History[T]): Unit = {
-    val tr = setPositions(abstractHistoryTree(h))
-    
+    drawHistory(setPositions(abstractHistoryTree(h)))
+  }
+  
+  def drawHistory(tr: HistoryTree[HNode]): Unit = {
+    drawHistoryPrepare(tr)
+    drawHistoryRepaint(tr)
+  }
+
+  def drawHistoryPrepare(tr: HistoryTree[HNode]): Unit = {
     val deepestN = tr.root.deepChildrenLeafs
     val width = deepestN * drawNode.size.width + (deepestN - 1) * distanceBetweenH
     val height = tr.byDepth.size * drawNode.size.height + (tr.byDepth.size - 1) * distanceBetweenV
     setCanvasSize(width -> height)
+  }
 
+  def drawHistoryRepaint(tr: HistoryTree[HNode]): Unit = {
     // draw nodes
     tr.byDepth.values.flatten.foreach(drawNode.draw)
 
@@ -243,7 +252,19 @@ abstract class AWTVisualizeHistory[T] extends VisualizeHistory[T]{
   protected val graphicsState = new ScopedState[Option[java.awt.Graphics]](None)
   protected def graphics = graphicsState.get.orNull
 
-  def drawHistory(g: java.awt.Graphics, h: History[T]): Unit = graphicsState.doWith(Some(g)){ drawHistory(h) }
+  def drawHistory(g: java.awt.Graphics, h: History[T]): Unit = {
+    if (!historyCache.contains(h))  graphicsState.doWith(Some(g)){ drawHistoryPrepare(getHCache(h)) }
+    graphicsState.doWith(Some(g)) { drawHistory(h) }
+  }
 
   protected def drawArrow(from: Point, to: Point) = graphics.drawLine(from.x, from.y, to.x, to.y) // todo
+  
+  protected val historyCache = mutable.HashMap.empty[History[T], HistoryTree[HNode]]
+
+  protected def getHCache(h: History[T]) = historyCache.getOrElseUpdate(h, setPositions(abstractHistoryTree(h)))
+
+  /** Draws the history tree.
+    */
+  override def drawHistory(h: History[T]): Unit = drawHistory(getHCache(h))
+  override def drawHistory(tr: HistoryTree[HNode]): Unit = drawHistoryRepaint(tr)
 }
