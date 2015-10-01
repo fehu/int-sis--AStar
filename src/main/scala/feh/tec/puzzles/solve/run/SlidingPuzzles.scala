@@ -1,7 +1,7 @@
 package feh.tec.puzzles.solve.run
 
 import java.awt.{Dimension, Graphics}
-import javax.swing.{JFrame, JPanel}
+import javax.swing.{ScrollPaneConstants, JScrollPane, JFrame, JPanel}
 
 import feh.tec.astar.AwtHelper._
 import feh.tec.astar.HistoryEntry
@@ -41,14 +41,12 @@ object SlidingPuzzle_Example1 extends App{
 
   val cellSize = 30 -> 30
   val dh = 10
-  val dv = 10
+  val dv = 30
 
   val vh = new GenericSlidingPuzzleAWTVisualize(puzzle, cellSize, solver.heuristic, dh, dv){
     protected def setCanvasSize(dim: Dimension): Unit = {
-      println("size = " + dim)
       frame.panel.setMinimumSize(dim)
       frame.panel.setPreferredSize(dim)
-      frame.pack()
     }
   }
 
@@ -62,15 +60,13 @@ object SlidingPuzzle_Example1 extends App{
       }
     }
     setContentPane(panel)
+    setContentPane(new JScrollPane(panel,
+      ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,
+      ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED
+    ))
   }
-
   frame.setVisible(true)
-
-  lazy val aTree = vh.abstractHistoryTree(res._2)
-  vh.setPositions(aTree)
-  println()
-  aTree.Debug.listTree()
-
+  frame.setSize(600 -> 800)
 }
 
 object SlidingPuzzle_Example2 extends App{
