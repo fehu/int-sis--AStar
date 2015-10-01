@@ -57,6 +57,16 @@ object SlidingPuzzleExamples{
     ) |> (SlidingPuzzleInstance.initial(Example2Puzzle, _))
   )
 
+  lazy val Example3Puzzle = new SlidingPuzzleInt3x3v1
+  lazy val Example3 = SlidingPuzzles.exampleFor(
+    Example3Puzzle,
+    List(
+      List(Some(4), Some(1), Some(2)),
+      List(None   , Some(7), Some(3)),
+      List(Some(8), Some(5), Some(6))
+    ) |> (SlidingPuzzleInstance.initial(Example3Puzzle, _))
+  )
+
 }
 
 object H{
@@ -119,4 +129,8 @@ object SlidingPuzzle_Example2_H02 extends App{
 
 object SlidingPuzzle_Example2_H03 extends App{
   Example2.withSolver(H._03).run()
+}
+
+object SlidingPuzzle_Example3_H03 extends App{
+  Example3.withSolver(H._03).run()
 }
