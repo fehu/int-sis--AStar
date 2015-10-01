@@ -5,18 +5,97 @@ import java.awt.{Dimension, Point}
 import scala.collection.mutable
 import feh.util._
 
-trait VisualizeHistory[T] {
+trait VisualizeHistory[T] extends AwtHelper{
   vis =>
 
-  val drawState: VisualizeState[T]
+  val drawNode: VisualizeNode[HNode]
+
+  def distanceBetweenH: Int
+  def distanceBetweenV: Int
 
   protected def heuristic: T => Any
   protected def description: T => String
   protected def depthOf: T => Int
 
-  def drawHistory(h: History[T])
+  protected def setCanvasSize(dim: Dimension)
+  protected def drawArrow(from: Point, to: Point)
 
-  def abstractHistoryTree(h: History[T]): AbstractHistoryTree[HNode] = {
+  /** Draws the history tree.
+   */
+  def drawHistory(h: History[T]) = {
+    val tr = setPositions(abstractHistoryTree(h))
+    
+    val deepestN = tr.root.deepChildrenLeafs
+    val width = deepestN * drawNode.size.width + (deepestN - 1) * distanceBetweenH
+    val height = tr.byDepth.size * drawNode.size.height + (tr.byDepth.size - 1) * distanceBetweenV
+    setCanvasSize(width -> height)
+
+    // draw nodes
+    tr.byDepth.values.flatten.foreach(drawNode.draw)
+
+    // draw arrows
+    tr.byDepth.toList.sortBy(_._1).foreach {
+      case (_, nodes) => nodes.foreach{
+        node => node.children.foreach(child => drawArrow(node.position, child.position))
+      }
+    }
+  }
+  
+  protected def shiftLeft(p: Point): Point = p.x - drawNode.size.width/2 -> p.y
+  protected def shiftRight(p: Point): Point = p.x + drawNode.size.width/2 -> p.y
+    
+  def setPositions(tr: HistoryTree[HNode]): tr.type = {
+    // resolve the `deepChildrenLeafs`
+    tr.byDepth.toList.sortBy(-_._1).foreach{
+      case (depth, nodes) => nodes.foreach {
+        case node if node.children.isEmpty => node.deepChildrenLeafsUpd(1)
+        case node =>
+          val x = node.children.toSeq.map{
+            case child if child.deepChildrenLeafs == -1 =>
+              sys.error("not set `deepChildrenLeafs` at depth " + (depth-1).toString)
+            case child => child.deepChildrenLeafs
+          }
+          node.deepChildrenLeafsUpd(x.sum)
+      }
+    }
+
+    // each state at depth =>
+    //    each child of state  =>
+    //        place child in the middle of corresponding totalWidth
+
+    def totalWidth(node: HNode) = {
+      val n = node.deepChildrenLeafs
+      n * drawNode.size.width + (n - 1) * distanceBetweenH
+    }
+    def pointsInMiddle(nodes: Seq[HNode], relTo: HNode): Seq[Point] = {
+      val y = relTo.position.y + distanceBetweenV
+      val firstX = relTo.position.x - totalWidth(relTo) / 2
+
+      ((List.empty[Point], firstX) /: nodes){
+        case ((acc, xacc), node) =>
+          val (x, newXAcc) = xMiddle(totalWidth(node), xacc)
+
+          ((x -> y : Point) :: acc) -> newXAcc
+      }._1
+    }
+    def xMiddle(width: Int, acc: Int): (Int, Int) = acc + width / 2 -> (acc + width)
+
+    tr.root.positionUpd(totalWidth(tr.root) / 2 -> 0)
+
+    tr.byDepth.toList.sortBy(_._1).foreach{
+      case (_, nodes) => nodes.foreach{
+        node =>
+          val children = node.children.toSeq
+          children.zip(pointsInMiddle(children, node)).foreach{
+            case (child, point) => child.positionUpd(shiftLeft(point))
+          }
+      }
+    }
+
+    tr
+  }
+  
+  def abstractHistoryTree(h: History[T]): HistoryTree[HNode] = {
     // depth -> state (at this depth) -> children (should be on the next depth)
     val acc = mutable.HashMap.empty[Int, mutable.HashMap[(T, Int), Set[T]]]
 
@@ -56,12 +135,12 @@ trait VisualizeHistory[T] {
 
     accOrd.foreach((buildHTree _).tupled)
 
-    new AbstractHistoryTree[HNode]{
+    new HistoryTree[HNode]{
       lazy val root = nodeOf(acc(0).head._1.ensuring(_._2 == 0)._1)
     }
   }
 
-  trait AbstractHistoryTree[Node <: AbstractHistoryNode[Node]]{
+  trait HistoryTree[Node <: AbstractHistoryNode[Node]]{
     val root: Node
 
     lazy val byDepth: Map[Int, Seq[Node]] = {
@@ -108,6 +187,7 @@ trait VisualizeHistory[T] {
   trait HistoryNode[Node <: HistoryNode[Node]] extends AbstractHistoryNode[Node]{
     /** left-upper corner */
     def position: Point
+    def deepChildrenLeafs: Int
   }
 
   class HNode(val state: T,
@@ -117,7 +197,7 @@ trait VisualizeHistory[T] {
 
     protected var childrenVar: Set[HNode] = Set()
     protected var positionOpt: Option[Point] = None
-
+    protected var deepChildrenLeafsVar: Option[Int] = None
     protected var orderVar: Option[Int] = None
 
     def order = orderVar
@@ -130,30 +210,30 @@ trait VisualizeHistory[T] {
 
     def children = childrenVar
     def childrenUpd(f: Set[HNode] => Set[HNode]) = childrenVar = f(childrenVar)
+    
+    def deepChildrenLeafs = deepChildrenLeafsVar.getOrElse(-1)
+    def deepChildrenLeafsUpd(n: Int) = deepChildrenLeafsVar = Option(n)
 
     override lazy val toString = "HNode(" +
                                  s"${order map("order="+_+", ") getOrElse ""}${parent.map(_ => "").getOrElse("is root, ")}" +
                                  s"depth=$depth, $state, $description, heuristic=$heuristic" +
-                                 s", childen=${children.size}, position=${positionOpt getOrElse "undefined"}"
+                                 s", childen=${children.size}, position=${positionOpt getOrElse "undefined"}" +
+                                 s", deepChildrenLeafs=$deepChildrenLeafs"
   }
 
 
 
 }
 
-trait VisualizeState[T]{
+trait VisualizeNode[Node]{
 
-  /** Draw the `state` at point `p` (left-upper corner) with given `scale`
-    *
-    * @param state the state to visualize.
-    * @param point where to draw,
-    * @param scale of the visualization. 1 by default. (not supported yet)
+  /** Draws the node.
     */
-  def drawAt(state: T, point: Point, scale: Float = 1)
+  def draw(node: Node)
 
-  /** The size of visualization with scale 1.
+  /** The size of visualization.
    */
-  def normalSize: Dimension
+  def size: Dimension
 
 }
 

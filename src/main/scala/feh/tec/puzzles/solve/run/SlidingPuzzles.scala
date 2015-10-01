@@ -1,10 +1,12 @@
 package feh.tec.puzzles.solve.run
 
-import feh.tec.astar.{VisualizeState, History, VisualizeHistory, HistoryEntry}
+import java.awt.{Dimension, Point}
+
+import feh.tec.astar.{VisualizeNode, HistoryEntry, VisualizeHistory}
+import feh.tec.puzzles.SlidingPuzzle._
 import feh.tec.puzzles.solve.SlidingPuzzle_A_*.Solve
 import feh.tec.puzzles.{SlidingPuzzleInstance, SlidingPuzzleInt3x3v1, SlidingPuzzleInt3x3v2}
 import feh.util._
-import feh.tec.puzzles.SlidingPuzzle._
 
 object SlidingPuzzle_Example1 extends App{
   import feh.tec.puzzles.solve.SlidingPuzzle_A_*._
@@ -36,16 +38,24 @@ object SlidingPuzzle_Example1 extends App{
   }
 
   val vh = new VisualizeHistory[SlidingPuzzleInstance[Int]]{
-    lazy val drawState: VisualizeState[SlidingPuzzleInstance[Int]] = null
+    lazy val drawNode: VisualizeNode[HNode] = new VisualizeNode[HNode]{
+      def draw(node: HNode) = ???
+      def size = 50 -> 50
+    }
 
     protected def heuristic = solver.heuristic
     protected def depthOf = _.generation.toInt
     protected def description = _.description
 
-    def drawHistory(h: History[SlidingPuzzleInstance[Int]]) = ???
+    def distanceBetweenH = 20
+    def distanceBetweenV = 30
+
+    protected def setCanvasSize(dim: Dimension) = ???
+    protected def drawArrow(from: Point, to: Point) = ???
   }
 
   lazy val aTree = vh.abstractHistoryTree(res._2)
+  vh.setPositions(aTree)
 
   println()
   aTree.Debug.listTree()
