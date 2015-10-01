@@ -71,7 +71,7 @@ trait SlidingPuzzleInstance[Piece]{
   def parentInstance: Option[SlidingPuzzleInstance[Piece]]
 
   /** Number of parents until root. */
-  def generation: Long
+  def generation: Int
 
   override def equals(obj: scala.Any) = obj match {
     case that: SlidingPuzzleInstance[_] =>
@@ -159,7 +159,7 @@ object SlidingPuzzle{
                                             val listRows: Seq[Seq[Option[Piece]]],
                                             val parentInstance: Option[SlidingPuzzleInstance[Piece]],
                                             val description: String,
-                                            val generation: Long )
+                                            val generation: Int )
     extends SlidingPuzzleInstance[Piece]
   {
     /**
