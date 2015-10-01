@@ -93,7 +93,9 @@ class FrameVisualization[T](fvh: (Dimension => Unit) => AWTVisualizeHistory[T], 
 
     val panel = new JPanel{
       override def paint(g: Graphics): Unit = {
+        super.paint(g)
         vh.drawHistory(g, hist)
+        revalidate()
       }
     }
     setContentPane(panel)
