@@ -1,6 +1,6 @@
 package feh.tec.puzzles
 
-import java.awt.Dimension
+import java.awt.{Color, Dimension}
 
 import feh.tec.astar.AWTVisualizeHistory
 
@@ -17,12 +17,22 @@ trait SlidingPuzzleAWTVisualize[Piece] {
       */
     def draw(node: HNode) = {
       val shiftX = node.position.x
-      val shiftY = node.position.y
+      val shiftY = node.position.y + extraHeight
       for{
         x <- 0 until puzzle.width
         y <- 0 until puzzle.height
       }{
+        withColor(Color.red){
+          graphics.drawString(node.order.mkString, shiftX + drawNode.size.width/2, shiftY - extraHeight/2)
+        }
+
+        graphics.drawString(node.description, shiftX, shiftY-1)
+
+        val hw = graphics.getFontMetrics.stringWidth(node.heuristic)
+        graphics.drawString(node.heuristic, shiftX + drawNode.size.width - hw, shiftY-1)
+
         graphics.drawRect(x*cellSize.width + shiftX, y*cellSize.height + shiftY, cellSize.width, cellSize.height)
+
         node.state.asMap(x -> y).foreach{
           v =>
             val s = v.toString
@@ -35,12 +45,21 @@ trait SlidingPuzzleAWTVisualize[Piece] {
       }
     }
 
-    def extraHeight = 10
+    def extraHeight = graphics.getFontMetrics.getHeight * 2
 
     /** The size of visualization.
       */
     lazy val size: Dimension = puzzle.width*cellSize.width -> (puzzle.height*cellSize.height + extraHeight)
   }
+
+  protected def withColor[R](c: Color)(f: => R): R = {
+    val old = graphics.getColor
+    graphics.setColor(c)
+    val res = f
+    graphics.setColor(old)
+    res
+  }
+
 }
 
 
