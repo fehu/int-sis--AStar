@@ -6,7 +6,7 @@ import feh.tec.puzzles._
 import feh.tec.puzzles.solve.SlidingPuzzle_A_*
 import feh.tec.puzzles.solve.SlidingPuzzle_A_*.{Heuristics, Solve}
 import feh.tec.puzzles.solve.run.SlidingPuzzleExample.Visualization
-import feh.tec.puzzles.vis.{FrameVisualization, GenericSlidingPuzzleAWTVisualize}
+import feh.tec.puzzles.vis.{GTGEVisualization, FrameVisualization, GenericSlidingPuzzleAWTVisualize}
 import feh.util._
 
 object SlidingPuzzles{
@@ -55,6 +55,12 @@ object SlidingPuzzleExample{
         new GenericSlidingPuzzleAWTVisualize(puzzle, conf.cellSize, solver.heuristic, conf.dh, conf.dv, _),
         h
       )
+    }
+    def gtge[T]: SlidingPuzzles.VisualizationArgs[T] => {def open()} = {
+      case SlidingPuzzles.VisualizationArgs(puzzle, solver, conf, h) =>
+        new GTGEVisualization(
+          new GenericSlidingPuzzleAWTVisualize(puzzle, conf.cellSize, solver.heuristic, conf.dh, conf.dv, _)
+        )(h)
     }
   }
 }
@@ -113,9 +119,9 @@ object SlidingPuzzle_Example1_H01 extends App{
 }
 
 object SlidingPuzzle_Example1_H02 extends App{
-  Example1.withVisualization(Visualization.swing).withSolver(H._02).run()
+  Example1.withVisualization(Visualization.gtge).withSolver(H._02).run()
 }
 
 object SlidingPuzzle_Example2_H02 extends App{
-  Example2.withVisualization(Visualization.swing).withSolver(H._02).run()
+  Example2.withVisualization(Visualization.gtge).withSolver(H._02).run()
 }

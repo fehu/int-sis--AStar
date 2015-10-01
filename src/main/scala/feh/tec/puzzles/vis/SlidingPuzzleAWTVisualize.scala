@@ -48,7 +48,7 @@ trait SlidingPuzzleAWTVisualize[Piece] {
       }
     }
 
-    def extraHeight = graphics.getFontMetrics.getHeight * 2
+    def extraHeight = 20 // graphics.getFontMetrics.getHeight * 2
 
     /** The size of visualization.
       */
