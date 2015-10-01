@@ -18,8 +18,7 @@
 - [x] Visualize solutions tree:
     - [x] for a result
     - [ ] during execution (?)
-    - [x] optimize drawing (+-)
-    - [ ] use another drawing engine (GTGE)
+    - [x] optimize drawing
 
 - [ ] Write Tests for:
     - [x] instance operations

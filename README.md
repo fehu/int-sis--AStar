@@ -2,14 +2,14 @@ A*
 ==
 _A project for master studies at [ITESM](http://www.itesm.mx/wps/wcm/connect/ITESM/Tecnologico+de+Monterrey/English)_
 
-(Version 0.3)
+(Version 0.4-SNAPSHOT)
 
 See [**dev** branch](https://github.com/fehu/int-sis--AStar/tree/dev) for the latest changes.
 
 ---
 
 
-[API Documentation](http://fehu.github.io/int-sis--AStar/api/0.3/index.html#package)
+[API Documentation](http://fehu.github.io/int-sis--AStar/api/0.3/index.html#package) (a bit old)
 
 [Diagrams](Diagrams.md)
 
