@@ -1,5 +1,6 @@
 package feh.tec.puzzles.solve.run
 
+import feh.tec.astar.HistoryEntry
 import feh.tec.puzzles.solve.SlidingPuzzle_A_*.Solve
 import feh.tec.puzzles.{SlidingPuzzleInstance, SlidingPuzzleInt3x3v1, SlidingPuzzleInt3x3v2}
 import feh.util._
@@ -23,15 +24,18 @@ object SlidingPuzzle_Example1 extends App{
 
 //  solver.searchDebugEach = Some(10000)
 
-  solver.searchPrintBestEach = Some(100)
-
   val res = solver.search(initial)
 
 //  println(res)
 
-  res.map{
+  res._1.map{
     _.pathFromRoot.zipWithIndex.foreach{ case (inst, i) => println(s"\t$i:\t $inst") }
   } getOrElse println(res)
+
+  println("History:")
+  res._2.get.foreach{
+    case HistoryEntry(parent, children) => println(s"$parent\t===>\t ${children.mkString(", ")}")
+  }
 
 }
 
@@ -47,8 +51,6 @@ object SlidingPuzzle_Example2 extends App{
   )|> (SlidingPuzzleInstance.initial(puzzle, _))
 
   val solver = Solve.solver_v1[Int]
-
-  solver.searchPrintBestEach = Some(100)
 
   val res = solver.search(initial)
 
