@@ -1,8 +1,9 @@
 package feh.tec.puzzles
 
-import java.awt.{Color, Dimension}
+import java.awt.{Graphics, Color, Dimension}
+import javax.swing.{ScrollPaneConstants, JScrollPane, JPanel, JFrame}
 
-import feh.tec.astar.AWTVisualizeHistory
+import feh.tec.astar.{AwtHelper, History, AWTVisualizeHistory}
 
 trait SlidingPuzzleAWTVisualize[Piece] {
   outer: AWTVisualizeHistory[SlidingPuzzleInstance[Piece]] =>
@@ -63,14 +64,45 @@ trait SlidingPuzzleAWTVisualize[Piece] {
 }
 
 
-abstract class GenericSlidingPuzzleAWTVisualize[Piece](val puzzle: SlidingPuzzle[Piece],
-                                                       val cellSize: Dimension,
-                                                       val heuristic: SlidingPuzzleInstance[Piece] => Any,
-                                                       val distanceBetweenH: Int,
-                                                       val distanceBetweenV: Int
-                                                        )
+class GenericSlidingPuzzleAWTVisualize[Piece](val puzzle: SlidingPuzzle[Piece],
+                                              val cellSize: Dimension,
+                                              val heuristic: SlidingPuzzleInstance[Piece] => Any,
+                                              val distanceBetweenH: Int,
+                                              val distanceBetweenV: Int,
+                                              _setCanvasSize: Dimension => Unit
+                                              )
   extends AWTVisualizeHistory[SlidingPuzzleInstance[Piece]] with SlidingPuzzleAWTVisualize[Piece]
 {
   protected def depthOf = _.generation
   protected def description = _.description
+  protected def setCanvasSize(dim: Dimension): Unit = _setCanvasSize(dim)
+}
+
+class FrameVisualization[T](fvh: (Dimension => Unit) => AWTVisualizeHistory[T], hist: History[T]) extends AwtHelper{
+  def setCanvasSize(dim: Dimension): Unit = {
+    frame.panel.setMinimumSize(dim)
+    frame.panel.setPreferredSize(dim)
+  }
+
+  val vh = fvh(setCanvasSize)
+
+  val frame: JFrame {val panel: JPanel} = new JFrame(){
+    setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE)
+
+    val panel = new JPanel{
+      override def paint(g: Graphics): Unit = {
+        vh.drawHistory(g, hist)
+      }
+    }
+    setContentPane(panel)
+    setContentPane(new JScrollPane(panel,
+      ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,
+      ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED
+    ))
+  }
+
+  def open(): Unit = {
+    frame.setVisible(true)
+    frame.setSize(600 -> 800)
+  }
 }

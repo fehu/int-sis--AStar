@@ -7,7 +7,7 @@ import feh.tec.astar.AwtHelper._
 import feh.tec.astar.HistoryEntry
 import feh.tec.puzzles.SlidingPuzzle._
 import feh.tec.puzzles.solve.SlidingPuzzle_A_*.Solve
-import feh.tec.puzzles.{GenericSlidingPuzzleAWTVisualize, SlidingPuzzleInstance, SlidingPuzzleInt3x3v1, SlidingPuzzleInt3x3v2}
+import feh.tec.puzzles._
 import feh.util._
 
 object SlidingPuzzle_Example1 extends App{
@@ -43,30 +43,12 @@ object SlidingPuzzle_Example1 extends App{
   val dh = 10
   val dv = 30
 
-  val vh = new GenericSlidingPuzzleAWTVisualize(puzzle, cellSize, solver.heuristic, dh, dv){
-    protected def setCanvasSize(dim: Dimension): Unit = {
-      frame.panel.setMinimumSize(dim)
-      frame.panel.setPreferredSize(dim)
-    }
-  }
+  val vh = new FrameVisualization(
+    new GenericSlidingPuzzleAWTVisualize(puzzle, cellSize, solver.heuristic, dh, dv, _),
+    res._2
+  )
 
-
-  val frame: JFrame {val panel: JPanel} = new JFrame(){
-    setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE)
-
-    val panel = new JPanel{
-      override def paint(g: Graphics): Unit = {
-        vh.drawHistory(g, res._2)
-      }
-    }
-    setContentPane(panel)
-    setContentPane(new JScrollPane(panel,
-      ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,
-      ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED
-    ))
-  }
-  frame.setVisible(true)
-  frame.setSize(600 -> 800)
+  vh.open()
 }
 
 object SlidingPuzzle_Example2 extends App{
