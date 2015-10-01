@@ -15,11 +15,13 @@
 
 - [x] Should provide a description for generated `transformations`
 
-- [ ] Visualize solutions tree:
-    - [ ] for a result
+- [x] Visualize solutions tree:
+    - [x] for a result
     - [ ] during execution (?)
 
 - [ ] Write Tests for:
     - [x] instance operations
     - [ ] heuristics
     - [ ] solver (with hardcoded initial)
+
+- [ ] examples generation for heuristics testing
