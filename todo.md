@@ -18,10 +18,11 @@
 - [x] Visualize solutions tree:
     - [x] for a result
     - [ ] during execution (?)
+    - [ ] optimize drawing
 
 - [ ] Write Tests for:
     - [x] instance operations
     - [ ] heuristics
     - [ ] solver (with hardcoded initial)
 
-- [ ] examples generation for heuristics testing
+- [x] examples generation for heuristics testing

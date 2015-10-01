@@ -81,17 +81,17 @@ object SlidingPuzzle_A_*{
      *        f = [[Heuristics.Double.HasSingleEmpty.manhattanDistanceToSolutionSum]]
      *        g = [[Heuristics.Double.solutionLength]]
      */
+    @deprecated
     def solver_v1[Piece]: SlidingPuzzle_A_*[Piece] = {
       val f = Heuristics.Double.HasSingleEmpty.manhattanDistanceToSolutionSum[Piece]
       val g = Heuristics.Double.solutionLength
       val heristic = (x: SlidingPuzzleInstance[Piece]) => f(x) + g(x)
 
-      new MinimizingHeuristic[Piece, Double](heristic)
+      minimizing(heristic)
     }
 
-    //(initial: SlidingPuzzleInstance[Piece])
-    //A_*[SlidingPuzzleInstance[Piece]]#Result
-//    val res = a_*.search(initial)
+    def minimizing[Piece, H: Ordering](heristic: SlidingPuzzleInstance[Piece] => H) =
+      new MinimizingHeuristic[Piece, H](heristic)
   }
 
 }
