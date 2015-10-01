@@ -5,6 +5,7 @@ import feh.tec.astar.History
 import feh.tec.puzzles._
 import feh.tec.puzzles.solve.SlidingPuzzle_A_*
 import feh.tec.puzzles.solve.SlidingPuzzle_A_*.{Heuristics, Solve}
+import feh.tec.puzzles.vis.{FrameVisualization, GenericSlidingPuzzleAWTVisualize}
 import feh.util._
 
 object SlidingPuzzles{
