@@ -9,7 +9,7 @@ See [**dev** branch](https://github.com/fehu/int-sis--AStar/tree/dev) for the la
 ---
 
 
-[API Documentation](http://fehu.github.io/int-sis--AStar/api/0.3/index.html#package) (a bit old)
+[API Documentation](http://fehu.github.io/int-sis--AStar/api/0.4-SNAPSHOT/index.html#package)
 
 [Diagrams](Diagrams.md)
 
