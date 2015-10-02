@@ -30,3 +30,4 @@ scalacOptions in (Compile, doc) ++= Seq("-diagrams", "-diagrams-max-classes", "5
 
 testOptions in Test += Tests.Argument(Some(TestFrameworks.Specs2), List("console", "html"))
 
+artifactName in packageBin := ((_, m, _) => "A-Star_" + m.revision + ".jar")
