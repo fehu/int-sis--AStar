@@ -4,8 +4,6 @@ _A project for master studies at [ITESM](http://www.itesm.mx/wps/wcm/connect/ITE
 
 (Version 0.4-SNAPSHOT)
 
-See [**dev** branch](https://github.com/fehu/int-sis--AStar/tree/dev) for the latest changes.
-
 ---
 
 
