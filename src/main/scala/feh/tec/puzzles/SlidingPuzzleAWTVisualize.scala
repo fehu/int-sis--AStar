@@ -78,7 +78,9 @@ class GenericSlidingPuzzleAWTVisualize[Piece](val puzzle: SlidingPuzzle[Piece],
   protected def setCanvasSize(dim: Dimension): Unit = _setCanvasSize(dim)
 }
 
-class FrameVisualization[T](fvh: (Dimension => Unit) => AWTVisualizeHistory[T], hist: History[T]) extends AwtHelper{
+class FrameVisualization[T](fvh: (Dimension => Unit) => AWTVisualizeHistory[T], hist: History[T], exitOnClose: Boolean)
+  extends AwtHelper
+{
   def setCanvasSize(dim: Dimension): Unit = {
     frame.panel.setMinimumSize(dim)
     frame.panel.setPreferredSize(dim)
@@ -87,7 +89,7 @@ class FrameVisualization[T](fvh: (Dimension => Unit) => AWTVisualizeHistory[T], 
   val vh = fvh(setCanvasSize)
 
   val frame: JFrame {val panel: JPanel} = new JFrame(){
-    setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE)
+    if (exitOnClose) setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE)
 
     val panel = new JPanel{
       override def paint(g: Graphics): Unit = {

@@ -27,12 +27,15 @@ case class SlidingPuzzleExample[T](puzzle: SlidingPuzzle[T],
                                    solver: SlidingPuzzle_A_*[T])
 {
   def solve = solver.search(initial getOrElse puzzle.randomInstance)
-  def showTree(h: History[SlidingPuzzleInstance[T]], conf: HistoryTreeShowConf) = new FrameVisualization(
+  def showTree(h: History[SlidingPuzzleInstance[T]], conf: HistoryTreeShowConf, exitOnClose: Boolean) = new FrameVisualization(
     new GenericSlidingPuzzleAWTVisualize(puzzle, conf.cellSize, solver.heuristic, conf.dh, conf.dv, _),
-    h
+    h,
+    exitOnClose
   )
 
-  def run(conf: HistoryTreeShowConf = HistoryTreeShowConf.default) = showTree(solve._2, conf).open()
+  def run(conf: HistoryTreeShowConf = HistoryTreeShowConf.default,
+          exitOnClose: Boolean = false) =
+    showTree(solve._2, conf, exitOnClose).open()
 }
 
 object SlidingPuzzleExamples{
@@ -109,28 +112,28 @@ import feh.tec.puzzles.solve.run.SlidingPuzzleExamples._
 
 
 object SlidingPuzzle_Example1_H01 extends App{
-  Example1.withSolver(H._01).run()
+  Example1.withSolver(H._01).run(exitOnClose = true)
 }
 
 object SlidingPuzzle_Example1_H02 extends App{
-  Example1.withSolver(H._02).run()
+  Example1.withSolver(H._02).run(exitOnClose = true)
 }
 
 object SlidingPuzzle_Example1_H03 extends App{
-  Example1.withSolver(H._03).run()
+  Example1.withSolver(H._03).run(exitOnClose = true)
 }
 
 
 
 
 object SlidingPuzzle_Example2_H02 extends App{
-  Example2.withSolver(H._02).run()
+  Example2.withSolver(H._02).run(exitOnClose = true)
 }
 
 object SlidingPuzzle_Example2_H03 extends App{
-  Example2.withSolver(H._03).run()
+  Example2.withSolver(H._03).run(exitOnClose = true)
 }
 
 object SlidingPuzzle_Example3_H03 extends App{
-  Example3.withSolver(H._03).run()
+  Example3.withSolver(H._03).run(exitOnClose = true)
 }
