@@ -30,4 +30,12 @@ scalacOptions in (Compile, doc) ++= Seq("-diagrams", "-diagrams-max-classes", "5
 
 testOptions in Test += Tests.Argument(Some(TestFrameworks.Specs2), List("console", "html"))
 
-artifactName in packageBin := ((_, m, _) => "A-Star_" + m.revision + ".jar")
+// Packaging Options
+
+def fixNameTask(f: => (ScalaVersion, ModuleID, Artifact) => String) =
+  (sv: ScalaVersion, m: ModuleID, a: Artifact) => f(sv, m, a.copy(name = "A-Star"))
+
+def fixName(pkg: TaskKey[sbt.File]) =
+  artifactName in pkg <<= (artifactName in pkg)(f => fixNameTask(f))
+
+for(p <- List(packageBin, packageDoc, packageSrc)) yield fixName(p)
