@@ -5,23 +5,13 @@ import feh.tec.astar.History
 import feh.tec.puzzles._
 import feh.tec.puzzles.solve.SlidingPuzzle_A_*
 import feh.tec.puzzles.solve.SlidingPuzzle_A_*.{Heuristics, Solve}
-import feh.tec.puzzles.solve.run.SlidingPuzzleExample.Visualization
 import feh.tec.puzzles.vis.{FrameVisualization, GenericSlidingPuzzleAWTVisualize}
 import feh.util._
 
 object SlidingPuzzles{
   def exampleFor[T](puzzle: SlidingPuzzle[T], initial: SlidingPuzzleInstance[T] = null) = new {
-    def withVisualization (vis: SlidingPuzzles.VisualizationArgs[T] => {def open()} = null) = new {
-      def withSolver(solver: SlidingPuzzle_A_*[T]) =
-        SlidingPuzzleExample(Option(vis), puzzle, Option(initial), solver)
-    }
-
+    def withSolver(solver: SlidingPuzzle_A_*[T]) = SlidingPuzzleExample(puzzle, Option(initial), solver)
   }
-
-  case class VisualizationArgs[T](puzzle: SlidingPuzzle[T],
-                                  solver: SlidingPuzzle_A_*[T],
-                                  conf: HistoryTreeShowConf,
-                                  h: History[SlidingPuzzleInstance[T]])
 }
 
 case class HistoryTreeShowConf(cellSize: (Int, Int), distanceBetweenH: Int, distanceBetweenV: Int){
@@ -33,30 +23,20 @@ object HistoryTreeShowConf{
   def default = HistoryTreeShowConf(30 -> 30, distanceBetweenH = 10, distanceBetweenV = 30)
 }
 
-case class SlidingPuzzleExample[T](visuzlization: Option[SlidingPuzzles.VisualizationArgs[T] => {def open()}],
-                                   puzzle: SlidingPuzzle[T],
+case class SlidingPuzzleExample[T](puzzle: SlidingPuzzle[T],
                                    initial: Option[SlidingPuzzleInstance[T]],
                                    solver: SlidingPuzzle_A_*[T])
 {
   def solve = solver.search(initial getOrElse puzzle.randomInstance)
-  def showTree(h: History[SlidingPuzzleInstance[T]], conf: HistoryTreeShowConf) =
-    visuzlization
-      .map(_ apply  SlidingPuzzles.VisualizationArgs(puzzle, solver, conf, h))
-      .getOrElse(new { def open() = {} })
+  def showTree(h: History[SlidingPuzzleInstance[T]], conf: HistoryTreeShowConf, exitOnClose: Boolean) = new FrameVisualization(
+    new GenericSlidingPuzzleAWTVisualize(puzzle, conf.cellSize, solver.heuristic, conf.dh, conf.dv, _),
+    h,
+    exitOnClose
+  )
 
-
-  def run(conf: HistoryTreeShowConf = HistoryTreeShowConf.default) = showTree(solve._2, conf).open()
-}
-
-object SlidingPuzzleExample{
-  object Visualization{
-    def swing[T]: SlidingPuzzles.VisualizationArgs[T] => {def open()} = {
-      case SlidingPuzzles.VisualizationArgs(puzzle, solver, conf, h) =>  new FrameVisualization(
-        new GenericSlidingPuzzleAWTVisualize(puzzle, conf.cellSize, solver.heuristic, conf.dh, conf.dv, _),
-        h
-      )
-    }
-  }
+  def run(conf: HistoryTreeShowConf = HistoryTreeShowConf.default,
+          exitOnClose: Boolean = false) =
+    showTree(solve._2, conf, exitOnClose).open()
 }
 
 object SlidingPuzzleExamples{
@@ -81,6 +61,16 @@ object SlidingPuzzleExamples{
     ) |> (SlidingPuzzleInstance.initial(Example2Puzzle, _))
   )
 
+  lazy val Example3Puzzle = new SlidingPuzzleInt3x3v1
+  lazy val Example3 = SlidingPuzzles.exampleFor(
+    Example3Puzzle,
+    List(
+      List(Some(4), Some(1), Some(2)),
+      List(None   , Some(7), Some(3)),
+      List(Some(8), Some(5), Some(6))
+    ) |> (SlidingPuzzleInstance.initial(Example3Puzzle, _))
+  )
+
 }
 
 object H{
@@ -102,20 +92,49 @@ object H{
     Heuristics.Double.HasSingleEmpty.manhattanDistanceToSolutionSum(x) + 0.5 * Heuristics.Double.solutionLength(x)
   )
 
+  /** heuristic = f + 0.5 * g - h - k
+    *        f = [[feh.tec.puzzles.solve.SlidingPuzzle_A_*.Heuristics.Double.HasSingleEmpty.manhattanDistanceToSolutionSum]]
+    *        g = [[feh.tec.puzzles.solve.SlidingPuzzle_A_*.Heuristics.Double.solutionLength]]
+    *        h = [[feh.tec.puzzles.solve.SlidingPuzzle_A_*.Heuristics.Double.correctlySet]]
+    *        k = [[feh.tec.puzzles.solve.SlidingPuzzle_A_*.Heuristics.Double.correctRowsAndCols]]
+    */
+  def _03[T] = Solve.minimizing[T, Double](x =>
+    Heuristics.Double.HasSingleEmpty.manhattanDistanceToSolutionSum(x)
+      + 0.5 * Heuristics.Double.solutionLength(x)
+      - Heuristics.Double.correctlySet(x)
+      - Heuristics.Double.correctRowsAndCols(x)
+  )
 }
 
 
 
 import feh.tec.puzzles.solve.run.SlidingPuzzleExamples._
 
+
+
 object SlidingPuzzle_Example1_H01 extends App{
-  Example1.withVisualization(Visualization.swing).withSolver(H._01).run()
+  Example1.withSolver(H._01).run(exitOnClose = true)
 }
 
 object SlidingPuzzle_Example1_H02 extends App{
-  Example1.withVisualization(Visualization.swing).withSolver(H._02).run()
+  Example1.withSolver(H._02).run(exitOnClose = true)
 }
 
+object SlidingPuzzle_Example1_H03 extends App{
+  Example1.withSolver(H._03).run(exitOnClose = true)
+}
+
+
+
+
 object SlidingPuzzle_Example2_H02 extends App{
-  Example2.withVisualization(Visualization.swing).withSolver(H._02).run()
+  Example2.withSolver(H._02).run(exitOnClose = true)
+}
+
+object SlidingPuzzle_Example2_H03 extends App{
+  Example2.withSolver(H._03).run(exitOnClose = true)
+}
+
+object SlidingPuzzle_Example3_H03 extends App{
+  Example3.withSolver(H._03).run(exitOnClose = true)
 }
