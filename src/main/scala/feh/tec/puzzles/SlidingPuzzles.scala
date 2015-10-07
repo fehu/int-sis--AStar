@@ -2,7 +2,6 @@ package feh.tec.puzzles
 
 import feh.util._
 
-// is abstract to enforce a specific class name
 abstract class GenericSlidingPuzzle[Piece](val width: Int,
                                            val height: Int,
                                            val emptySpaces: Int,

@@ -28,7 +28,7 @@ scalacOptions in (Compile, doc) ++= Seq("-diagrams", "-diagrams-max-classes", "5
 
 // Test Options
 
-testOptions in Test += Tests.Argument(Some(TestFrameworks.Specs2), List("console", "html"))
+//testOptions in Test += Tests.Argument(Some(TestFrameworks.Specs2), List("console", "html"))
 
 // Packaging Options
 

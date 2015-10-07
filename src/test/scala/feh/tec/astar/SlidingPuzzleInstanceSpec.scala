@@ -204,7 +204,7 @@ object GenericSlidingPuzzleInstanceSpecExample1{
   protected lazy val anotherPuzzle = new SlidingPuzzleInt3x3v2
 
   def randomData: Arbitrary[InstanceData] = Arbitrary{
-    val pieces = None +: (1 to 8).map(Option(_)) |> (_.randomOrder)
+    val pieces = None +: (1 to 8).map(Option(_))
     val genOrder = Gen.listOfN(9, Gen.posNum[Int]).suchThat(l => l.distinct == l)
     val shuffledPieces = genOrder.map(_.zip(pieces).sortBy(_._1).map(_._2))
     shuffledPieces.map{
