@@ -23,7 +23,7 @@ trait A_*[T] {
    * @return `Some(solution)` or `None` if the solution wasn't found.
    */
   def search(initial: T): Result =
-    searchInner(initial, 0, SortedPossibilities.empty[Heuristic, T], new HashSet, HistoryRecord(Nil)) match {
+    runSearchInner(initial) match {
       case SearchInnerReturn(res, history) => res -> history
       case _: SearchInnerRecCall  => implementationError("`SearchInnerRecCall` should never escape `searchInner`") -> NoHistory()
     }
@@ -45,6 +45,9 @@ trait A_*[T] {
 
   // Implemented
 
+  protected def runSearchInner(initial: T) =
+    searchInner(initial, 0, SortedPossibilities.empty[Heuristic, T], new HashSet, HistoryRecord(Nil))
+
   implicit def heuristicContainer: HeuristicContainer[T, Heuristic] = HeuristicContainer(heuristic)
 
   protected type Decide = Long => PartialFunction[ExtractedOpt, SearchInnerResult]
@@ -54,11 +57,19 @@ trait A_*[T] {
   protected def implementationError = Failure.apply _ compose (AStarImplementationError(_: String))
 
   /** Exists because Scala cannot optimize @tailrec for f => g => f => ... */
-  protected trait SearchInnerResult
+  protected trait SearchInnerResult{
+    def changeHistory(h: History[T]): SearchInnerResult
+  }
   protected case class SearchInnerRecCall(state: T,
                                           count: Long,
                                           open: SortedPossibilities[Heuristic, T])           extends SearchInnerResult
+  {
+    def changeHistory(h: History[T]) = copy()
+  }
   protected case class SearchInnerReturn( result: Try[T], history: History[T] = NoHistory()) extends SearchInnerResult
+  {
+    def changeHistory(h: History[T]) = copy(history = h)
+  }
   protected object SearchInnerReturn{
     def create(result: Try[T]) = SearchInnerReturn(result)
   }
@@ -97,13 +108,14 @@ trait A_*[T] {
     val newHist = HistoryEntry(state, newStates.toSet) :: history
 
     makeDecision lift extracted match {
-      case Some(SearchInnerReturn(res, _))     => val hist = res.map(r => HistoryEntry.solution(r) :: newHist)
+      case Some(ret@SearchInnerReturn(res, _)) => val hist = res.map(r => HistoryEntry.solution(r) :: newHist)
                                                                 .getOrElse(newHist)
-                                                  SearchInnerReturn(res, hist)
+                                                  ret.changeHistory(hist)
       case Some(SearchInnerRecCall(s, c, opn)) => searchInner(s, c, opn, closed + state, newHist)
       case None                                => SearchInnerReturn(implementationError("ExtractedOpt not matched"))
+      case Some(other)                         => other.changeHistory(newHist)
     }
-}
+  }
 }
 
 object A_*{
