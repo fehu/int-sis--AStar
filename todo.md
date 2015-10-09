@@ -12,6 +12,7 @@
 
 - [x] Should have an option to return full solution search history on both success and error (for analysis)
 - [ ] maximum history size configuration
+- [ ] history for LimitedHorizon
 
 - [x] Should provide a description for generated `transformations`
 

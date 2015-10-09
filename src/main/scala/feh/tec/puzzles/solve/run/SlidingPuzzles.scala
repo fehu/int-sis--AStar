@@ -1,10 +1,11 @@
 package feh.tec.puzzles.solve.run
 
+import feh.tec.astar.A_*.SortedPossibilities
 import feh.tec.astar.AwtHelper._
-import feh.tec.astar.History
+import feh.tec.astar.{History, LimitedHorizon}
 import feh.tec.puzzles._
-import feh.tec.puzzles.solve.SlidingPuzzle_A_*
-import feh.tec.puzzles.solve.SlidingPuzzle_A_*.{Heuristics, Solve}
+import feh.tec.puzzles.solve.SlidingPuzzle_A_*.{Heuristics, MinimizingHeuristic, Solve}
+import feh.tec.puzzles.solve.{SlidingPuzzle_A_*, SlidingPuzzle_HorLim_A_*}
 import feh.tec.puzzles.vis.{FrameVisualization, GenericSlidingPuzzleAWTVisualize}
 import feh.util._
 
@@ -73,37 +74,72 @@ object SlidingPuzzleExamples{
 
 }
 
-object H{
+object Solver{
+  object H{
+    /** heuristic = f + g
+      *        f = [[feh.tec.puzzles.solve.SlidingPuzzle_A_*.Heuristics.Double.HasSingleEmpty.manhattanDistanceToSolutionSum]]
+      *        g = [[feh.tec.puzzles.solve.SlidingPuzzle_A_*.Heuristics.Double.solutionLength]]
+      */
+    def _01[T]: SlidingPuzzleInstance[T] => Double =
+      x => Heuristics.Double.HasSingleEmpty.manhattanDistanceToSolutionSum(x) + Heuristics.Double.solutionLength(x)
 
-  /** heuristic = f + g
-    *        f = [[feh.tec.puzzles.solve.SlidingPuzzle_A_*.Heuristics.Double.HasSingleEmpty.manhattanDistanceToSolutionSum]]
-    *        g = [[feh.tec.puzzles.solve.SlidingPuzzle_A_*.Heuristics.Double.solutionLength]]
+    /** heuristic = f + 0.5 * g
+      *        f = [[feh.tec.puzzles.solve.SlidingPuzzle_A_*.Heuristics.Double.HasSingleEmpty.manhattanDistanceToSolutionSum]]
+      *        g = [[feh.tec.puzzles.solve.SlidingPuzzle_A_*.Heuristics.Double.solutionLength]]
+      */
+    def _02[T]: SlidingPuzzleInstance[T] => Double =
+      x => Heuristics.Double.HasSingleEmpty.manhattanDistanceToSolutionSum(x) + 0.5 * Heuristics.Double.solutionLength(x)
+
+    /** heuristic = f + 0.5 * g - h - k
+      *        f = [[feh.tec.puzzles.solve.SlidingPuzzle_A_*.Heuristics.Double.HasSingleEmpty.manhattanDistanceToSolutionSum]]
+      *        g = [[feh.tec.puzzles.solve.SlidingPuzzle_A_*.Heuristics.Double.solutionLength]]
+      *        h = [[feh.tec.puzzles.solve.SlidingPuzzle_A_*.Heuristics.Double.correctlySet]]
+      *        k = [[feh.tec.puzzles.solve.SlidingPuzzle_A_*.Heuristics.Double.correctRowsAndCols]]
+      */
+    def _03[T]: SlidingPuzzleInstance[T] => Double = {
+      x =>
+        Heuristics.Double.HasSingleEmpty.manhattanDistanceToSolutionSum(x)
+        + 0.5 * Heuristics.Double.solutionLength(x)
+        - Heuristics.Double.correctlySet(x)
+        - Heuristics.Double.correctRowsAndCols(x)
+    }
+  }
+
+  /** Minimizing heuristic [[H._01]]
+   */
+  def _01[T] = Solve.minimizing[T, Double](H._01)
+
+
+  /** Minimizing heuristic [[H._02]]
     */
-  def _01[T] = Solve.minimizing[T, Double](x =>
-    Heuristics.Double.HasSingleEmpty.manhattanDistanceToSolutionSum(x) + Heuristics.Double.solutionLength(x)
-  )
+  def _02[T] = Solve.minimizing[T, Double](H._02)
 
 
-  /** heuristic = f + 0.5 * g
-    *        f = [[feh.tec.puzzles.solve.SlidingPuzzle_A_*.Heuristics.Double.HasSingleEmpty.manhattanDistanceToSolutionSum]]
-    *        g = [[feh.tec.puzzles.solve.SlidingPuzzle_A_*.Heuristics.Double.solutionLength]]
+  /** Minimizing heuristic [[H._03]]
     */
-  def _02[T] = Solve.minimizing[T, Double](x =>
-    Heuristics.Double.HasSingleEmpty.manhattanDistanceToSolutionSum(x) + 0.5 * Heuristics.Double.solutionLength(x)
-  )
+  def _03[T] = Solve.minimizing[T, Double](H._03)
 
-  /** heuristic = f + 0.5 * g - h - k
-    *        f = [[feh.tec.puzzles.solve.SlidingPuzzle_A_*.Heuristics.Double.HasSingleEmpty.manhattanDistanceToSolutionSum]]
-    *        g = [[feh.tec.puzzles.solve.SlidingPuzzle_A_*.Heuristics.Double.solutionLength]]
-    *        h = [[feh.tec.puzzles.solve.SlidingPuzzle_A_*.Heuristics.Double.correctlySet]]
-    *        k = [[feh.tec.puzzles.solve.SlidingPuzzle_A_*.Heuristics.Double.correctRowsAndCols]]
-    */
-  def _03[T] = Solve.minimizing[T, Double](x =>
-    Heuristics.Double.HasSingleEmpty.manhattanDistanceToSolutionSum(x)
-      + 0.5 * Heuristics.Double.solutionLength(x)
-      - Heuristics.Double.correctlySet(x)
-      - Heuristics.Double.correctRowsAndCols(x)
-  )
+
+  object LimHor{
+
+    /** Minimizing heuristic [[H._03]] with [[feh.tec.astar.LimitedHorizon]].
+      * Selects as best the nodes with `heuristic _ >= (heuristic best)*bestFracThreshold`
+      */
+    def _03[T](horLimit: Int, bestFracThreshold: InUnitInterval): SlidingPuzzle_A_*.MinimizingHeuristic[T, Double] =
+      new MinimizingHeuristic[T, Double](H._03)
+        with SlidingPuzzle_HorLim_A_*[T]
+        with LimitedHorizon.Sequential[SlidingPuzzleInstance[T]]
+      {
+        def maxDepth: Int = horLimit
+
+        def selectTheBest: (SortedPossibilities[Double, SlidingPuzzleInstance[T]]) => Map[Double, Set[SlidingPuzzleInstance[T]]] = {
+          sps =>
+            val bestH = sps.head._1
+            val threshold = bestH * bestFracThreshold
+            sps.underlying.filterKeys(_ >= threshold).toMap.mapValues(_.toSet)
+        }
+      }
+  }
 }
 
 
@@ -113,28 +149,28 @@ import feh.tec.puzzles.solve.run.SlidingPuzzleExamples._
 
 
 object SlidingPuzzle_Example1_H01 extends App{
-  Example1.withSolver(H._01).run(exitOnClose = true)
+  Example1.withSolver(Solver._01).run(exitOnClose = true)
 }
 
 object SlidingPuzzle_Example1_H02 extends App{
-  Example1.withSolver(H._02).run(exitOnClose = true)
+  Example1.withSolver(Solver._02).run(exitOnClose = true)
 }
 
 object SlidingPuzzle_Example1_H03 extends App{
-  Example1.withSolver(H._03).run(exitOnClose = true)
+  Example1.withSolver(Solver._03).run(exitOnClose = true)
 }
 
 
 
 
 object SlidingPuzzle_Example2_H02 extends App{
-  Example2.withSolver(H._02).run(exitOnClose = true)
+  Example2.withSolver(Solver._02).run(exitOnClose = true)
 }
 
 object SlidingPuzzle_Example2_H03 extends App{
-  Example2.withSolver(H._03).run(exitOnClose = true)
+  Example2.withSolver(Solver._03).run(exitOnClose = true)
 }
 
 object SlidingPuzzle_Example3_H03 extends App{
-  Example3.withSolver(H._03).run(exitOnClose = true)
+  Example3.withSolver(Solver._03).run(exitOnClose = true)
 }

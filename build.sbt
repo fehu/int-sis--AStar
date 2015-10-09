@@ -29,3 +29,8 @@ scalacOptions in (Compile, doc) ++= Seq("-diagrams", "-diagrams-max-classes", "5
 // Test Options
 
 testOptions in Test += Tests.Argument(Some(TestFrameworks.Specs2), List("console", "html"))
+
+initialCommands in console :=
+  """ import feh.tec.puzzles.solve.run._
+    | import SlidingPuzzleExamples._
+  """.stripMargin

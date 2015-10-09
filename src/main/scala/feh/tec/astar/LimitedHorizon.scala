@@ -37,7 +37,7 @@ trait LimitedHorizon[T] {
 
 
 
-  protected def searchLH = RecFunc[T, Result]{
+  protected def searchLH = RecFunc[T, Result]{ t => runSearchInner(t) match {
     case SearchInnerReturn(res, history) =>
       RecFunc Ret (res -> history)
     case PartialSolutionReturn(Success(ps), history) =>
@@ -46,7 +46,7 @@ trait LimitedHorizon[T] {
       RecFunc Ret fail.asInstanceOf[Failure[T]] -> history
     case _: SearchInnerRecCall =>
       RecFunc Ret implementationError("`SearchInnerRecCall` should never escape `searchInner`") -> NoHistory() // todo: duplication!
-  }
+  }}
 
   /** Searches for a solution with limited horizon.
     *
