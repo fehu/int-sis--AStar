@@ -125,11 +125,11 @@ object A_*{
   }
 
 
-  protected case class AStarException(msg: String) extends  Exception(msg){
+  protected[astar] case class AStarException(msg: String) extends  Exception(msg){
     override def toString = "A* Exception: " + msg
   }
 
-  protected case class AStarImplementationError(msg: String) extends RuntimeException(msg){
+  protected[astar] case class AStarImplementationError(msg: String) extends RuntimeException(msg){
     override def toString = "A* Implementation Error: " + msg
   }
 
@@ -144,7 +144,7 @@ object A_*{
 
     def +(ts: T*) = ++(ts)
 
-    def ++(ts: Seq[T]) = new SortedPossibilities(insert(ts.toList, underlying))
+    def ++(ts: Traversable[T]) = new SortedPossibilities(insert(ts.toList, underlying))
 
     protected def insert(ts: List[T], into: SortedMap[H, List[T]]): SortedMap[H, List[T]] = ts match {
       case Nil       => into

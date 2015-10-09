@@ -1,8 +1,9 @@
 package feh.tec.astar
 
-import feh.tec.astar.A_*.SortedPossibilities
+import feh.tec.astar.A_*.{AStarException, SortedPossibilities}
 import feh.util._
 
+import scala.collection.immutable.TreeMap
 import scala.util.{Failure, Success, Try}
 
 trait LimitedHorizon[T] {
@@ -14,11 +15,11 @@ trait LimitedHorizon[T] {
 
 
 
-  def withNewPartialSolution(ps: PartialSolution): TCO.Res[T, (Try[T], History[T])]
+  def handlePartialSolution(ps: PartialSolution): RecFunc.Res[T, (Try[T], History[T])]
 
+  protected def execSearchLH(f: RecFunc[T, Result])(state: T): Result
 
-
-  case class PartialSolution(best: Map[Heuristic, Set[T]])
+  case class PartialSolution(best: Set[T])
 
   case class PartialSolutionReturn(result: Try[PartialSolution],
                                    history: History[T] = NoHistory()) extends SearchInnerResult
@@ -31,58 +32,68 @@ trait LimitedHorizon[T] {
     count => {
       case Some((best, open)) if count == maxDepth =>
         val bestSel = selectTheBest  apply (open + best)
-        PartialSolutionReturn(Success(PartialSolution(bestSel)))
+        PartialSolutionReturn(Success(PartialSolution(bestSel.values.toSet.flatten)))
     }
+
+
+
+  protected def searchLH = RecFunc[T, Result]{
+    case SearchInnerReturn(res, history) =>
+      RecFunc Ret (res -> history)
+    case PartialSolutionReturn(Success(ps), history) =>
+      handlePartialSolution(ps)
+    case PartialSolutionReturn(fail, history) =>
+      RecFunc Ret fail.asInstanceOf[Failure[T]] -> history
+    case _: SearchInnerRecCall =>
+      RecFunc Ret implementationError("`SearchInnerRecCall` should never escape `searchInner`") -> NoHistory() // todo: duplication!
+  }
 
   /** Searches for a solution with limited horizon.
     *
     * @param initial The initial state.
     * @return `Some(solution)` or `None` if the solution wasn't found.
     */
-  override def search(initial: T) = TCO[T, Result](initial, {
-    case SearchInnerReturn(res, history) =>
-      TCO Ret (res -> history)
-    case PartialSolutionReturn(Success(ps), history) =>
-      withNewPartialSolution(ps)
-    case PartialSolutionReturn(fail, history) =>
-      TCO Ret fail.asInstanceOf[Failure[T]] -> history
-    case _: SearchInnerRecCall =>
-      TCO Ret implementationError("`SearchInnerRecCall` should never escape `searchInner`") -> NoHistory() // todo: duplication!
-  })
+  override def search(initial: T) = execSearchLH(searchLH)(initial)
 
 
-//  {
-//    runSearchInner(initial) match {
-//      case SearchInnerReturn(res, history) =>
-//        res -> history
-//      case PartialSolutionReturn(Success(ps), history) =>
-//        withNewPartialSolution(ps)
-//      case PartialSolutionReturn(fail, history) =>
-//        fail.asInstanceOf[Failure[T]] -> history
-//      case _: SearchInnerRecCall =>
-//        implementationError("`SearchInnerRecCall` should never escape `searchInner`") -> NoHistory() // todo: duplication!
-//    }
-//  }
+}
 
 
-  protected object TCO{
-    sealed trait Res[+A, +B]
-    case class Rec[A](a: A) extends Res[A, Nothing]
-    case class Ret[B](b: B) extends Res[Nothing, B]
+object LimitedHorizon{
+  protected trait PartialSolutionsBuffer[T]{
+    self : A_*[T] with LimitedHorizon[T] =>
 
-    def apply[A, B](initial: A, f: A => Res[A, B]): B = {
-      var flag = true
-      var arg  = initial
-      var res: B = null.asInstanceOf[B]
+    protected var buffer = SortedPossibilities.empty[Heuristic, T]
 
-      while(flag)
-        f(arg) match {
-          case Rec(a) => arg = a
-          case Ret(b) => res = b; flag = false
-        }
+    def guardPartialSolution(ps: PartialSolution): Unit = { buffer ++= ps.best }
 
-      res
+    def popBestPartialSolution(): Option[T] = extractTheBest(buffer) map {
+      case (best, rest) =>
+        buffer = rest
+        best
     }
+
   }
 
+
+  trait Sequential[T] extends LimitedHorizon[T] with PartialSolutionsBuffer[T] {
+    self : A_*[T] =>
+
+    def handlePartialSolution(ps: PartialSolution) = {
+      guardPartialSolution(ps)
+      popBestPartialSolution()
+        .map(RecFunc.Rec.apply)
+        .getOrElse(RecFunc.Ret(Failure(AStarException("no more partial solutions to search")) -> NoHistory()))
+    }
+
+    protected def execSearchLH(f: RecFunc[T, Result])(state: T): Result = RecFunc.TCO(state, f)
+  }
+
+  /** TODO: implement
+   */
+  trait Parallel[T] extends LimitedHorizon[T]{
+    self: A_*[T] =>
+
+
+  }
 }
