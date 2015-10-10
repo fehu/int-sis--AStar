@@ -13,6 +13,8 @@ trait VisualizeHistory[T] extends AwtHelper{
   def distanceBetweenH: Int
   def distanceBetweenV: Int
 
+  implicit def orderingForT: Ordering[T]
+
   protected def heuristic: T => Any
   protected def description: T => String
   protected def depthOf: T => Int
@@ -105,7 +107,7 @@ trait VisualizeHistory[T] extends AwtHelper{
 
     tr
   }
-  
+
   def abstractHistoryTree(h: History[T]): HistoryTree[HNode] = {
     // depth -> (state (at this depth), order, runId) -> children (should be on the next depth)
     val acc = mutable.HashMap.empty[Int, mutable.HashMap[(T, Int, Int), Set[T]]]
@@ -119,10 +121,10 @@ trait VisualizeHistory[T] extends AwtHelper{
              .getOrElseUpdate(id, children)
       }
 
-    h.get.zipWithIndex foreach (Function uncurried flip(putInAcc)).tupled
+    h.get.groupBy(_.runId).values.foreach( _.zipWithIndex foreach (Function uncurried flip(putInAcc)).tupled )
 
     val accOrd = acc.toList.sortBy(_._1)
-    val ((root, _, run), _) = accOrd.head.ensuring(_._2.size == 1)._2.head
+    val ((root, _, _), _) = accOrd.head.ensuring(_._2.size == 1)._2.head
     val rootNode = new HNode(root, 0, None, 0)
 
     val parentOf = mutable.HashMap.empty[T, HNode]

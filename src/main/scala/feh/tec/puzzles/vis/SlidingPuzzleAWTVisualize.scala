@@ -16,6 +16,8 @@ trait SlidingPuzzleAWTVisualize[Piece] {
 
   lazy val drawNode = new AWTVisualizeNode
 
+  implicit def orderingForT: Ordering[SlidingPuzzleInstance[Piece]] = Ordering.by(_.generation)
+
   class AWTVisualizeNode extends VisualizeNode{
     /** Draws the node.
       */
@@ -26,11 +28,18 @@ trait SlidingPuzzleAWTVisualize[Piece] {
         x <- 0 until puzzle.width
         y <- 0 until puzzle.height
       }{
-        withColor(Color.red){
-          val ordS = node.order.mkString
-          val runS = if (showRunId) s" (${node.runId})" else ""
-          graphics.drawString(ordS + runS, shiftX + drawNode.size.width/2, shiftY - extraHeight/2)
+
+        if (showRunId) {
+          val (prev, color, run) = if (node.order contains 0) (Some(Color.blue), Color.red,  node.runId + 1)
+                                   else                       (None,             Color.blue, node.runId)
+          withColor(color){ drawTitleStr()(s"$run.${node.order getOrElse "_"}") }
+          prev foreach {c => withColor(c){ drawTitleStr(-20)(s"(${run-1})") } }
         }
+        else
+          withColor(Color.blue){ drawTitleStr()(node.order.mkString) }
+
+        def drawTitleStr(shiftXExtra: Int = 0) =
+          graphics.drawString(_: String, shiftX + drawNode.size.width/2 + shiftXExtra, shiftY - extraHeight/2)
 
         graphics.drawString(node.description, shiftX, shiftY-1)
 
