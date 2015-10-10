@@ -96,13 +96,13 @@ object Solver{
       *        h = [[feh.tec.puzzles.solve.SlidingPuzzle_A_*.Heuristics.Double.correctlySet]]
       *        k = [[feh.tec.puzzles.solve.SlidingPuzzle_A_*.Heuristics.Double.correctRowsAndCols]]
       */
-    def _03[T]: SlidingPuzzleInstance[T] => Double = {
+    def _03[T]: SlidingPuzzleInstance[T] => Double =
       x =>
-        Heuristics.Double.HasSingleEmpty.manhattanDistanceToSolutionSum(x)
+        ( Heuristics.Double.HasSingleEmpty.manhattanDistanceToSolutionSum(x)
         + 0.5 * Heuristics.Double.solutionLength(x)
         - Heuristics.Double.correctlySet(x)
         - Heuristics.Double.correctRowsAndCols(x)
-    }
+        )
   }
 
   /** Minimizing heuristic [[H._01]]
