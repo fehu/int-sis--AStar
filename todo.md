@@ -21,6 +21,7 @@
     - [ ] during execution (?)
     - [x] optimize drawing
     - [x] distinguish different A* runs in case of LimitedHorizon
+    - [ ] reset _order_ numeration each _run_
 
 - [ ] Write Tests for:
     - [x] instance operations
