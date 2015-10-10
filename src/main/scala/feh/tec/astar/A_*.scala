@@ -25,8 +25,11 @@ trait A_*[T] {
   def search(initial: T): Result =
     runSearchInner(initial) match {
       case SearchInnerReturn(res, history) => res -> history
-      case _: SearchInnerRecCall  => implementationError("`SearchInnerRecCall` should never escape `searchInner`") -> NoHistory()
+      case _: SearchInnerRecCall           => searchInnerRecCallEscaped_!
     }
+
+  protected def searchInnerRecCallEscaped_! : (Try[T], History[T]) =
+    implementationError("`SearchInnerRecCall` should never escape `searchInner`") -> NoHistory()
 
   /** Lists the next possible states.*/
   def transformations: T => Seq[T]

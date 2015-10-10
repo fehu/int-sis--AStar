@@ -29,15 +29,15 @@ case class SlidingPuzzleExample[T](puzzle: SlidingPuzzle[T],
                                    solver: SlidingPuzzle_A_*[T])
 {
   def solve = solver.search(initial getOrElse puzzle.randomInstance)
-  def showTree(h: History[SlidingPuzzleInstance[T]], conf: HistoryTreeShowConf, exitOnClose: Boolean) = new FrameVisualization(
+  def showTree(conf: HistoryTreeShowConf, exitOnClose: Boolean, hs: History[SlidingPuzzleInstance[T]]*) = new FrameVisualization(
     new GenericSlidingPuzzleAWTVisualize(puzzle, conf.cellSize, solver.heuristic, conf.dh, conf.dv, _),
-    h,
-    exitOnClose
+    exitOnClose,
+    hs: _*
   )
 
   def run(conf: HistoryTreeShowConf = HistoryTreeShowConf.default,
           exitOnClose: Boolean = false) =
-    showTree(solve._2, conf, exitOnClose).open()
+    showTree(conf, exitOnClose, solve._2).open()
 }
 
 object SlidingPuzzleExamples{
@@ -125,10 +125,11 @@ object Solver{
     /** Minimizing heuristic [[H._03]] with [[feh.tec.astar.LimitedHorizon]].
       * Selects as best the nodes with `heuristic _ >= (heuristic best)*bestFracThreshold`
       */
-    def _03[T](horLimit: Int, bestFracThreshold: InUnitInterval): SlidingPuzzle_A_*.MinimizingHeuristic[T, Double] =
+    def _03[T](horLimit: Int, bestFracThreshold: InUnitInterval) =
       new MinimizingHeuristic[T, Double](H._03)
         with SlidingPuzzle_HorLim_A_*[T]
         with LimitedHorizon.Sequential[SlidingPuzzleInstance[T]]
+        with LimitedHorizon.HistManagement.InMemory[SlidingPuzzleInstance[T]]
       {
         def maxDepth: Int = horLimit
 

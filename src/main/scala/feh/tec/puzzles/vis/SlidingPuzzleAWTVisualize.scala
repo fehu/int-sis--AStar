@@ -80,7 +80,7 @@ class GenericSlidingPuzzleAWTVisualize[Piece](val puzzle: SlidingPuzzle[Piece],
   protected def setCanvasSize(dim: Dimension): Unit = _setCanvasSize(dim)
 }
 
-class FrameVisualization[T](fvh: (Dimension => Unit) => AWTVisualizeHistory[T], hist: History[T], exitOnClose: Boolean)
+class FrameVisualization[T](fvh: (Dimension => Unit) => AWTVisualizeHistory[T], exitOnClose: Boolean, hist: History[T]*)
   extends AwtHelper
 {
   def setCanvasSize(dim: Dimension): Unit = {
@@ -96,7 +96,7 @@ class FrameVisualization[T](fvh: (Dimension => Unit) => AWTVisualizeHistory[T], 
     val panel = new JPanel{
       override def paint(g: Graphics): Unit = {
         super.paint(g)
-        vh.drawHistory(g, hist)
+        vh.drawHistory(g, hist: _*)
         revalidate()
       }
     }

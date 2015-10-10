@@ -12,7 +12,7 @@
 
 - [x] Should have an option to return full solution search history on both success and error (for analysis)
 - [ ] maximum history size configuration
-- [ ] history for LimitedHorizon
+- [x] history for LimitedHorizon
 
 - [x] Should provide a description for generated `transformations`
 
@@ -20,6 +20,7 @@
     - [x] for a result
     - [ ] during execution (?)
     - [x] optimize drawing
+    - [ ] distinguish different A* runs in case of LimitedHorizon
 
 - [ ] Write Tests for:
     - [x] instance operations

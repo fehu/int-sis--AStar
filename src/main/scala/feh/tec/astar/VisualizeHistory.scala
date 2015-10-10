@@ -121,7 +121,7 @@ trait VisualizeHistory[T] extends AwtHelper{
     h.get.zipWithIndex foreach (Function uncurried flip(putInAcc)).tupled
 
     val accOrd = acc.toList.sortBy(_._1)
-    val ((root, 0), _) = accOrd.head.ensuring(_._2.size == 1)._2.head
+    val ((root, _), _) = accOrd.head.ensuring(_._2.size == 1)._2.head
     val rootNode = new HNode(root, 0, None)
 
     val parentOf = mutable.HashMap.empty[T, HNode]
@@ -147,7 +147,7 @@ trait VisualizeHistory[T] extends AwtHelper{
     accOrd.foreach((buildHTree _).tupled)
 
     new HistoryTree[HNode]{
-      lazy val root = nodeOf(acc(0).head._1.ensuring(_._2 == 0)._1)
+      lazy val root = nodeOf(acc(0).head._1._1)
     }
   }
 

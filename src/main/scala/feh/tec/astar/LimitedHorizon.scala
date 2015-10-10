@@ -4,6 +4,7 @@ import feh.tec.astar.A_*.{AStarException, SortedPossibilities}
 import feh.util._
 
 import scala.collection.immutable.TreeMap
+import scala.collection.mutable.ListBuffer
 import scala.util.{Failure, Success, Try}
 
 trait LimitedHorizon[T] {
@@ -35,18 +36,28 @@ trait LimitedHorizon[T] {
         PartialSolutionReturn(Success(PartialSolution(bestSel.values.toSet.flatten)))
     }
 
+  val HistoryManagement: HistoryManagement
 
+  trait HistoryManagement{
+    def saveHistory(h: History[T])
+  }
 
-  protected def searchLH = RecFunc[T, Result]{ t => runSearchInner(t) match {
-    case SearchInnerReturn(res, history) =>
-      RecFunc Ret (res -> history)
-    case PartialSolutionReturn(Success(ps), history) =>
-      handlePartialSolution(ps)
-    case PartialSolutionReturn(fail, history) =>
-      RecFunc Ret fail.asInstanceOf[Failure[T]] -> history
-    case _: SearchInnerRecCall =>
-      RecFunc Ret implementationError("`SearchInnerRecCall` should never escape `searchInner`") -> NoHistory() // todo: duplication!
-  }}
+  protected def searchLH = RecFunc[T, Result]{
+    t =>
+      runSearchInner(t) match {
+        case SearchInnerReturn(res, history) =>
+          HistoryManagement.saveHistory(history)
+          RecFunc Ret (res -> history)
+        case PartialSolutionReturn(Success(ps), history) =>
+          HistoryManagement.saveHistory(history)
+          handlePartialSolution(ps)
+        case PartialSolutionReturn(fail, history) =>
+          HistoryManagement.saveHistory(history)
+          RecFunc Ret fail.asInstanceOf[Failure[T]] -> history
+        case _: SearchInnerRecCall =>
+          RecFunc Ret searchInnerRecCallEscaped_!
+      }
+  }
 
   /** Searches for a solution with limited horizon.
     *
@@ -60,6 +71,25 @@ trait LimitedHorizon[T] {
 
 
 object LimitedHorizon{
+
+  object HistManagement{
+
+    trait InMemory[T]{
+      self: LimitedHorizon[T] =>
+
+      protected val historyInMem = ListBuffer.empty[History[T]]
+
+      val HistoryManagement: HistoryManagement = new HistoryManagement{
+        def saveHistory(h: History[T]): Unit = synchronized{ historyInMem += h }
+      }
+
+      def listHistory = historyInMem.toList
+      def clearHistory() = historyInMem.clear()
+    }
+
+  }
+
+
   protected trait PartialSolutionsBuffer[T]{
     self : A_*[T] with LimitedHorizon[T] =>
 
