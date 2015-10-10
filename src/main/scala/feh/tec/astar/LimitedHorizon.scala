@@ -31,7 +31,7 @@ trait LimitedHorizon[T] {
 
   override protected def searchInnerExtraLogic: Decide =
     count => {
-      case Some((best, open)) if count == maxDepth =>
+      case Some((best, open)) if count == maxDepth - 1 =>
         val bestSel = selectTheBest  apply (open + best)
         PartialSolutionReturn(Success(PartialSolution(bestSel.values.toSet.flatten)))
     }
