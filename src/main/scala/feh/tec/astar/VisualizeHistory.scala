@@ -107,36 +107,37 @@ trait VisualizeHistory[T] extends AwtHelper{
   }
   
   def abstractHistoryTree(h: History[T]): HistoryTree[HNode] = {
-    // depth -> state (at this depth) -> children (should be on the next depth)
-    val acc = mutable.HashMap.empty[Int, mutable.HashMap[(T, Int), Set[T]]]
+    // depth -> (state (at this depth), order, runId) -> children (should be on the next depth)
+    val acc = mutable.HashMap.empty[Int, mutable.HashMap[(T, Int, Int), Set[T]]]
 
     def putInAcc: Int => HistoryEntry[T] => Unit =
       order => {
-        case HistoryEntry(state, children) =>
+        case HistoryEntry(state, children, runId) =>
           val depth = depthOf(state)
-          acc.getOrElseUpdate(depth, mutable.HashMap((state, order) -> children))
-             .getOrElseUpdate(state -> order, children)
+          val id = (state, order, runId)
+          acc.getOrElseUpdate(depth, mutable.HashMap(id -> children))
+             .getOrElseUpdate(id, children)
       }
 
     h.get.zipWithIndex foreach (Function uncurried flip(putInAcc)).tupled
 
     val accOrd = acc.toList.sortBy(_._1)
-    val ((root, _), _) = accOrd.head.ensuring(_._2.size == 1)._2.head
-    val rootNode = new HNode(root, 0, None)
+    val ((root, _, run), _) = accOrd.head.ensuring(_._2.size == 1)._2.head
+    val rootNode = new HNode(root, 0, None, 0)
 
     val parentOf = mutable.HashMap.empty[T, HNode]
     val nodeOf   = mutable.HashMap(root -> rootNode)
 
-    def buildHTree(depth: Int, level: mutable.HashMap[(T, Int), Set[T]]): Unit =
+    def buildHTree(depth: Int, level: mutable.HashMap[(T, Int, Int), Set[T]]): Unit =
       for {
-        ((state, order), children) <- level
+        ((state, order, run), children) <- level
         parent = parentOf.get(state)
         node   = nodeOf(state)
       } {
         node.orderUpd(order)
 
         for (child <- children) {
-          val n = new HNode(child, depth+1, Some(node))
+          val n = new HNode(child, depth+1, Some(node), run)
           parentOf += child -> node
           nodeOf += child -> n
 
@@ -203,7 +204,9 @@ trait VisualizeHistory[T] extends AwtHelper{
 
   class HNode(val state: T,
               val depth: Int,
-              val parent: Option[HNode]) extends HistoryNode[HNode]
+              val parent: Option[HNode],
+              val runId: Int )
+    extends HistoryNode[HNode]
   {
 
     protected var childrenVar: Set[HNode] = Set()

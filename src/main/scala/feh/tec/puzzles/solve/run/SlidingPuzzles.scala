@@ -15,13 +15,16 @@ object SlidingPuzzles{
   }
 }
 
-case class HistoryTreeShowConf(cellSize: (Int, Int), distanceBetweenH: Int, distanceBetweenV: Int){
+case class HistoryTreeShowConf(cellSize: (Int, Int),
+                               distanceBetweenH: Int,
+                               distanceBetweenV: Int,
+                               showRunId: Boolean ){
   def dh = distanceBetweenH
   def dv = distanceBetweenV
 }
 
 object HistoryTreeShowConf{
-  def default = HistoryTreeShowConf(30 -> 30, distanceBetweenH = 10, distanceBetweenV = 30)
+  def default = HistoryTreeShowConf(30 -> 30, distanceBetweenH = 10, distanceBetweenV = 30, showRunId = false)
 }
 
 case class SlidingPuzzleExample[T](puzzle: SlidingPuzzle[T],
@@ -30,7 +33,7 @@ case class SlidingPuzzleExample[T](puzzle: SlidingPuzzle[T],
 {
   def solve = solver.search(initial getOrElse puzzle.randomInstance)
   def showTree(conf: HistoryTreeShowConf, exitOnClose: Boolean, hs: History[SlidingPuzzleInstance[T]]*) = new FrameVisualization(
-    new GenericSlidingPuzzleAWTVisualize(puzzle, conf.cellSize, solver.heuristic, conf.dh, conf.dv, _),
+    new GenericSlidingPuzzleAWTVisualize(puzzle, conf.cellSize, solver.heuristic, conf.dh, conf.dv, _, conf.showRunId),
     exitOnClose,
     hs: _*
   )

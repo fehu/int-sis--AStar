@@ -20,7 +20,7 @@
     - [x] for a result
     - [ ] during execution (?)
     - [x] optimize drawing
-    - [ ] distinguish different A* runs in case of LimitedHorizon
+    - [x] distinguish different A* runs in case of LimitedHorizon
 
 - [ ] Write Tests for:
     - [x] instance operations

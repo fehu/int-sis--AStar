@@ -12,6 +12,7 @@ trait SlidingPuzzleAWTVisualize[Piece] {
 
   def puzzle: SlidingPuzzle[Piece]
   def cellSize: Dimension
+  def showRunId: Boolean
 
   lazy val drawNode = new AWTVisualizeNode
 
@@ -26,7 +27,9 @@ trait SlidingPuzzleAWTVisualize[Piece] {
         y <- 0 until puzzle.height
       }{
         withColor(Color.red){
-          graphics.drawString(node.order.mkString, shiftX + drawNode.size.width/2, shiftY - extraHeight/2)
+          val ordS = node.order.mkString
+          val runS = if (showRunId) s" (${node.runId})" else ""
+          graphics.drawString(ordS + runS, shiftX + drawNode.size.width/2, shiftY - extraHeight/2)
         }
 
         graphics.drawString(node.description, shiftX, shiftY-1)
@@ -71,7 +74,8 @@ class GenericSlidingPuzzleAWTVisualize[Piece](val puzzle: SlidingPuzzle[Piece],
                                               val heuristic: SlidingPuzzleInstance[Piece] => Any,
                                               val distanceBetweenH: Int,
                                               val distanceBetweenV: Int,
-                                              _setCanvasSize: Dimension => Unit
+                                              _setCanvasSize: Dimension => Unit,
+                                              val showRunId: Boolean
                                               )
   extends AWTVisualizeHistory[SlidingPuzzleInstance[Piece]] with SlidingPuzzleAWTVisualize[Piece]
 {

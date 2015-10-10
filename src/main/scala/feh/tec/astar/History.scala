@@ -14,7 +14,7 @@ trait History[T] {
   def :: = prepend _
 }
 
-case class HistoryEntry[T](parent: T, children: Set[T])
+case class HistoryEntry[T](parent: T, children: Set[T], runId: Int = 0)
 
 object HistoryEntry{
   def solution[T] = HistoryEntry(_: T, Set.empty)
