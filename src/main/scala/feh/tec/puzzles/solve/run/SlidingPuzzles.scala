@@ -123,7 +123,7 @@ object Solver{
   def _03[T] = Solve.minimizing[T, Double](H._03)
 
 
-  object LimHor{
+  object LimHorSeq{
 
     /** Minimizing heuristic [[H._03]] with [[feh.tec.astar.LimitedHorizon]].
       * Selects as best the nodes with `heuristic _ >= (heuristic best)*bestFracThreshold`
