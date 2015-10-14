@@ -1,6 +1,6 @@
 package feh.tec.astar
 
-import akka.actor.{Actor, ActorRef, ActorRefFactory, Props}
+import akka.actor._
 import feh.tec.astar.A_*.{AStarException, SortedPossibilities}
 import feh.util.{RecFunc, _}
 
@@ -128,7 +128,6 @@ object LimitedHorizon{
     self: A_*[T] =>
 
     def maxExecTime: FiniteDuration
-    def maxHistTime: FiniteDuration
     def executorPoolSize: Int
     
     protected def aFactory: ActorRefFactory
@@ -148,7 +147,7 @@ object LimitedHorizon{
 
 //    protected val histScope = new ScopedState[HistoryManagement](???)
 
-    protected abstract class Controller extends Actor{
+    protected abstract class Controller extends Actor with ActorLogging{
       protected var promiseOpt: Option[Promise[Result]] = None
       protected var func: RecFunc[T, Result] = null
 
@@ -163,40 +162,67 @@ object LimitedHorizon{
         case InitExec(init, promise, f) => 
           promiseOpt = Option(promise)
           func = f
+          log.debug("InitExec")
           getFree match {
             case Some(exec) => exec ! Exec(init, f)
             case _          => promise.failure(NoExecutor)
-          } 
+          }
+        case _ if promiseOpt.isEmpty =>
+          log.debug("promiseOpt.isEmpty")
+          free(sender())
         case Finished(Left(ps)) =>
+          log.debug("Finished(Left(ps))")
           guardPartialSolution(ps)
           nextTask match{
             case Some(next) => sender() ! Exec(next, func)
             case _          => free(sender())
           }
         case Finished(Right(res)) =>
+          log.debug("Finished(Right(res))")
           promiseOpt.get.success(res -> NoHistory())
           promiseOpt = None
           func = null
       }
     }
 
-    protected class Executor(val controller: ActorRef) extends Actor{
+    protected class Executor(val controller: ActorRef) extends Actor with ActorLogging{
       def receive: Actor.Receive = {
-        case Exec(st, f) => executor.doWith(self){ execSearchLH(f)(st) }
+        case Exec(st, f) =>
+          log.debug("Exec")
+          executor.doWith(self){ execSearchLH(f)(st) }
       }
     }
 
     protected lazy val controllerRef: ActorRef = aFactory.actorOf(controllerProps)
 
     def handlePartialSolution(ps: PartialSolution): RecFunc.Res[T, Result] = {
-      executor.get ! Finished(Left(ps))
+      executor.get.log("handlePartialSolution " +  executor.get)
+      implicit val sender = executor.get
+      controllerRef ! Finished(Left(ps))
       RecFunc Rec null.asInstanceOf[T]
     }
 
-    protected def execSearchLH(f: RecFunc[T, Result])(state: T): Result = {
+
+    /** Searches for a solution with limited horizon.
+      *
+      * @param initial The initial state.
+      * @return `Some(solution)` or `None` if the solution wasn't found.
+      */
+    override def search(initial: T): (Try[T], History[T]) = {
       val promise = Promise[Result]()
-      controllerRef ! InitExec(state, promise, f)
+      println("search")
+      controllerRef ! InitExec(initial, promise, searchLH)
+      println("await")
       Await.result(promise.future, maxExecTime)
+    }
+
+
+    protected def execSearchLH(f: RecFunc[T, Result])(state: T): Result = f(state) match {
+      case RecFunc.Ret(r@(res, _))  =>
+        implicit val sender = executor.get
+        controllerRef ! Finished(Right(res))
+        r
+      case RecFunc.Rec(null) => null
     }
 
     protected def controllerProps = Props(new Controller {
