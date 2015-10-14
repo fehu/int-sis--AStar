@@ -1,9 +1,13 @@
 package feh.tec.astar
 
 import akka.actor._
+import akka.dispatch.{PriorityGenerator, UnboundedStablePriorityMailbox}
+import com.typesafe.config.Config
 import feh.tec.astar.A_*.{AStarException, SortedPossibilities}
+import feh.tec.astar.LimitedHorizon.Parallel.Finished
 import feh.util.{RecFunc, _}
 
+import scala.collection.immutable.TreeMap
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{Await, Promise}
@@ -134,7 +138,6 @@ object LimitedHorizon{
     
     protected case class InitExec(state: T, promise: Promise[Result], f: RecFunc[T, Result])
     protected case class Exec(state: T, f: RecFunc[T, Result])
-    protected case class Finished(res: Either[PartialSolution, Try[T]])
 
 //    protected case class SaveHistory(hist: History[T])
 //    protected case object ClearHistory
@@ -170,14 +173,14 @@ object LimitedHorizon{
         case _ if promiseOpt.isEmpty =>
           log.debug("promiseOpt.isEmpty")
           free(sender())
-        case Finished(Left(ps)) =>
+        case Finished(Left(ps : PartialSolution)) =>
           log.debug("Finished(Left(ps))")
           guardPartialSolution(ps)
           nextTask match{
             case Some(next) => sender() ! Exec(next, func)
             case _          => free(sender())
           }
-        case Finished(Right(res)) =>
+        case Finished(Right(res : Try[T])) =>
           log.debug("Finished(Right(res))")
           promiseOpt.get.success(res -> NoHistory())
           promiseOpt = None
@@ -229,15 +232,18 @@ object LimitedHorizon{
       val execPool = Stream.fill(executorPoolSize)(aFactory.actorOf(executorProps(self)))
       var freePool = execPool
 
-      val partialSolutions = ListBuffer.empty[T]
-      
+      var partialSolutions = SortedPossibilities.empty
+
       protected def getFree: Option[ActorRef] = freePool.headOption
       protected def free: ActorRef => Unit = freePool +:= _
 
       protected def guardPartialSolution: PartialSolution => Unit = ps => partialSolutions ++= ps.best
-      protected def nextTask: Option[T] =
-        if (partialSolutions.nonEmpty) Some(partialSolutions.remove(0))
-        else None
+      protected def nextTask: Option[T] = extractTheBest(partialSolutions) match {
+        case Some((t, ps)) =>
+          partialSolutions = ps
+          Some(t)
+        case _ => None
+      }
     })
     
     protected def executorProps(parent: ActorRef) = Props(new Executor(parent))
@@ -249,5 +255,18 @@ object LimitedHorizon{
 //
 //      def clearHistory(): Unit = ???
 //    }
+  }
+
+  object Parallel{
+    protected case class Finished[L, R](res: Either[L, Try[R]])
+
+    class PriorityMailbox(settings: ActorSystem.Settings, config: Config)
+      extends UnboundedStablePriorityMailbox(
+        PriorityGenerator {
+          case Finished(Right(res)) => 0
+          case PoisonPill           => 2
+          case _                    => 1
+        }
+      )
   }
 }
