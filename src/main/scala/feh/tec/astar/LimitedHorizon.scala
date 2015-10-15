@@ -127,6 +127,7 @@ object LimitedHorizon{
   }
 
   /** uses akka actors
+   * TODO: test if all executors are used
    */
   trait Parallel[T] extends LimitedHorizon[T] {
     self: A_*[T] =>
@@ -148,40 +149,42 @@ object LimitedHorizon{
 
     protected val executor = new ScopedState[ActorRef](null)
 
-//    protected val histScope = new ScopedState[HistoryManagement](???)
-
     protected abstract class Controller extends Actor with ActorLogging{
       protected var promiseOpt: Option[Promise[Result]] = None
       protected var func: RecFunc[T, Result] = null
 
       protected def getFree: Option[ActorRef]
+      protected def countFree: Int
       protected def free: ActorRef => Unit
 
       protected def guardPartialSolution: PartialSolution => Unit
       protected def nextTask: Option[T]
+
+
+      def runNextTask() = for{
+        next <- nextTask
+        exec <- getFree
+      } yield exec ! Exec(next, func)
+
+      def runNextTasks() = while ( runNextTask().isDefined ) {}
+
 
       def receive: Receive = {
         case InitExec(_, promise, _) if promiseOpt.isDefined => promise.failure(AlreadyRunning)
         case InitExec(init, promise, f) => 
           promiseOpt = Option(promise)
           func = f
-          log.debug("InitExec")
           getFree match {
             case Some(exec) => exec ! Exec(init, f)
             case _          => promise.failure(NoExecutor)
           }
         case _ if promiseOpt.isEmpty =>
-          log.debug("promiseOpt.isEmpty")
           free(sender())
         case Finished(Left(ps : PartialSolution)) =>
-          log.debug("Finished(Left(ps))")
           guardPartialSolution(ps)
-          nextTask match{
-            case Some(next) => sender() ! Exec(next, func)
-            case _          => free(sender())
-          }
+          free(sender())
+          runNextTasks()
         case Finished(Right(res : Try[T])) =>
-          log.debug("Finished(Right(res))")
           promiseOpt.get.success(res -> NoHistory())
           promiseOpt = None
           func = null
@@ -191,7 +194,6 @@ object LimitedHorizon{
     protected class Executor(val controller: ActorRef) extends Actor with ActorLogging{
       def receive: Actor.Receive = {
         case Exec(st, f) =>
-          log.debug("Exec")
           executor.doWith(self){ execSearchLH(f)(st) }
       }
     }
@@ -199,7 +201,7 @@ object LimitedHorizon{
     protected lazy val controllerRef: ActorRef = aFactory.actorOf(controllerProps)
 
     def handlePartialSolution(ps: PartialSolution): RecFunc.Res[T, Result] = {
-      executor.get.log("handlePartialSolution " +  executor.get)
+//      executor.get.log("handlePartialSolution " +  executor.get)
       implicit val sender = executor.get
       controllerRef ! Finished(Left(ps))
       RecFunc Rec null.asInstanceOf[T]
@@ -213,9 +215,7 @@ object LimitedHorizon{
       */
     override def search(initial: T): (Try[T], History[T]) = {
       val promise = Promise[Result]()
-      println("search")
       controllerRef ! InitExec(initial, promise, searchLH)
-      println("await")
       Await.result(promise.future, maxExecTime)
     }
 
@@ -234,8 +234,15 @@ object LimitedHorizon{
 
       var partialSolutions = SortedPossibilities.empty
 
-      protected def getFree: Option[ActorRef] = freePool.headOption
+      protected def getFree: Option[ActorRef] =
+        freePool.headOption.map{
+          h =>
+            freePool = freePool.tail
+            h
+        }
+
       protected def free: ActorRef => Unit = freePool +:= _
+      protected def countFree = freePool.size
 
       protected def guardPartialSolution: PartialSolution => Unit = ps => partialSolutions ++= ps.best
       protected def nextTask: Option[T] = extractTheBest(partialSolutions) match {
