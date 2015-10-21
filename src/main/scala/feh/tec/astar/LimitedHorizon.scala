@@ -7,7 +7,6 @@ import feh.tec.astar.A_*.{AStarException, SortedPossibilities}
 import feh.tec.astar.LimitedHorizon.Parallel.Finished
 import feh.util.{RecFunc, _}
 
-import scala.collection.immutable.TreeMap
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{Await, Promise}
@@ -37,6 +36,7 @@ trait LimitedHorizon[T] {
 
   override protected def searchInnerExtraLogic: Decide =
     count => {
+      case Some((best, _)) if isSolution(best) => SearchInnerReturn(Success(best), NoHistory())
       case Some((best, open)) if count == maxDepth - 1 =>
         val bestSel = selectTheBest  apply (open + best)
         PartialSolutionReturn(Success(PartialSolution(bestSel.values.toSet.flatten)))
