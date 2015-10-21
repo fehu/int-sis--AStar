@@ -111,7 +111,7 @@ trait A_*[T] {
     val newHist = HistoryEntry(state, newStates.toSet) :: history
 
     makeDecision lift extracted match {
-      case Some(ret@SearchInnerReturn(res, _)) => val hist = res.map(r => HistoryEntry.solution(r) :: newHist)
+      case Some(ret@SearchInnerReturn(res, _)) => val hist = res.map(HistoryEntry.solution(newHist))
                                                                 .getOrElse(newHist)
                                                   ret.changeHistory(hist)
       case Some(SearchInnerRecCall(s, c, opn)) => searchInner(s, c, opn, closed + state, newHist)

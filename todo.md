@@ -22,7 +22,7 @@
     - [x] optimize drawing
     - [x] distinguish different A* runs in case of LimitedHorizon
     - [x] reset _order_ numeration each _run_
-    - [ ] mark solution
+    - [x] mark solution
 
 - [ ] Write Tests for:
     - [x] instance operations

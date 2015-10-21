@@ -14,17 +14,28 @@ trait History[T] {
   def :: = prepend _
 
   def map(f: HistoryEntry[T] => HistoryEntry[T]): History[T]
+
+  def last = toList.head
+  def lastOption = toList.headOption
 }
 
 case class HistoryEntry[T](parent: T, children: Set[T], runId: Int = 0)
 
 object HistoryEntry{
-  def solution[T] = HistoryEntry(_: T, Set.empty)
+  def solution[T](history: History[T]): T => History[T] = history match {
+    case rec@HistoryRecord(list) => SolutionHistoryRecord(list, _: T, rec.overflowed)
+    case h => _ => h
+  }
+}
+
+case class SolutionHistoryRecord[T](toList: List[HistoryEntry[T]], solution: T, overflowed: Boolean) extends History[T]{
+  def prepend(entry: HistoryEntry[T]): History[T] = this
+  def map(f: (HistoryEntry[T]) => HistoryEntry[T]): History[T] = copy(toList.map(f))
 }
 
 case class HistoryRecord[T](toList: List[HistoryEntry[T]]) extends History[T]{
   def overflowed = false
-  def prepend(entry: HistoryEntry[T]) = HistoryRecord(entry :: toList)
+  def prepend(entry: HistoryEntry[T]) = copy(entry :: toList)
   def map(f: HistoryEntry[T] => HistoryEntry[T]) = copy(toList.map(f))
 }
 

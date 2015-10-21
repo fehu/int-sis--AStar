@@ -1,6 +1,6 @@
 package feh.tec.astar
 
-import java.awt.{Dimension, Point}
+import java.awt.{Color, Dimension, Point}
 
 import scala.collection.mutable
 import feh.util._
@@ -21,6 +21,8 @@ trait VisualizeHistory[T] extends AwtHelper{
 
   protected def setCanvasSize(dim: Dimension)
   protected def drawArrow(from: Point, to: Point)
+
+  protected def withColor[R](c: Color)(f: => R): R
 
   /** Draws the history tree.
    */
@@ -47,10 +49,24 @@ trait VisualizeHistory[T] extends AwtHelper{
     // draw arrows
     tr.byDepth.toList.sortBy(_._1).foreach {
       case (_, nodes) => nodes.foreach{
-        node => node.children.foreach(child => drawArrow(shiftFullDown compose shiftRight apply  node.position,
+        node => node.children.foreach(child => drawArrow(shiftFullDown compose shiftRight apply node.position,
                                                          shiftRight apply child.position))
       }
     }
+
+    // draw solution path
+    for {
+      solution <- tr.solution
+      prev <- solution.parent
+    } Y[(HNode, HNode), Unit](
+      rec => {
+        case (from, to) =>
+         withColor(Color.blue.brighter()){ drawArrow(shiftRight apply from.position,
+                                                     shiftFullDown  compose shiftRight apply to.position)
+                                         }
+         to.parent.foreach(rec apply to -> _)
+      }
+    )(solution, prev)
   }
   
   protected def shiftLeft: Point => Point     = p => p.x - drawNode.size.width/2 -> p.y
@@ -109,6 +125,8 @@ trait VisualizeHistory[T] extends AwtHelper{
   }
 
   def abstractHistoryTree(h: History[T]): HistoryTree[HNode] = {
+    if (h.lastOption.isEmpty) sys.error("Empty history")
+
     // depth -> (state (at this depth), order, runId) -> children (should be on the next depth)
     val acc = mutable.HashMap.empty[Int, mutable.HashMap[(T, Int, Int), Set[T]]]
 
@@ -157,11 +175,17 @@ trait VisualizeHistory[T] extends AwtHelper{
 
     new HistoryTree[HNode]{
       lazy val root = nodeOf(acc(0).head._1._1)
+      lazy val solution: Option[HNode] = PartialFunction.condOpt(h){
+        case SolutionHistoryRecord(_, sol, _) =>
+          println("Solution")
+          nodeOf(sol)
+      }
     }
   }
 
   trait HistoryTree[Node <: AbstractHistoryNode[Node]]{
     val root: Node
+    val solution: Option[Node]
 
     lazy val byDepth: Map[Int, Seq[Node]] = {
       val acc = mutable.HashMap.empty[Int, Seq[Node]]
