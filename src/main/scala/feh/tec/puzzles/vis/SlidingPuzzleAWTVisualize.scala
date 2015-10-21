@@ -30,10 +30,8 @@ trait SlidingPuzzleAWTVisualize[Piece] {
       }{
 
         if (showRunId) {
-          val (prev, color, run) = if (node.order contains 0) (Some(Color.blue), Color.red,  node.runId + 1)
-                                   else                       (None,             Color.blue, node.runId)
-          withColor(color){ drawTitleStr()(s"$run.${node.order getOrElse "_"}") }
-          prev foreach {c => withColor(c){ drawTitleStr(-20)(s"(${run-1})") } }
+          withColor(Color.red) { drawTitleStr(-30)(node.runId.toString) }
+          for(order <- node.order) withColor(Color.blue){ drawTitleStr()(order.toString) }
         }
         else
           withColor(Color.blue){ drawTitleStr()(node.order.mkString) }

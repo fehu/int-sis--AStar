@@ -13,9 +13,7 @@ abstract class AWTVisualizeHistory[T] extends VisualizeHistory[T]{
   protected def graphics = graphicsState.get.orNull
 
   def drawHistory(g: java.awt.Graphics, hs: History[T]*): Unit = {
-    val flatHist = HistoryRecord(hs.zipWithIndex.toList.reverse.flatMap{
-      case (HistoryRecord(asList), i) => asList.map(_.copy[T](runId = i+1))
-    })
+    val flatHist = HistoryRecord(hs.toList.reverse.flatMap(_.toList))
     if (!historyCache.contains(flatHist))  graphicsState.doWith(Some(g)){ drawHistoryPrepare(getHCache(flatHist)) }
     graphicsState.doWith(Some(g)) { drawHistory(flatHist) }
   }

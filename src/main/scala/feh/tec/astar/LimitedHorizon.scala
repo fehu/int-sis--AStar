@@ -86,9 +86,13 @@ object LimitedHorizon{
       self: LimitedHorizon[T] =>
 
       protected val historyInMem = ListBuffer.empty[History[T]]
+      protected var lastRun      = 0
 
       val HistoryManagement: HistoryManagement = new HistoryManagement{
-        def saveHistory(h: History[T]): Unit = synchronized{ historyInMem += h }
+        def saveHistory(h: History[T]): Unit = synchronized{
+          lastRun += 1
+          historyInMem += h.map(_.copy(runId = lastRun))
+        }
         def listHistory = historyInMem.toList
         def clearHistory() = historyInMem.clear()
       }

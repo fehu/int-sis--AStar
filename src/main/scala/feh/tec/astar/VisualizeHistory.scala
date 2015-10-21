@@ -117,11 +117,18 @@ trait VisualizeHistory[T] extends AwtHelper{
         case HistoryEntry(state, children, runId) =>
           val depth = depthOf(state)
           val id = (state, order, runId)
-          acc.getOrElseUpdate(depth, mutable.HashMap(id -> children))
-             .getOrElseUpdate(id, children)
+          val dacc = acc.getOrElseUpdate(depth, mutable.HashMap(id -> children))
+          val x = dacc.getOrElseUpdate(id, children)
+//          println("state = " + state)
+//          println("depth = " + depth)
+//          println("dacc = " + dacc)
+//          println("added " + id)
+          x
       }
 
-    h.get.groupBy(_.runId).values.foreach( _.zipWithIndex foreach (Function uncurried flip(putInAcc)).tupled )
+    val grRI = h.get.groupBy(_.runId)
+//    println("grRI = " + grRI)
+    grRI.values.foreach( _.zipWithIndex foreach (Function uncurried flip(putInAcc)).tupled )
 
     val accOrd = acc.toList.sortBy(_._1)
     val ((root, _, _), _) = accOrd.head.ensuring(_._2.size == 1)._2.head
@@ -133,8 +140,7 @@ trait VisualizeHistory[T] extends AwtHelper{
     def buildHTree(depth: Int, level: mutable.HashMap[(T, Int, Int), Set[T]]): Unit =
       for {
         ((state, order, run), children) <- level
-        parent = parentOf.get(state)
-        node   = nodeOf(state)
+        node = nodeOf(state)
       } {
         node.orderUpd(order)
 
