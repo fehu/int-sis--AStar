@@ -79,12 +79,15 @@ trait A_*[T] {
 
   protected def searchInnerError = SearchInnerReturn.create _ compose Failure.apply compose (AStarException(_: String))
 
-  protected final def decisionLogic: Decide = count => {
+  protected final def caseSolution : Decide = _ => {
     case Some((best, _)) if isSolution(best) => SearchInnerReturn(Success(best))
-    case Some((best, opn))                   => SearchInnerRecCall(best, count + 1, opn)
-    case None                                => searchInnerError("no solution was found in the whole search tree "  ++
-                                                                s"($count nodes were open)"
-                                                                )
+  }
+  
+  protected final def recursion: Decide = count => {
+    case Some((best, opn)) => SearchInnerRecCall(best, count + 1, opn)
+    case None              => searchInnerError("no solution was found in the whole search tree "  ++
+                                              s"($count nodes were open)"
+                                              )
   }
 
   protected def listParents: T => Seq[T]
@@ -106,7 +109,7 @@ trait A_*[T] {
     }
 
     val extracted    = extract(newOpen)
-    val makeDecision = Seq(searchInnerExtraLogic, decisionLogic).map(_(count)).reduceLeft(_ orElse _)
+    val makeDecision = Seq(caseSolution, searchInnerExtraLogic, recursion).map(_(count)).reduceLeft(_ orElse _)
 
     val newHist = HistoryEntry(state, newStates.toSet) :: history
 
@@ -170,6 +173,10 @@ object A_*{
     def init       = new SortedPossibilities(underlying.init)
 
     override def toString() = underlying.toString()
+
+    def transform(f: SortedMap[H, List[T]] => SortedMap[H, List[T]]) = new SortedPossibilities[H, T](f(underlying))
+
+    def size = underlying.size
 
   }
 

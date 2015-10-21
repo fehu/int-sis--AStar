@@ -36,6 +36,17 @@ object SlidingPuzzle_A_*{
     type Heuristic = H
   }
 
+  /** An A* algorithm for [[feh.tec.puzzles.SlidingPuzzle]], maximizing the given heuristic
+    */
+  class MaximizingHeuristic[Piece, H](val heuristic: SlidingPuzzleInstance[Piece] => H)
+                                     (implicit val heuristicOrdering: Ordering[H])
+    extends SlidingPuzzle_A_*[Piece]
+    with A_*.MinimizingHeuristic[SlidingPuzzleInstance[Piece]]
+  {
+    type Heuristic = H
+  }
+
+
   object Heuristics{
 
     object Double{

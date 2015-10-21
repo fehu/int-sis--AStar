@@ -30,3 +30,5 @@
     - [ ] solver (with hardcoded initial)
 
 - [x] examples generation for heuristics testing
+
+- [ ] create generic puzzle solver with LimitedHorizon and BeamSearch
