@@ -7,7 +7,7 @@ import Ordering.Implicits._
 trait BeamSearch[T] {
   self : A_*[T] =>
 
-  def prune: BeamSearch.Pnune[Heuristic, T]
+  def prune: BeamSearch.Prune[Heuristic, T]
 
   override protected def searchInnerExtraLogic: Decide = count => {
     case Some((best, opn)) => SearchInnerRecCall(best, count + 1, prune(opn))
@@ -17,15 +17,17 @@ trait BeamSearch[T] {
 }
 
 object BeamSearch{
-  type Pnune[Heuristic, T] = SortedPossibilities[Heuristic, T] => SortedPossibilities[Heuristic, T]
+  type Prune[Heuristic, T] = SortedPossibilities[Heuristic, T] => SortedPossibilities[Heuristic, T]
+  type PruneTake[Heuristic, T] = Int => Prune[Heuristic, T]
+  type PruneDir[Heuristic, T] = PruneTake[Heuristic, T] => Prune[Heuristic, T]
 
-  def dropAbove[Heuristic: Ordering, T](threshold: Heuristic): Pnune[Heuristic, T] = _.transform(_.filter(_._1 <= threshold))
-  def dropBelow[Heuristic: Ordering, T](threshold: Heuristic): Pnune[Heuristic, T] = _.transform(_.filter(_._1 >= threshold))
+  def dropAbove[Heuristic: Ordering, T](threshold: Heuristic): Prune[Heuristic, T] = _.transform(_.filter(_._1 <= threshold))
+  def dropBelow[Heuristic: Ordering, T](threshold: Heuristic): Prune[Heuristic, T] = _.transform(_.filter(_._1 >= threshold))
 
-  def takeMax[Heuristic, T](c: Int): Pnune[Heuristic, T] = _.transform(_.takeRight(c))
-  def takeMin[Heuristic, T](c: Int): Pnune[Heuristic, T] = _.transform(_.take(c))
+  def takeMax[Heuristic, T](c: Int): Prune[Heuristic, T] = _.transform(_.takeRight(c))
+  def takeMin[Heuristic, T](c: Int): Prune[Heuristic, T] = _.transform(_.take(c))
 
-  def dropPercent[Heuristic, T](takeBest: Int => Pnune[Heuristic, T])(p: InUnitInterval): Pnune[Heuristic, T] = {
+  def takePercent[Heuristic, T](p: InUnitInterval)(takeBest: Int => Prune[Heuristic, T]): Prune[Heuristic, T] = {
     open =>
       val count   = (p * open.size).toInt
       if (count == 0) open

@@ -1,5 +1,6 @@
 package feh.tec.astar
 
+import feh.tec.astar.A_*.MinMaxHeuristic.ExtractTheBest
 import feh.util._
 
 import scala.annotation.tailrec
@@ -180,10 +181,10 @@ object A_*{
 
   }
 
-  protected trait MinMaxHeuristic[T]{
-    self: A_*[T] =>
-
-    def _extractTheBest: (=> SortedPossibilities[Heuristic, T]) => ((Heuristic, List[T])) => (T, SortedPossibilities[Heuristic, T]) =
+  object MinMaxHeuristic{
+    protected[astar] def _extractTheBest[Heuristic, T]: (=> SortedPossibilities[Heuristic, T])
+                                                        => ((Heuristic, List[T]))
+                                                        => (T, SortedPossibilities[Heuristic, T]) =
       open => {
         case (h, best :: Nil) => best -> open.remove(h)
         case (h, best) =>
@@ -191,18 +192,31 @@ object A_*{
           val newOpen = open.replace(h, rest.toList)
           chosen -> newOpen
       }
+
+    type ExtractTheBest[H, T] = SortedPossibilities[H, T] => Option[(T, SortedPossibilities[H, T])]
   }
 
-  trait MinimizingHeuristic[T] extends MinMaxHeuristic[T]{
+  trait MinimizingHeuristic[T]{
     self: A_*[T] =>
 
-    protected def extractTheBest(open: SortedPossibilities[Heuristic, T]) = open.headOption.map{ _extractTheBest(open.tail) }
+    protected def extractTheBest(open: SortedPossibilities[Heuristic, T]) = MinimizingHeuristic.extractTheBest(open)
   }
 
-  trait MaximizingHeuristic[T] extends MinMaxHeuristic[T]{
+  object MinimizingHeuristic{
+    def extractTheBest[H, T]: ExtractTheBest[H, T] =
+      open => open.headOption.map{ MinMaxHeuristic._extractTheBest(open.tail) }
+  }
+
+
+  trait MaximizingHeuristic[T] {
     self: A_*[T] =>
 
-    protected def extractTheBest(open: SortedPossibilities[Heuristic, T]) = open.lastOption.map{ _extractTheBest(open.init) }
+    protected def extractTheBest(open: SortedPossibilities[Heuristic, T]) = MaximizingHeuristic.extractTheBest(open)
+  }
+
+  object MaximizingHeuristic{
+    def extractTheBest[H, T]: ExtractTheBest[H, T] =
+      open => open.lastOption.map{ MinMaxHeuristic._extractTheBest(open.init) }
   }
 
 }

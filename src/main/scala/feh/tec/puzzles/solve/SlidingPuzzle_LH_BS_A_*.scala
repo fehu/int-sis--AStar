@@ -1,12 +1,14 @@
 package feh.tec.puzzles.solve
 
 import SlidingPuzzle_LH_BS_A_*._
-import feh.tec.astar.A_*.SortedPossibilities
-import feh.tec.astar.BeamSearch.Pnune
+import akka.actor.ActorRefFactory
+import feh.tec.astar.A_*.{MaximizingHeuristic, MinimizingHeuristic, SortedPossibilities}
+import feh.tec.astar.BeamSearch.{PruneTake, PruneDir, Prune}
 import feh.tec.astar.{History, BeamSearch, LimitedHorizon}
 import feh.tec.puzzles.SlidingPuzzleInstance
 import feh.util.RecFunc
 
+import scala.concurrent.duration.FiniteDuration
 import scala.util.Try
 
 /**
@@ -14,14 +16,13 @@ import scala.util.Try
  * with [[feh.tec.astar.LimitedHorizon]] and [[feh.tec.astar.BeamSearch]].
  */
 
-class SlidingPuzzle_Mutable_LH_BS_A_*[H, Piece]( var searchDir        : SearchDirection
-                                               , var heuristic        : SlidingPuzzleInstance[Piece] => H
+abstract class SlidingPuzzle_Mutable_LH_BS_A_*[H, Piece] protected[solve] (
+                                                 var heuristic        : SlidingPuzzleInstance[Piece] => H
                                                , var maxDepth         : Int
-                                               , var prune            : Pnune[H, SlidingPuzzleInstance[Piece]]
+                                               , var pruneDir         : PruneDir[H, SlidingPuzzleInstance[Piece]]
+                                               , var pruneTake        : PruneTake[H, SlidingPuzzleInstance[Piece]]
                                                , var selectTheBest    : SelectTheBest[H, Piece]
                                                , var extractTheBestVar: ExtractTheBest[H, Piece]
-                                               , var execSearchLimHor : ExecSearchLimHor[Piece]
-                                               , var onPartialSolution: HandlePartialSolution[Piece]
                                                )
                                        (implicit val heuristicOrdering: Ordering[H])
   extends SlidingPuzzle_A_*[Piece]
@@ -33,11 +34,7 @@ class SlidingPuzzle_Mutable_LH_BS_A_*[H, Piece]( var searchDir        : SearchDi
 
   protected def extractTheBest(open: SortedPossibilities[H, SlidingPuzzleInstance[Piece]]) = extractTheBestVar(open)
 
-  protected def execSearchLH(f: RecFunc[SlidingPuzzleInstance[Piece], Result])
-                            (state: SlidingPuzzleInstance[Piece]) = execSearchLimHor(f)(state)
-
-  def handlePartialSolution(ps: PartialSolution)  = onPartialSolution(ps)
-
+  def prune: Prune[H, SlidingPuzzleInstance[Piece]] = pruneDir(pruneTake)
 
   private var _isRunning = false
   def isRunning = synchronized( _isRunning )
@@ -71,4 +68,84 @@ object SlidingPuzzle_LH_BS_A_*{
                               => Result[Piece]
   type HandlePartialSolution[Piece] = LimitedHorizon[SlidingPuzzleInstance[Piece]]#PartialSolution
                                    => RecFunc.Res[SlidingPuzzleInstance[Piece], Result[Piece]]
+
+  class MutableContainer[H, Piece](protected val underlying: SlidingPuzzle_Mutable_LH_BS_A_*[H, Piece]){
+    def affect[R](f: SlidingPuzzle_Mutable_LH_BS_A_*[H, Piece] => R): Option[R] =
+      if (underlying.isRunning) None
+      else Some(f(underlying))
+  }
+  
+
+  case class MutableSolverConstructor[H: Ordering, Piece]( heuristic      : SlidingPuzzleInstance[Piece] => H
+                                                         , searchDir      : SearchDirection
+                                                         , maxDepth       : Int
+                                                         , searchDirConfig: SearchDirConfig[H, Piece]
+                                                         , pruneDir       : PruneDir[H, SlidingPuzzleInstance[Piece]]
+                                                         )
+  {
+    private lazy val setup = searchDirConfig.setup(searchDir)
+    def pruneTake      = setup.pruneTake
+    def selectTheBest  = setup.selectTheBest
+    def extractTheBest = setup.extractTheBest
+
+    def sequential: MutableContainer[H, Piece] =
+      new MutableContainer[H, Piece](
+        new SlidingPuzzle_Mutable_LH_BS_A_*[H, Piece](heuristic, maxDepth, pruneDir, pruneTake, selectTheBest, extractTheBest)
+          with LimitedHorizon.Sequential[SlidingPuzzleInstance[Piece]]
+      )
+
+    def parallel(maxExecutionTime: FiniteDuration, executorPool: Int)
+                (implicit actorFactory: ActorRefFactory): MutableContainer[H, Piece] =
+      new MutableContainer[H, Piece](
+        new SlidingPuzzle_Mutable_LH_BS_A_*[H, Piece](heuristic, maxDepth, pruneDir, pruneTake, selectTheBest, extractTheBest)
+          with LimitedHorizon.Parallel[SlidingPuzzleInstance[Piece]]
+        {
+          protected def aFactory = actorFactory
+
+          def maxExecTime = maxExecutionTime
+          def executorPoolSize = executorPool
+        }
+      )
+  }
+
+  case class SearchDirSetup[H, Piece]( extractTheBest: ExtractTheBest[H, Piece]
+                                     , selectTheBest : SelectTheBest[H, Piece]
+                                     , pruneTake     : PruneTake[H, SlidingPuzzleInstance[Piece]]
+                                     )
+  case class SearchDirConfig[H, Piece](setup: Map[SearchDirection, SearchDirSetup[H, Piece]])
+
+
+  def defaultMinimizingSetup[H, Piece](selectBest: SelectTheBest[H, Piece]) = SearchDirSetup[H, Piece](
+    extractTheBest = MinimizingHeuristic.extractTheBest,
+    selectTheBest  = selectBest,
+    pruneTake      = BeamSearch.takeMin
+  )
+
+  def defaultMaximizingSetup[H, Piece](selectBest: SelectTheBest[H, Piece]) = SearchDirSetup[H, Piece](
+    extractTheBest = MaximizingHeuristic.extractTheBest,
+    selectTheBest  = selectBest,
+    pruneTake      = BeamSearch.takeMax
+  )
+
+  def defaultDirConfig[H, Piece](selectBestMax: SelectTheBest[H, Piece], selectBestMin: SelectTheBest[H, Piece]) =
+    SearchDirConfig(
+      Map(
+        SearchDirection.Min -> defaultMinimizingSetup(selectBestMin),
+        SearchDirection.Max -> defaultMaximizingSetup(selectBestMax)
+      )
+    )
+
+
+
+
+  def setSearchDir[H, Piece](searchDir: SearchDirection, mutableSolver: SlidingPuzzle_Mutable_LH_BS_A_*[H, Piece])
+                            (implicit cfg: SearchDirConfig[H, Piece]): mutableSolver.type = {
+    val setup = cfg.setup(searchDir)
+    mutableSolver.extractTheBestVar = setup.extractTheBest
+    mutableSolver.selectTheBest = setup.selectTheBest
+    mutableSolver.pruneTake = setup.pruneTake
+    mutableSolver
+  }
+
+
 }
