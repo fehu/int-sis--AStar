@@ -26,6 +26,8 @@ libraryDependencies ++= List(
 
 libraryDependencies += "org.scala-lang" % "scala-swing" % "2.11.0-M7"
 
+libraryDependencies += "feh.dsl" %% "swing" % "1.4-SNAPSHOT"
+
 // Scaladoc Options
 
 scalacOptions in (Compile, doc) ++= Seq("-diagrams", "-diagrams-max-classes", "50", "-diagrams-max-implicits", "20")

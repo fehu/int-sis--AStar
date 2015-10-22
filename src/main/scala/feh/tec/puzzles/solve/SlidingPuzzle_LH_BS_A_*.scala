@@ -73,6 +73,13 @@ object SlidingPuzzle_LH_BS_A_*{
     def affect[R](f: SlidingPuzzle_Mutable_LH_BS_A_*[H, Piece] => R): Option[R] =
       if (underlying.isRunning) None
       else Some(f(underlying))
+
+    def heuristic = underlying.heuristic
+    def maxDepth  = underlying.maxDepth
+    def pruneDir  = underlying.pruneDir
+    def pruneTake = underlying.pruneTake
+    def selectTheBest     = underlying.selectTheBest
+    def extractTheBestVar = underlying.extractTheBestVar
   }
   
 
