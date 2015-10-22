@@ -50,6 +50,8 @@ abstract class SlidingPuzzle_Mutable_LH_BS_A_*[H, Piece] protected[solve] (
   override def search(initial: SlidingPuzzleInstance[Piece]): Result =
     if (isRunning) sys.error("already running, use another instance")
     else super.search(initial)
+
+  def execType: String
 }
 
 
@@ -80,6 +82,8 @@ object SlidingPuzzle_LH_BS_A_*{
     def pruneTake = underlying.pruneTake
     def selectTheBest     = underlying.selectTheBest
     def extractTheBestVar = underlying.extractTheBestVar
+
+    def execType = underlying.execType
   }
   
 
@@ -99,6 +103,9 @@ object SlidingPuzzle_LH_BS_A_*{
       new MutableContainer[H, Piece](
         new SlidingPuzzle_Mutable_LH_BS_A_*[H, Piece](heuristic, maxDepth, pruneDir, pruneTake, selectTheBest, extractTheBest)
           with LimitedHorizon.Sequential[SlidingPuzzleInstance[Piece]]
+        {
+          def execType = "Seq"
+        }
       )
 
     def parallel(maxExecutionTime: FiniteDuration, executorPool: Int)
@@ -111,6 +118,8 @@ object SlidingPuzzle_LH_BS_A_*{
 
           def maxExecTime = maxExecutionTime
           def executorPoolSize = executorPool
+
+          def execType = "Par"
         }
       )
   }

@@ -26,7 +26,7 @@ libraryDependencies ++= List(
 
 libraryDependencies += "org.scala-lang" % "scala-swing" % "2.11.0-M7"
 
-libraryDependencies += "feh.dsl" %% "swing" % "1.4-SNAPSHOT"
+libraryDependencies += "feh.dsl" %% "swing" % "1.5-SNAPSHOT"
 
 // Scaladoc Options
 

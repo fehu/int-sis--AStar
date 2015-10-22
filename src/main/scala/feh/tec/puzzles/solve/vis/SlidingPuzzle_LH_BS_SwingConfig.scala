@@ -1,8 +1,11 @@
 package feh.tec.puzzles.solve.vis
 
-import javax.swing.SpinnerNumberModel
+import java.awt.Color
+import javax.swing.{ListSelectionModel, SpinnerNumberModel}
 
+import akka.actor.ActorSystem
 import feh.dsl.swing.FormCreation.DSL
+import feh.dsl.swing2.{Var, Control}
 import feh.tec.astar.A_*.SortedPossibilities
 import feh.tec.astar.BeamSearch
 import feh.tec.puzzles.SlidingPuzzleInstance
@@ -10,32 +13,113 @@ import feh.tec.puzzles.solve.SlidingPuzzle_LH_BS_A_*
 import feh.tec.puzzles.solve.SlidingPuzzle_LH_BS_A_*._
 import feh.tec.puzzles.solve.run.Solver
 import feh.tec.puzzles.solve.vis.SlidingPuzzle_LH_BS_Solver_SwingConfig.Heuristic
-import feh.util.InUnitInterval
+import feh.util._
 
-import scala.swing.{Frame, GridPanel, Label}
+import scala.concurrent.duration.DurationInt
+import scala.swing.GridBagPanel.{Anchor, Fill}
+import scala.swing.event.ListSelectionChanged
+import scala.swing._
+import scala.swing.Swing._
 import scala.util.Try
 
 
-class SlidingPuzzle_LH_BS_SwingConfig {
-  
-  type H = Double
-  
-  object Solver{
-//    val current = new ScopedState[MutableContainer[H, Int]]()
-    
-    protected lazy val builder = MutableSolverConstructor[Double, Int](
-      ???, ???, ???, ???, ???
+class SlidingPuzzle_LH_BS_SwingConfig(heuristics: Seq[Heuristic], builder: MutableSolverConstructor[Double, Int])
+  extends GridBagPanel
+{
+
+  case class SPair (mc: MutableContainer[Double, Int], cfg: SlidingPuzzle_LH_BS_Solver_SwingConfig){
+    override def toString = "A* LH BS " + mc.execType
+  }
+
+  val solvers = Var[List[SPair]](Nil)
+
+  val currentSolver = Var[Option[SPair]](None)
+
+  lazy val solversList = Control
+    .custom[List[SPair], ListView[SPair]](
+      solvers,
+      new ListView[SPair](){ peer.setSelectionMode(ListSelectionModel.SINGLE_SELECTION) },
+      initial = _ => {},
+      onVarChange = lv => lv.listData = _,
+      listenToUserChange = {
+        lv =>
+          lv.reactions += { case ListSelectionChanged(_, _, _) => currentSolver set lv.selection.items.headOption }
+          lv.listenTo(lv.selection)
+        }
     )
-    
-    lazy val seq = builder.sequential
-//    def par = builder.parallel _
+
+  lazy val createSolverPanel = new SlidingPuzzle_LH_BS_Solver_Create(builder, register)
+
+  lazy val configPanel = new GridPanel(1, 1)
+  lazy val controlPanel = new GridPanel(1, 1)
+
+  layout += configPanel -> (new Constraints $${
+    c =>
+      c.grid = 0 -> 0
+      c.weightx = 0.8
+      c.fill = Fill.None
+      c.anchor = Anchor.NorthEast
+      c.insets = new Insets(10, 5, 5, 10)
+  })
+
+  layout += controlPanel -> (new Constraints $${
+    c =>
+      c.grid = 0 -> 1
+      c.fill = Fill.Horizontal
+  })
+
+  layout += solversList.component -> (new Constraints $${
+    c =>
+      c.grid = 1 -> 0
+      c.weightx = 0
+      c.weighty = 1
+      c.fill = Fill.Both
+  })
+
+  layout += createSolverPanel -> (new Constraints $${
+    c =>
+      c.grid = 1 -> 1
+      c.weighty = 0
+      c.fill = Fill.Horizontal
+  })
+
+  currentSolver.onChange{
+    case Some(SPair(_, cfg)) =>
+      configPanel.contents.clear()
+      configPanel.contents += cfg
+      configPanel.revalidate()
+      configPanel.repaint()
+    case _ =>
   }
-  
-  
-  object ConfigCommon{
-    
+
+  def register(mc: MutableContainer[Double, Int]): Unit = {
+    solvers.affect(_ :+ SPair(mc, new SlidingPuzzle_LH_BS_Solver_SwingConfig(mc, heuristics)))
   }
-  
+}
+
+class SlidingPuzzle_LH_BS_Solver_Create( builder: MutableSolverConstructor[Double, Int]
+                                       , register: MutableContainer[Double, Int] => Unit
+                                       )
+  extends GridPanel(1, 2)
+{
+
+  implicit lazy val asys = ActorSystem.create("SlidingPuzzle_LH_BS_Solver")
+
+  var execTime = 1.second
+  var execPool = 4
+
+  lazy val createSeqButton = DSL
+    .triggerFor{ register(builder.sequential) }
+    .button("Sequential")
+
+  lazy val createParButton = DSL
+    .triggerFor{ register(builder.parallel(execTime, execPool)) }
+    .button("Parallel")
+
+  contents ++= Seq(createSeqButton, createParButton).map(_.component)
+
+  border = TitledBorder(BeveledBorder(Lowered), "New Solver")
+
 }
 
 class SlidingPuzzle_LH_BS_Solver_SwingConfig( val solver: MutableContainer[Double, Int]
@@ -116,6 +200,8 @@ class SlidingPuzzle_LH_BS_Solver_SwingConfig( val solver: MutableContainer[Doubl
   }
 
   controlls.foreach(_.formMeta.form.updateForm())
+
+  border = TitledBorder(LineBorder(Color.gray.darker()), "Configure")
 }
 
 object SlidingPuzzle_LH_BS_Solver_SwingConfig{
@@ -135,10 +221,9 @@ object SwingConfigTst extends App{
     pruneDir = BeamSearch.takePercent[Double, SlidingPuzzleInstance[Int]](1)
   )
 
-  val solverC = builder.sequential
-
   val frame = new Frame{
-    contents = new SlidingPuzzle_LH_BS_Solver_SwingConfig(solverC, Nil)
+    contents = new SlidingPuzzle_LH_BS_SwingConfig(Nil, builder)
+    size = 600 -> 400
   }
 
   frame.open()
