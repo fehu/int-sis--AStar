@@ -2,7 +2,7 @@ organization := "feh.tec"
 
 name := "A*"
 
-version := "0.4"
+version := "0.5-SNAPSHOT"
 
 scalaVersion := "2.11.7"
 
@@ -23,6 +23,8 @@ libraryDependencies ++= List(
   "org.specs2" %% "specs2-html",
   "org.specs2" %% "specs2-scalacheck"
 ).map(_ % "3.6.4" % "test")
+
+libraryDependencies += "org.scala-lang" % "scala-swing" % "2.11.0-M7"
 
 // Scaladoc Options
 
