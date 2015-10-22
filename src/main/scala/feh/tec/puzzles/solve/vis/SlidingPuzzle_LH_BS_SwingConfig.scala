@@ -5,9 +5,10 @@ import javax.swing.{ListSelectionModel, SpinnerNumberModel}
 
 import akka.actor.ActorSystem
 import feh.dsl.swing.FormCreation.DSL
+import feh.dsl.swing2.ComponentExt.ComponentWrapper
 import feh.dsl.swing2.{Var, Control}
 import feh.tec.astar.A_*.SortedPossibilities
-import feh.tec.astar.BeamSearch
+import feh.tec.astar.{History, BeamSearch}
 import feh.tec.puzzles.SlidingPuzzleInstance
 import feh.tec.puzzles.solve.SlidingPuzzle_LH_BS_A_*
 import feh.tec.puzzles.solve.SlidingPuzzle_LH_BS_A_*._
@@ -23,9 +24,23 @@ import scala.swing.Swing._
 import scala.util.Try
 
 
-class SlidingPuzzle_LH_BS_SwingConfig(heuristics: Seq[Heuristic], builder: MutableSolverConstructor[Double, Int])
+class SlidingPuzzle_LH_BS_SwingConfig( heuristics: Seq[Heuristic]
+                                     , builder: MutableSolverConstructor[Double, Int]
+                                     , extraPanel: Panel
+                                     , solve: => Result[Int]
+                                     , showTree: History[SlidingPuzzleInstance[Int]] => Unit
+                                      )
   extends GridBagPanel
 {
+
+//  def foreachComponent(f: Component => Unit) = {
+//    f(solversList.component)
+//    createSolverPanel.components.foreach(f apply _.component)
+//
+//  }
+
+  def lockAll(): Unit = { /* TODO */ }
+  def unlockAll(): Unit = { /* TODO */ }
 
   case class SPair (mc: MutableContainer[Double, Int], cfg: SlidingPuzzle_LH_BS_Solver_SwingConfig){
     override def toString = "A* LH BS " + mc.execType
@@ -51,7 +66,7 @@ class SlidingPuzzle_LH_BS_SwingConfig(heuristics: Seq[Heuristic], builder: Mutab
   lazy val createSolverPanel = new SlidingPuzzle_LH_BS_Solver_Create(builder, register)
 
   lazy val configPanel = new GridPanel(1, 1)
-  lazy val controlPanel = new GridPanel(1, 1)
+  lazy val controlPanel = new SlidingPuzzle_LH_BS_Solver_Control(solve, showTree, lockAll(), unlockAll())
 
   layout += configPanel -> (new Constraints $${
     c =>
@@ -62,9 +77,15 @@ class SlidingPuzzle_LH_BS_SwingConfig(heuristics: Seq[Heuristic], builder: Mutab
       c.insets = new Insets(10, 5, 5, 10)
   })
 
-  layout += controlPanel -> (new Constraints $${
+  layout += extraPanel -> (new Constraints $${
     c =>
       c.grid = 0 -> 1
+      c.fill = Fill.Horizontal
+  })
+
+  layout += controlPanel -> (new Constraints $${
+    c =>
+      c.grid = 0 -> 2
       c.fill = Fill.Horizontal
   })
 
@@ -73,12 +94,13 @@ class SlidingPuzzle_LH_BS_SwingConfig(heuristics: Seq[Heuristic], builder: Mutab
       c.grid = 1 -> 0
       c.weightx = 0
       c.weighty = 1
+      c.gridheight = 2
       c.fill = Fill.Both
   })
 
   layout += createSolverPanel -> (new Constraints $${
     c =>
-      c.grid = 1 -> 1
+      c.grid = 1 -> 2
       c.weighty = 0
       c.fill = Fill.Horizontal
   })
@@ -95,6 +117,40 @@ class SlidingPuzzle_LH_BS_SwingConfig(heuristics: Seq[Heuristic], builder: Mutab
   def register(mc: MutableContainer[Double, Int]): Unit = {
     solvers.affect(_ :+ SPair(mc, new SlidingPuzzle_LH_BS_Solver_SwingConfig(mc, heuristics)))
   }
+}
+
+
+class SlidingPuzzle_LH_BS_Solver_Control( solve: => Result[Int]
+                                        , showTree: History[SlidingPuzzleInstance[Int]] => Unit
+                                        , lockAll: => Unit
+                                        , unlockAll: => Unit)
+  extends GridPanel(1, 3)
+{
+
+  var lastResult: Option[Result[Int]] = None
+  var status = ""
+
+
+  lazy val solveButton = DSL
+    .triggerFor{
+      lockAll
+      lastResult = Option(solve)
+      status = lastResult.map(_._1 map(_ => "Success") getOrElse "Failure") getOrElse ""
+      unlockAll
+      statusLabel.form.updateForm()
+    }
+    .button("Solve")
+
+  lazy val statusLabel = DSL
+    .monitorFor(status)
+    .textField
+
+  lazy val showTreeButton = DSL
+    .triggerFor( lastResult foreach (showTree apply _._2) )
+    .button("Show Tree")
+
+  contents ++= Seq(solveButton, statusLabel, showTreeButton)
+
 }
 
 class SlidingPuzzle_LH_BS_Solver_Create( builder: MutableSolverConstructor[Double, Int]
@@ -116,7 +172,9 @@ class SlidingPuzzle_LH_BS_Solver_Create( builder: MutableSolverConstructor[Doubl
     .triggerFor{ register(builder.parallel(execTime, execPool)) }
     .button("Parallel")
 
-  contents ++= Seq(createSeqButton, createParButton).map(_.component)
+  def components = Seq(createSeqButton, createParButton)
+
+  contents ++= components.map(_.component)
 
   border = TitledBorder(BeveledBorder(Lowered), "New Solver")
 
@@ -222,7 +280,7 @@ object SwingConfigTst extends App{
   )
 
   val frame = new Frame{
-    contents = new SlidingPuzzle_LH_BS_SwingConfig(Nil, builder)
+    contents = new SlidingPuzzle_LH_BS_SwingConfig(Nil, builder, new Panel {}, null, _ => {})
     size = 600 -> 400
   }
 
