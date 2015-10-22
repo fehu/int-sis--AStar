@@ -24,7 +24,7 @@ libraryDependencies ++= List(
   "org.specs2" %% "specs2-scalacheck"
 ).map(_ % "3.6.4" % "test")
 
-libraryDependencies += "org.scala-lang" % "scala-swing" % "2.11.0-M7"
+libraryDependencies += "org.scala-lang.modules" %% "scala-swing" % "2.0.0-M2"
 
 libraryDependencies += "feh.dsl" %% "swing" % "1.5-SNAPSHOT"
 
