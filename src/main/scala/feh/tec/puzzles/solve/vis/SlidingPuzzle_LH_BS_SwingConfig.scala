@@ -246,18 +246,18 @@ class SlidingPuzzle_LH_BS_Solver_SwingConfig( val solver: MutableContainer[Doubl
     )
     .textForm(verifyInUnitInterval)
 
-  def controlls = Seq(heuristicCtrl, searchDirCtrl, maxDepthCtrl, pruneTakePercentCtrl, bestFracThresholdCtrl)
+  def controls = Seq(heuristicCtrl, searchDirCtrl, maxDepthCtrl, pruneTakePercentCtrl, bestFracThresholdCtrl)
 
   def labels = Seq("heuristic", "search dir", "max depth", "prune %", "LH best %")
 
   for {
-    (c, l) <- controlls zip labels
+    (c, l) <- controls zip labels
   } {
     contents += new Label(l)
     contents += c.component
   }
 
-  controlls.foreach(_.formMeta.form.updateForm())
+  controls.foreach(_.formMeta.form.updateForm())
 
   border = TitledBorder(LineBorder(Color.gray.darker()), "Configure")
 }
