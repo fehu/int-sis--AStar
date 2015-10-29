@@ -338,6 +338,8 @@ object SwingConfigTst extends App{
   val frame = new Frame{
     contents = solverChooser
     size = 600 -> 400
+
+    override def closeOperation(): Unit = sys.exit()
   }
 
   frame.open()

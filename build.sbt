@@ -2,10 +2,12 @@ organization := "feh.tec"
 
 name := "A*"
 
-version := "0.5-SNAPSHOT"
+version := "0.5"
 
 scalaVersion := "2.11.7"
 
+
+mainClass in (Compile, run) := Some("feh.tec.puzzles.solve.vis.SwingConfigTst")
 
 // Library Dependencies
 

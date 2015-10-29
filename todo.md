@@ -31,4 +31,13 @@
 
 - [x] examples generation for heuristics testing
 
-- [ ] create generic puzzle solver with LimitedHorizon and BeamSearch
+- [x] create generic puzzle solver with LimitedHorizon and BeamSearch
+
+#### GUI
+
+- [ ] update config when a solver is chosen
+- [ ] block buttons until a solver is chosen
+- [ ] show status
+- [ ] block interface duting execution
+- [ ] fix layout
+- [ ] show solution (out of the tree)
