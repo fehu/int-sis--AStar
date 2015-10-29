@@ -178,36 +178,3 @@ object Solver{
 
   }
 }
-
-
-
-import feh.tec.puzzles.solve.run.SlidingPuzzleExamples._
-
-
-
-object SlidingPuzzle_Example1_H01 extends App{
-  Example1.withSolver(Solver._01).run(exitOnClose = true)
-}
-
-object SlidingPuzzle_Example1_H02 extends App{
-  Example1.withSolver(Solver._02).run(exitOnClose = true)
-}
-
-object SlidingPuzzle_Example1_H03 extends App{
-  Example1.withSolver(Solver._03).run(exitOnClose = true)
-}
-
-
-
-
-object SlidingPuzzle_Example2_H02 extends App{
-  Example2.withSolver(Solver._02).run(exitOnClose = true)
-}
-
-object SlidingPuzzle_Example2_H03 extends App{
-  Example2.withSolver(Solver._03).run(exitOnClose = true)
-}
-
-object SlidingPuzzle_Example3_H03 extends App{
-  Example3.withSolver(Solver._03).run(exitOnClose = true)
-}
