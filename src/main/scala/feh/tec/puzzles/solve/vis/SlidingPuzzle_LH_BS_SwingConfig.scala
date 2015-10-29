@@ -104,7 +104,7 @@ class SlidingPuzzle_LH_BS_SwingConfig( builder: MutableSolverConstructor[Double,
   layout += extraPanel -> (new Constraints $${
     c =>
       c.grid = 1 -> 1
-      c.fill = Fill.Horizontal
+      c.fill = Fill.None
   })
 
   layout += controlPanel -> (new Constraints $${

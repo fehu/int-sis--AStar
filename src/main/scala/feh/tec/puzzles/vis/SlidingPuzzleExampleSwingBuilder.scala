@@ -2,13 +2,14 @@ package feh.tec.puzzles.vis
 
 import java.awt.Color
 
+import feh.dsl.swing.FormCreation.DSL
 import feh.tec.puzzles.SlidingPuzzle.GenericSlidingPuzzleInstance
 import feh.tec.puzzles.{SlidingPuzzle, SlidingPuzzleInstance}
 
 import scala.collection.mutable
 import scala.swing.Swing._
-import scala.swing.event.MouseClicked
 import scala.swing._
+import scala.swing.event.MouseClicked
 
 class SlidingPuzzleExampleSwingBuilder( val boardSize: (Int, Int)
                                       , val cellSize: (Int, Int)
@@ -19,16 +20,14 @@ class SlidingPuzzleExampleSwingBuilder( val boardSize: (Int, Int)
   lazy val initialInstBuilder  = new SlidingPuzzleInstanceSwingBuilder(boardSize, cellSize, "Initial")
   lazy val solutionInstBuilder = new SlidingPuzzleInstanceSwingBuilder(boardSize, cellSize, "Solution")
 
-  contents += HGlue
   contents += initialInstBuilder
-  contents += HGlue
+  contents += HStrut(20)
   contents += solutionInstBuilder
-  contents += HGlue
 }
 
 
 class SlidingPuzzleInstanceSwingBuilder(boardSize: (Int, Int), cellSize: (Int, Int), instLabel: String)
-  extends GridPanel(boardSize._1, boardSize._2)
+  extends BoxPanel(Orientation.Vertical)
 {
 
   class Cell(val label: Option[Int], var position: (Int, Int)) extends GridPanel(1, 1){
@@ -58,7 +57,7 @@ class SlidingPuzzleInstanceSwingBuilder(boardSize: (Int, Int), cellSize: (Int, I
     c1.position = c2.position
     c2.position = p1
     putInGrid(c1, c2)
-    resetContent()
+    updateContent()
     revalidate()
     repaint()
   }
@@ -89,10 +88,15 @@ class SlidingPuzzleInstanceSwingBuilder(boardSize: (Int, Int), cellSize: (Int, I
 
 
   def putInGrid(cell: Cell*): Unit = grid ++= cell.map(c => c.position -> c)
-  def setContent() = contents ++= grid.toList.sortBy(_._1).map(_._2)
-  def resetContent() = {
-    contents.clear()
+  def setContent() = gPanel ++= grid.toList.sortBy(_._1).map(_._2)
+  def updateContent() = {
+    gPanel.clear()
     setContent()
+  }
+  def resetContent() = {
+    grid.clear()
+    grid ++= defaultGrid
+    updateContent()
   }
 
   def listRows[R](f: Cell => R): List[List[R]] =
@@ -101,21 +105,31 @@ class SlidingPuzzleInstanceSwingBuilder(boardSize: (Int, Int), cellSize: (Int, I
       .toList.sortBy(_._1)
       .map(_._2.toList.sortBy(_._1._2).map(f apply _._2))
 
-  protected val grid = mutable.HashMap((
-    for {
-      x <- 1 to boardSize._2
-      y <- 1 to boardSize._1
-      label = y + boardSize._1 * (x-1)
-    } yield (x, y) -> new Cell(if (label == boardSize._1*boardSize._2) None else Some(label), x -> y)
-    ): _*)
+  protected def defaultGrid = for {
+    x <- 1 to boardSize._2
+    y <- 1 to boardSize._1
+    label = y + boardSize._1 * (x-1)
+  } yield (x, y) -> new Cell(if (label == boardSize._1*boardSize._2) None else Some(label), x -> y)
 
-    setContent()
 
-//  val panel = new GridPanel(boardSize._1, boardSize._2){
+  protected val grid = mutable.HashMap(defaultGrid: _*)
+
+  setContent()
+
+  protected lazy val gPanel = new GridPanel(boardSize._1, boardSize._2){
+    def ++= = contents.++= _
+    def clear() = contents.clear()
+
 //    contents ++= grid.toList.sortBy(_._1).map(_._2)
-//  }
 
-  border = TitledBorder(BeveledBorder(Lowered), instLabel)
+    border = TitledBorder(BeveledBorder(Lowered), instLabel)
+  }
+
+  lazy val resetButton = DSL
+    .triggerFor{resetContent(); gPanel.revalidate(); gPanel.repaint()}
+    .button("Reset")
+
+  contents ++= Seq(gPanel, resetButton)
 
 
   def toInstance: SlidingPuzzle[Int] => SlidingPuzzleInstance[Int] =
