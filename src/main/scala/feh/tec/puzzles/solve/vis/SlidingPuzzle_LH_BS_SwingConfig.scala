@@ -143,22 +143,29 @@ class SlidingPuzzle_LH_BS_Solver_Control( solve: => Result[Int]
 {
 
   var lastResult: Option[Result[Int]] = None
-  var status = ""
 
 
   lazy val solveButton = DSL
     .triggerFor{
       lockAll
-      lastResult = Option(solve)
-      status = lastResult.map(_._1 map(_ => "Success") getOrElse "Failure") getOrElse ""
+      setStatus("Working ...")
+      println("Working ...")
+      val res = solve
+      lastResult = Option(res)
+      setStatus(res._1 map(_ => "Success") getOrElse "")
+      res._1.failed.foreach(ex => Dialog.showMessage(null, ex.getMessage, "ERROR", Dialog.Message.Error))
       unlockAll
-      statusLabel.form.updateForm()
     }
     .button("Solve")
 
-  lazy val statusLabel = DSL
-    .monitorFor(status)
-    .textField
+  def setStatus(s: String) = {
+    statusLabel.text = s
+    statusLabel.horizontalAlignment = Alignment.Center
+  }
+
+  lazy val statusLabel = new TextField(){
+    editable = false
+  }
 
   lazy val showTreeButton = DSL
     .triggerFor( lastResult foreach (showTree apply _._2) )
@@ -202,33 +209,20 @@ class SlidingPuzzle_LH_BS_Solver_SwingConfig( val solver: MutableContainer[Doubl
   
   implicit var cfg = mkCfg
 
-  var bestFracThreshold: InUnitInterval = 1
-  var pruneTakePercent: InUnitInterval = 1
+  var pruneDeepSearchTakePercent: InUnitInterval = 1
+  var pruneTakePercent: InUnitInterval = 0
 
-  solver.affect(SlidingPuzzle_LH_BS_A_*.setSearchDir(SearchDirection.Max, _)) // TODO: HARDCODE !!!!
+  solver.affect(SlidingPuzzle_LH_BS_A_*.setSearchDir(SearchDirection.Min, _)) // TODO: HARDCODE !!!!
 
 
-  def mkCfg = SlidingPuzzle_LH_BS_A_*.defaultDirConfig(selectTheBest(_ >= _), selectTheBest(_ <= _))
+  def mkCfg = SlidingPuzzle_LH_BS_A_*.defaultDirConfig(SlidingPuzzle_LH_BS_Solver_SwingConfig.selectTheBest(pruneDeepSearchTakePercent))
 
   def pruneDir = BeamSearch.takePercent[Double, SlidingPuzzleInstance[Int]] _
-
-  def selectTheBest(compare: (Double, Double) => Boolean): SortedPossibilities[Double, SlidingPuzzleInstance[Int]]
-                                                        => Map[Double, Set[SlidingPuzzleInstance[Int]]] =
-  {
-    sps =>
-      val bestH = sps.head._1
-      val threshold = bestH * bestFracThreshold
-      sps.underlying.filterKeys(compare(_, threshold)).toMap.mapValues(_.toSet)
-  }
 
   implicit def str2UnitInterval: String => InUnitInterval =
     s => InUnitInterval(java.lang.Double.parseDouble(s))
 
-  def verifyInUnitInterval: String => Boolean = {
-    s =>
-      println("verifyInUnitInterval")
-      Try(str2UnitInterval(s)).isSuccess
-  }
+  def verifyInUnitInterval: String => Boolean = s => Try(str2UnitInterval(s)).isSuccess
 
 
   lazy val heuristicCtrl = DSL
@@ -246,24 +240,24 @@ class SlidingPuzzle_LH_BS_Solver_SwingConfig( val solver: MutableContainer[Doubl
     .controlForNumeric(solver.maxDepth)(d => solver.affect(_.maxDepth = d))
     .spinner(new SpinnerNumberModel(solver.maxDepth, 1, Int.MaxValue, 1))
 
-  lazy val pruneTakePercentCtrl = DSL
+  lazy val prunePercentCtrl = DSL
     .controlForNumeric(pruneTakePercent)(
       p => {
-        pruneTakePercent = p
-        solver.affect(_.pruneDir = pruneDir(p))
+        pruneTakePercent = 1 - p
+        solver.affect(_.pruneDir = pruneDir(pruneTakePercent))
       })
     .textForm(verifyInUnitInterval)
 
   lazy val bestFracThresholdCtrl = DSL
-    .controlForNumeric(bestFracThreshold)(
+    .controlForNumeric(pruneDeepSearchTakePercent)(
       p => {
-        bestFracThreshold = p
+        pruneDeepSearchTakePercent = p
         cfg = mkCfg
       }
     )
     .textForm(verifyInUnitInterval)
 
-  def controls = Seq(heuristicCtrl, searchDirCtrl, maxDepthCtrl, pruneTakePercentCtrl, bestFracThresholdCtrl)
+  def controls = Seq(heuristicCtrl, searchDirCtrl, maxDepthCtrl, prunePercentCtrl, bestFracThresholdCtrl)
 
   def labels = Seq("heuristic", "search dir", "max depth", "prune %", "LH best %")
 
@@ -280,7 +274,18 @@ class SlidingPuzzle_LH_BS_Solver_SwingConfig( val solver: MutableContainer[Doubl
 }
 
 object SlidingPuzzle_LH_BS_Solver_SwingConfig{
+
   case class Heuristic(name: String, value: SlidingPuzzleInstance[Int] => Double){
     override def toString = name
   }
+
+  def selectTheBest(pruneDeepSearchTakePercent: => InUnitInterval): SortedPossibilities[Double, SlidingPuzzleInstance[Int]]
+    => Map[Double, Set[SlidingPuzzleInstance[Int]]] =
+  {
+    sps =>
+      val bestH = sps.head._1
+      val take = math.floor(sps.size * pruneDeepSearchTakePercent).toInt
+      sps.underlying.take(if (take == 0) 1 else take).toMap.mapValues(_.toSet)
+  }
+
 }

@@ -1,9 +1,9 @@
-package feh.tec.puzzles.solve.vis
+package feh.tec.puzzles.solve.run
 
 import feh.tec.astar.{BeamSearch, History}
 import feh.tec.puzzles.solve.SlidingPuzzle_LH_BS_A_*._
-import feh.tec.puzzles.solve.run.{HistoryTreeShowConf, SlidingPuzzleExample, Solver}
 import feh.tec.puzzles.solve.vis.SlidingPuzzle_LH_BS_Solver_SwingConfig.Heuristic
+import feh.tec.puzzles.solve.vis.SlidingPuzzle_LH_BS_SwingConfig
 import feh.tec.puzzles.solve.vis.SlidingPuzzle_LH_BS_SwingConfig.SPair
 import feh.tec.puzzles.vis.SlidingPuzzleExampleSwingBuilder
 import feh.tec.puzzles.{GenericSlidingPuzzle, SlidingPuzzleInstance}
@@ -13,7 +13,7 @@ import scala.swing.Swing._
 import scala.util.Failure
 
 object SlidingPuzzle_LH_BS_App extends App{
-  val cfg = defaultDirConfig[Double, Int](null, null)
+  val cfg = defaultDirConfig[Double, Int](null)
 
   val boardSize = 3 -> 3
   val cellSize  = 30 -> 30
@@ -28,8 +28,8 @@ object SlidingPuzzle_LH_BS_App extends App{
 
   val builder = MutableSolverConstructor[Double, Int](
     heuristic = heuristics.head.value,
-    searchDir = SearchDirection.Max,
-    maxDepth = 1,
+    searchDir = SearchDirection.Min,
+    maxDepth = 10,
     searchDirConfig = cfg,
     pruneDir = BeamSearch.takePercent[Double, SlidingPuzzleInstance[Int]](1)
   )

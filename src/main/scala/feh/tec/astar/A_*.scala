@@ -113,21 +113,19 @@ trait A_*[T] {
     val extracted    = extract(newOpen)
     val makeDecision = Seq(caseSolution, searchInnerExtraLogic, recursion).map(_(count)).reduceLeft(_ orElse _)
 
-    val newHist = HistoryEntry(state, newStates.zipMap(_ => false).toMap) :: history
+    val newHist = HistoryEntry(state, newStates.zipMap(_ => false).toMap)
 
     makeDecision lift extracted match {
-      case Some(ret@SearchInnerReturn(res, _)) => val hist = res.map(HistoryEntry.solution(newHist))
-                                                                .getOrElse(newHist)
+      case Some(ret@SearchInnerReturn(res, _)) => val hist = res.map(HistoryEntry.solution(newHist :: history))
+                                                                .getOrElse(newHist :: history)
                                                   ret.changeHistory(hist)
-      case Some(SearchInnerRecCall(s, c, opn)) => val hist = newHist.map{
-                                                    entry =>
-                                                      entry.copy(children = entry.children.map{
-                                                        case (child, _) => child -> (opn contains child)
+      case Some(SearchInnerRecCall(s, c, opn)) => val hist = newHist.copy(children = newHist.children.map{
+                                                        case (child, _) =>
+                                                          child -> (if(child == s) false else !(opn contains child)) //!(child == s || (opn contains child)) //(!(child == s) && !(opn contains child))
                                                       })
-                                                  }
-                                                  searchInner(s, c, opn, closed + state, hist)
+                                                  searchInner(s, c, opn, closed + state, hist :: history)
       case None                                => SearchInnerReturn(implementationError("ExtractedOpt not matched"))
-      case Some(other)                         => other.changeHistory(newHist)
+      case Some(other)                         => other.changeHistory(newHist :: history)
     }
   }
 }

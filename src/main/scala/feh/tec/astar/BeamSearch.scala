@@ -29,7 +29,7 @@ object BeamSearch{
 
   def takePercent[Heuristic, T](p: InUnitInterval)(takeBest: Int => Prune[Heuristic, T]): Prune[Heuristic, T] = {
     open =>
-      val count   = (p * open.size).toInt
+      val count   = (math ceil p * open.size).toInt
       if (count == 0 && open.size == 1) open
       else takeBest(count)(open)
   }

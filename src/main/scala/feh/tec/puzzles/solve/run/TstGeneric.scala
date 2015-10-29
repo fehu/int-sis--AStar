@@ -6,6 +6,7 @@ import feh.tec.puzzles.SlidingPuzzle.SlidingPuzzleInstanceOps
 import feh.tec.puzzles.SlidingPuzzleInstance
 import feh.tec.puzzles.solve.SlidingPuzzle_LH_BS_A_*._
 import feh.tec.puzzles.solve.run.SlidingPuzzleExamples._
+import feh.tec.puzzles.solve.vis.SlidingPuzzle_LH_BS_Solver_SwingConfig
 import feh.util.InUnitInterval
 
 import scala.util.Success
@@ -25,7 +26,7 @@ object TstGeneric extends App{
   }
 
 
-  val cfg = defaultDirConfig[Double, Int](selectTheBest(_ >= _), selectTheBest(_ <= _))
+  val cfg = defaultDirConfig[Double, Int](SlidingPuzzle_LH_BS_Solver_SwingConfig.selectTheBest(1))
 
   val builder = MutableSolverConstructor[Double, Int](
     heuristic = Solver.H._03,

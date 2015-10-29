@@ -51,12 +51,15 @@ abstract class SlidingPuzzle_Mutable_LH_BS_A_*[H, Piece] protected[solve] (
     if (isRunning) sys.error("already running, use another instance")
     else super.search(initial)
 
+
+  override protected def searchInnerExtraLogic: Decide =
+    c => super[LimitedHorizon].searchInnerExtraLogic(c) orElse super[BeamSearch].searchInnerExtraLogic(c)
   def execType: String
 }
 
 
 object SlidingPuzzle_LH_BS_A_*{
-  object SearchDirection extends Enumeration    { val Max, Min = Value }
+  object SearchDirection extends Enumeration    { val Min, Max = Value }
   type   SearchDirection = SearchDirection.Value
 
   type SortPoss[H, Piece] = SortedPossibilities[H, SlidingPuzzleInstance[Piece]]
@@ -143,11 +146,11 @@ object SlidingPuzzle_LH_BS_A_*{
     pruneTake      = BeamSearch.takeMax
   )
 
-  def defaultDirConfig[H, Piece](selectBestMax: SelectTheBest[H, Piece], selectBestMin: SelectTheBest[H, Piece]) =
+  def defaultDirConfig[H, Piece](selectTheBest: SelectTheBest[H, Piece]) =
     SearchDirConfig(
       Map(
-        SearchDirection.Min -> defaultMinimizingSetup(selectBestMin),
-        SearchDirection.Max -> defaultMaximizingSetup(selectBestMax)
+        SearchDirection.Min -> defaultMinimizingSetup(selectTheBest),
+        SearchDirection.Max -> defaultMaximizingSetup(selectTheBest)
       )
     )
 

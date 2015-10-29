@@ -38,7 +38,8 @@
 
 - [x] update config when a solver is chosen
 - [ ] block buttons until a solver is chosen
-- [ ] show status
+- [x] show status
 - [ ] block interface duting execution
 - [ ] fix layout
 - [ ] show solution (out of the tree)
+- [ ] heuristics constructor
