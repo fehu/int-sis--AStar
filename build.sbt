@@ -2,10 +2,12 @@ organization := "feh.tec"
 
 name := "A*"
 
-version := "0.4"
+version := "0.5"
 
 scalaVersion := "2.11.7"
 
+
+mainClass in (Compile, run) := Some("feh.tec.puzzles.solve.vis.SwingConfigTst")
 
 // Library Dependencies
 
@@ -23,6 +25,10 @@ libraryDependencies ++= List(
   "org.specs2" %% "specs2-html",
   "org.specs2" %% "specs2-scalacheck"
 ).map(_ % "3.6.4" % "test")
+
+libraryDependencies += "org.scala-lang.modules" %% "scala-swing" % "2.0.0-M2"
+
+libraryDependencies += "feh.dsl" %% "swing" % "1.5-SNAPSHOT"
 
 // Scaladoc Options
 

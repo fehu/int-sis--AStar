@@ -50,6 +50,8 @@ abstract class SlidingPuzzle_Mutable_LH_BS_A_*[H, Piece] protected[solve] (
   override def search(initial: SlidingPuzzleInstance[Piece]): Result =
     if (isRunning) sys.error("already running, use another instance")
     else super.search(initial)
+
+  def execType: String
 }
 
 
@@ -58,7 +60,7 @@ object SlidingPuzzle_LH_BS_A_*{
   type   SearchDirection = SearchDirection.Value
 
   type SortPoss[H, Piece] = SortedPossibilities[H, SlidingPuzzleInstance[Piece]]
-  type Result[Piece] = (Try[SlidingPuzzleInstance[Piece]], History[SlidingPuzzleInstance[Piece]])
+  type Result[Piece] = (Try[SlidingPuzzleInstance[Piece]], List[History[SlidingPuzzleInstance[Piece]]])
 
   type SelectTheBest[H, Piece] = SortPoss[H, Piece] => Map[H, Set[SlidingPuzzleInstance[Piece]]]
   type ExtractTheBest[H, Piece] = SortPoss[H, Piece] => Option[(SlidingPuzzleInstance[Piece], SortPoss[H, Piece])]
@@ -73,6 +75,15 @@ object SlidingPuzzle_LH_BS_A_*{
     def affect[R](f: SlidingPuzzle_Mutable_LH_BS_A_*[H, Piece] => R): Option[R] =
       if (underlying.isRunning) None
       else Some(f(underlying))
+
+    def heuristic = underlying.heuristic
+    def maxDepth  = underlying.maxDepth
+    def pruneDir  = underlying.pruneDir
+    def pruneTake = underlying.pruneTake
+    def selectTheBest     = underlying.selectTheBest
+    def extractTheBestVar = underlying.extractTheBestVar
+
+    def execType = underlying.execType
   }
   
 
@@ -92,6 +103,9 @@ object SlidingPuzzle_LH_BS_A_*{
       new MutableContainer[H, Piece](
         new SlidingPuzzle_Mutable_LH_BS_A_*[H, Piece](heuristic, maxDepth, pruneDir, pruneTake, selectTheBest, extractTheBest)
           with LimitedHorizon.Sequential[SlidingPuzzleInstance[Piece]]
+        {
+          def execType = "Seq"
+        }
       )
 
     def parallel(maxExecutionTime: FiniteDuration, executorPool: Int)
@@ -104,6 +118,8 @@ object SlidingPuzzle_LH_BS_A_*{
 
           def maxExecTime = maxExecutionTime
           def executorPoolSize = executorPool
+
+          def execType = "Par"
         }
       )
   }

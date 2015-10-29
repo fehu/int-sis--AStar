@@ -136,12 +136,11 @@ trait VisualizeHistory[T] extends AwtHelper{
           val depth = depthOf(state)
           val id = (state, order, runId)
           val dacc = acc.getOrElseUpdate(depth, mutable.HashMap(id -> children))
-          val x = dacc.getOrElseUpdate(id, children)
+          dacc.getOrElseUpdate(id, children)
 //          println("state = " + state)
 //          println("depth = " + depth)
 //          println("dacc = " + dacc)
 //          println("added " + id)
-          x
       }
 
     val grRI = h.get.groupBy(_.runId)
