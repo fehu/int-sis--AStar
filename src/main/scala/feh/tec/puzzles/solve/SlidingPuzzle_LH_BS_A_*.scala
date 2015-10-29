@@ -60,7 +60,7 @@ object SlidingPuzzle_LH_BS_A_*{
   type   SearchDirection = SearchDirection.Value
 
   type SortPoss[H, Piece] = SortedPossibilities[H, SlidingPuzzleInstance[Piece]]
-  type Result[Piece] = (Try[SlidingPuzzleInstance[Piece]], History[SlidingPuzzleInstance[Piece]])
+  type Result[Piece] = (Try[SlidingPuzzleInstance[Piece]], List[History[SlidingPuzzleInstance[Piece]]])
 
   type SelectTheBest[H, Piece] = SortPoss[H, Piece] => Map[H, Set[SlidingPuzzleInstance[Piece]]]
   type ExtractTheBest[H, Piece] = SortPoss[H, Piece] => Option[(SlidingPuzzleInstance[Piece], SortPoss[H, Piece])]

@@ -8,12 +8,14 @@ import feh.dsl.swing.FormCreation.DSL
 import feh.dsl.swing2.ComponentExt.ComponentWrapper
 import feh.dsl.swing2.{Var, Control}
 import feh.tec.astar.A_*.SortedPossibilities
-import feh.tec.astar.{History, BeamSearch}
-import feh.tec.puzzles.SlidingPuzzleInstance
+import feh.tec.astar.{NoHistory, History, BeamSearch}
+import feh.tec.puzzles.solve.vis.SlidingPuzzle_LH_BS_SwingConfig.SPair
+import feh.tec.puzzles.{GenericSlidingPuzzle, SlidingPuzzleInstance}
 import feh.tec.puzzles.solve.SlidingPuzzle_LH_BS_A_*
 import feh.tec.puzzles.solve.SlidingPuzzle_LH_BS_A_*._
-import feh.tec.puzzles.solve.run.Solver
+import feh.tec.puzzles.solve.run.{SlidingPuzzleExample, HistoryTreeShowConf, Solver}
 import feh.tec.puzzles.solve.vis.SlidingPuzzle_LH_BS_Solver_SwingConfig.Heuristic
+import feh.tec.puzzles.vis.SlidingPuzzleExampleSwingBuilder
 import feh.util._
 
 import scala.concurrent.duration.DurationInt
@@ -21,14 +23,14 @@ import scala.swing.GridBagPanel.{Anchor, Fill}
 import scala.swing.event.ListSelectionChanged
 import scala.swing._
 import scala.swing.Swing._
-import scala.util.Try
+import scala.util.{Success, Failure, Try}
 
 
 class SlidingPuzzle_LH_BS_SwingConfig( heuristics: Seq[Heuristic]
                                      , builder: MutableSolverConstructor[Double, Int]
                                      , extraPanel: Panel
                                      , solve: => Result[Int]
-                                     , showTree: History[SlidingPuzzleInstance[Int]] => Unit
+                                     , showTree: List[History[SlidingPuzzleInstance[Int]]] => Unit
                                       )
   extends GridBagPanel
 {
@@ -41,10 +43,6 @@ class SlidingPuzzle_LH_BS_SwingConfig( heuristics: Seq[Heuristic]
 
   def lockAll(): Unit = { /* TODO */ }
   def unlockAll(): Unit = { /* TODO */ }
-
-  case class SPair (mc: MutableContainer[Double, Int], cfg: SlidingPuzzle_LH_BS_Solver_SwingConfig){
-    override def toString = "A* LH BS " + mc.execType
-  }
 
   val solvers = Var[List[SPair]](Nil)
 
@@ -120,8 +118,16 @@ class SlidingPuzzle_LH_BS_SwingConfig( heuristics: Seq[Heuristic]
 }
 
 
+object SlidingPuzzle_LH_BS_SwingConfig{
+
+  case class SPair (mc: MutableContainer[Double, Int], cfg: SlidingPuzzle_LH_BS_Solver_SwingConfig){
+    override def toString = "A* LH BS " + mc.execType
+
+  }
+}
+
 class SlidingPuzzle_LH_BS_Solver_Control( solve: => Result[Int]
-                                        , showTree: History[SlidingPuzzleInstance[Int]] => Unit
+                                        , showTree: List[History[SlidingPuzzleInstance[Int]]] => Unit
                                         , lockAll: => Unit
                                         , unlockAll: => Unit)
   extends GridPanel(1, 3)
@@ -271,6 +277,11 @@ object SlidingPuzzle_LH_BS_Solver_SwingConfig{
 object SwingConfigTst extends App{
   val cfg = defaultDirConfig[Double, Int](null, null)
 
+  val boardSize = 3 -> 3
+  val cellSize  = 30 -> 30
+
+  val showConf = HistoryTreeShowConf.default.copy(showRunId = true)
+
   val builder = MutableSolverConstructor[Double, Int](
     heuristic = Solver.H._03,
     searchDir = SearchDirection.Min,
@@ -279,8 +290,44 @@ object SwingConfigTst extends App{
     pruneDir = BeamSearch.takePercent[Double, SlidingPuzzleInstance[Int]](1)
   )
 
+  val exampleBuilder = new SlidingPuzzleExampleSwingBuilder(boardSize, cellSize)
+
+  val solverChooser = new SlidingPuzzle_LH_BS_SwingConfig(Nil, builder, exampleBuilder, solve, showTree)
+
+  var lastExample: Option[SlidingPuzzleExample[Int]] = None
+
+  def newExample = {
+    val solutionRows = exampleBuilder.solutionInstBuilder.listRows(_.label)
+    val puzzle = new GenericSlidingPuzzle(3, 3, 1, solutionRows){ }
+    val init = exampleBuilder.initialInstBuilder.toInstance(puzzle)
+
+    puzzle -> init
+  }
+
+  def solve: Result[Int] = {
+    val (puzzle, init) = newExample
+    val solver = solverChooser.currentSolver
+
+    val resOpt = solver.get.flatMap{
+      case SPair(mc, _) => mc.affect{
+        solver =>
+          val example = SlidingPuzzleExample[Int](puzzle, Some(init), solver)
+          lastExample = Some(example)
+
+          val res  = solver.search(init)
+          val hist = solver.HistoryManagement.listHistory
+          res._1 -> hist
+      }
+    }
+    resOpt getOrElse (Failure(new Exception("the solver is busy")) -> Nil)
+  }
+
+  def showTree(hist: List[History[SlidingPuzzleInstance[Int]]]): Unit =
+    lastExample.foreach{ _.showTree(showConf, true, hist: _*).open() }
+
+
   val frame = new Frame{
-    contents = new SlidingPuzzle_LH_BS_SwingConfig(Nil, builder, new Panel {}, null, _ => {})
+    contents = solverChooser
     size = 600 -> 400
   }
 
