@@ -1,11 +1,13 @@
 package feh.tec.puzzles.vis
 
-import java.awt.{Color, Dimension, Graphics}
+import java.awt.font.TextAttribute
+import java.awt.{Font, Color, Dimension, Graphics}
 import javax.swing.{JFrame, JPanel, JScrollPane, ScrollPaneConstants}
 
 import feh.tec.astar.vis.AWTVisualizeHistory
 import feh.tec.astar.{AwtHelper, History}
 import feh.tec.puzzles.{SlidingPuzzle, SlidingPuzzleInstance}
+import feh.util._
 
 trait SlidingPuzzleAWTVisualize[Piece] {
   outer: AWTVisualizeHistory[SlidingPuzzleInstance[Piece]] =>
@@ -39,7 +41,18 @@ trait SlidingPuzzleAWTVisualize[Piece] {
         def drawTitleStr(shiftXExtra: Int = 0) =
           graphics.drawString(_: String, shiftX + drawNode.size.width/2 + shiftXExtra, shiftY - extraHeight/2)
 
-        graphics.drawString(node.description, shiftX, shiftY-1)
+        def drawDescription() = graphics.drawString(node.description, shiftX, shiftY-1)
+
+        if (node.pruned) {
+          // http://stackoverflow.com/questions/1070878/strike-through-java-awt-font
+          val attributes = new Font("helvetica", Font.PLAIN, 12) |>
+            (_.getAttributes.asInstanceOf[java.util.Map[TextAttribute, Any]]) $$
+              (_.put(TextAttribute.STRIKETHROUGH, TextAttribute.STRIKETHROUGH_ON))
+          val font = new Font(attributes)
+          withFont(font)(drawDescription())
+        }
+        else drawDescription()
+
 
         val hw = graphics.getFontMetrics.stringWidth(node.heuristic)
         graphics.drawString(node.heuristic, shiftX + drawNode.size.width - hw, shiftY-1)
@@ -70,6 +83,14 @@ trait SlidingPuzzleAWTVisualize[Piece] {
     graphics.setColor(c)
     val res = f
     graphics.setColor(old)
+    res
+  }
+
+  protected def withFont[R](font: Font)(f: => R): R = {
+    val old = graphics.getFont
+    graphics.setFont(font)
+    val res = f
+    graphics.setFont(old)
     res
   }
 

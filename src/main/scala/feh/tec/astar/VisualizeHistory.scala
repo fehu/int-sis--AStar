@@ -2,6 +2,8 @@ package feh.tec.astar
 
 import java.awt.{Color, Dimension, Point}
 
+import feh.tec.astar.HistoryEntry.Pruned
+
 import scala.collection.mutable
 import feh.util._
 
@@ -128,7 +130,7 @@ trait VisualizeHistory[T] extends AwtHelper{
     if (h.lastOption.isEmpty) sys.error("Empty history")
 
     // depth -> (state (at this depth), order, runId) -> children (should be on the next depth)
-    val acc = mutable.HashMap.empty[Int, mutable.HashMap[(T, Int, Int), Set[T]]]
+    val acc = mutable.HashMap.empty[Int, mutable.HashMap[(T, Int, Int), Map[T, Pruned]]]
 
     def putInAcc: Int => HistoryEntry[T] => Unit =
       order => {
@@ -149,20 +151,20 @@ trait VisualizeHistory[T] extends AwtHelper{
 
     val accOrd = acc.toList.sortBy(_._1)
     val ((root, _, _), _) = accOrd.head.ensuring(_._2.size == 1)._2.head
-    val rootNode = new HNode(root, 0, None, 0)
+    val rootNode = new HNode(root, 0, None, 0, false)
 
     val parentOf = mutable.HashMap.empty[T, HNode]
     val nodeOf   = mutable.HashMap(root -> rootNode)
 
-    def buildHTree(depth: Int, level: mutable.HashMap[(T, Int, Int), Set[T]]): Unit =
+    def buildHTree(depth: Int, level: mutable.HashMap[(T, Int, Int), Map[T, Pruned]]): Unit =
       for {
         ((state, order, run), children) <- level
         node = nodeOf(state)
       } {
         node.orderUpd(order)
 
-        for (child <- children) {
-          val n = new HNode(child, depth+1, Some(node), run)
+        for ((child, pruned) <- children) {
+          val n = new HNode(child, depth+1, Some(node), run, pruned)
           parentOf += child -> node
           nodeOf += child -> n
 
@@ -236,7 +238,8 @@ trait VisualizeHistory[T] extends AwtHelper{
   class HNode(val state: T,
               val depth: Int,
               val parent: Option[HNode],
-              val runId: Int )
+              val runId: Int,
+              val pruned: Pruned )
     extends HistoryNode[HNode]
   {
 

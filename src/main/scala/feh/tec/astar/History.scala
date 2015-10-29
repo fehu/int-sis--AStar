@@ -1,5 +1,7 @@
 package feh.tec.astar
 
+import feh.tec.astar.HistoryEntry.Pruned
+
 /**
  */
 trait History[T] {
@@ -19,9 +21,11 @@ trait History[T] {
   def lastOption = toList.headOption
 }
 
-case class HistoryEntry[T](parent: T, children: Set[T], runId: Int = 0)
+case class HistoryEntry[T](parent: T, children: Map[T, Pruned] = Map.empty[T, Pruned], runId: Int = 0)
 
 object HistoryEntry{
+  type Pruned = Boolean
+
   def solution[T](history: History[T]): T => History[T] = history match {
     case rec@HistoryRecord(list) => SolutionHistoryRecord(list, _: T, rec.overflowed)
     case h => _ => h

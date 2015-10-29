@@ -52,7 +52,12 @@ trait LimitedHorizon[T] {
 
   protected def searchLH = RecFunc[T, Result]{
     t =>
-      runSearchInner(t) match {
+      if (isSolution(t)) {
+        val hist = HistoryRecord(HistoryEntry(t) :: Nil)
+        HistoryManagement.saveHistory(hist)
+        RecFunc Ret Success(t) -> hist
+      }
+      else runSearchInner(t) match {
         case SearchInnerReturn(res, history) =>
           HistoryManagement.saveHistory(history)
           RecFunc Ret (res -> history)

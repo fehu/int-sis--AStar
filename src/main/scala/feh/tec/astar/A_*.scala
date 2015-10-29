@@ -24,7 +24,8 @@ trait A_*[T] {
    * @return `Some(solution)` or `None` if the solution wasn't found.
    */
   def search(initial: T): Result =
-    runSearchInner(initial) match {
+    if (isSolution(initial)) Success(initial) -> HistoryRecord(HistoryEntry(initial) :: Nil)
+    else runSearchInner(initial) match {
       case SearchInnerReturn(res, history) => res -> history
       case _: SearchInnerRecCall           => searchInnerRecCallEscaped_!
     }
@@ -112,13 +113,19 @@ trait A_*[T] {
     val extracted    = extract(newOpen)
     val makeDecision = Seq(caseSolution, searchInnerExtraLogic, recursion).map(_(count)).reduceLeft(_ orElse _)
 
-    val newHist = HistoryEntry(state, newStates.toSet) :: history
+    val newHist = HistoryEntry(state, newStates.zipMap(_ => false).toMap) :: history
 
     makeDecision lift extracted match {
       case Some(ret@SearchInnerReturn(res, _)) => val hist = res.map(HistoryEntry.solution(newHist))
                                                                 .getOrElse(newHist)
                                                   ret.changeHistory(hist)
-      case Some(SearchInnerRecCall(s, c, opn)) => searchInner(s, c, opn, closed + state, newHist)
+      case Some(SearchInnerRecCall(s, c, opn)) => val hist = newHist.map{
+                                                    entry =>
+                                                      entry.copy(children = entry.children.map{
+                                                        case (child, _) => child -> (opn contains child)
+                                                      })
+                                                  }
+                                                  searchInner(s, c, opn, closed + state, hist)
       case None                                => SearchInnerReturn(implementationError("ExtractedOpt not matched"))
       case Some(other)                         => other.changeHistory(newHist)
     }
@@ -178,6 +185,8 @@ object A_*{
     def transform(f: SortedMap[H, List[T]] => SortedMap[H, List[T]]) = new SortedPossibilities[H, T](f(underlying))
 
     def size = underlying.size
+
+    def contains(t: T): Boolean = underlying.get(heuristic(t)).exists(_.contains(t))
 
   }
 

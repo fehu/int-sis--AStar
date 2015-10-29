@@ -23,6 +23,7 @@
     - [x] distinguish different A* runs in case of LimitedHorizon
     - [x] reset _order_ numeration each _run_
     - [x] mark solution
+    - [x] show pruned
 
 - [ ] Write Tests for:
     - [x] instance operations
@@ -35,7 +36,7 @@
 
 #### GUI
 
-- [ ] update config when a solver is chosen
+- [x] update config when a solver is chosen
 - [ ] block buttons until a solver is chosen
 - [ ] show status
 - [ ] block interface duting execution
