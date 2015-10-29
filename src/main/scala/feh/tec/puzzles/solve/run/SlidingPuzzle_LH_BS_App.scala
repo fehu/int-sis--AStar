@@ -36,7 +36,7 @@ object SlidingPuzzle_LH_BS_App extends App{
 
   def newExample = {
     val solutionRows = exampleBuilder.solutionInstBuilder.listRows(_.label)
-    val puzzle = new GenericSlidingPuzzle(3, 3, 1, solutionRows){ }
+    val puzzle = new GenericSlidingPuzzle(boardSize._1, boardSize._2, 1, solutionRows){ }
     val init = exampleBuilder.initialInstBuilder.toInstance(puzzle)
 
     puzzle -> init
