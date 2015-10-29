@@ -94,7 +94,10 @@ object LimitedHorizon{
           historyInMem += h.map(_.copy(runId = lastRun))
         }
         def listHistory = historyInMem.toList
-        def clearHistory() = historyInMem.clear()
+        def clearHistory() = {
+          historyInMem.clear()
+          lastRun = 0
+        }
       }
     }
 
@@ -114,6 +117,8 @@ object LimitedHorizon{
         best
     }
 
+    protected def clearPartialSolutions() = buffer = SortedPossibilities.empty
+
   }
 
 
@@ -128,6 +133,16 @@ object LimitedHorizon{
     }
 
     protected def execSearchLH(f: RecFunc[T, Result])(state: T): Result = RecFunc.TCO(state, f)
+
+    /** Searches for a solution with limited horizon.
+      *
+      * @param initial The initial state.
+      * @return `Some(solution)` or `None` if the solution wasn't found.
+      */
+    override def search(initial: T): (Try[T], History[T]) = {
+      clearPartialSolutions()
+      super.search(initial)
+    }
   }
 
   /** uses akka actors

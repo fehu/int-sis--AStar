@@ -196,6 +196,8 @@ class SlidingPuzzle_LH_BS_Solver_SwingConfig( val solver: MutableContainer[Doubl
   var bestFracThreshold: InUnitInterval = 1
   var pruneTakePercent: InUnitInterval = 1
 
+  solver.affect(SlidingPuzzle_LH_BS_A_*.setSearchDir(SearchDirection.Max, _)) // TODO: HARDCODE !!!!
+
 
   def mkCfg = SlidingPuzzle_LH_BS_A_*.defaultDirConfig(selectTheBest(_ >= _), selectTheBest(_ <= _))
 
@@ -282,9 +284,15 @@ object SwingConfigTst extends App{
 
   val showConf = HistoryTreeShowConf.default.copy(showRunId = true)
 
+  val heuristics = List(
+    Heuristic("Manh. dist. + solution len", Solver.H._01),
+    Heuristic("Manh. dist. + 0.5 * solution len", Solver.H._02),
+    Heuristic("*** - corr. set - corr. rows&cols", Solver.H._03)
+  )
+
   val builder = MutableSolverConstructor[Double, Int](
-    heuristic = Solver.H._03,
-    searchDir = SearchDirection.Min,
+    heuristic = heuristics.head.value,
+    searchDir = SearchDirection.Max,
     maxDepth = 1,
     searchDirConfig = cfg,
     pruneDir = BeamSearch.takePercent[Double, SlidingPuzzleInstance[Int]](1)
@@ -292,7 +300,7 @@ object SwingConfigTst extends App{
 
   val exampleBuilder = new SlidingPuzzleExampleSwingBuilder(boardSize, cellSize)
 
-  val solverChooser = new SlidingPuzzle_LH_BS_SwingConfig(Nil, builder, exampleBuilder, solve, showTree)
+  val solverChooser = new SlidingPuzzle_LH_BS_SwingConfig(heuristics, builder, exampleBuilder, solve, showTree)
 
   var lastExample: Option[SlidingPuzzleExample[Int]] = None
 
@@ -314,6 +322,7 @@ object SwingConfigTst extends App{
           val example = SlidingPuzzleExample[Int](puzzle, Some(init), solver)
           lastExample = Some(example)
 
+          solver.HistoryManagement.clearHistory()
           val res  = solver.search(init)
           val hist = solver.HistoryManagement.listHistory
           res._1 -> hist
@@ -323,7 +332,7 @@ object SwingConfigTst extends App{
   }
 
   def showTree(hist: List[History[SlidingPuzzleInstance[Int]]]): Unit =
-    lastExample.foreach{ _.showTree(showConf, true, hist: _*).open() }
+    lastExample.foreach{ _.showTree(showConf, exitOnClose = false, hist: _*).open() }
 
 
   val frame = new Frame{

@@ -97,9 +97,9 @@ class SlidingPuzzleInstanceSwingBuilder(boardSize: (Int, Int), cellSize: (Int, I
 
   def listRows[R](f: Cell => R): List[List[R]] =
     grid
-      .groupBy(_._1._2)
+      .groupBy(_._1._1)
       .toList.sortBy(_._1)
-      .map(_._2.toList.sortBy(_._1).map(f apply _._2))
+      .map(_._2.toList.sortBy(_._1._2).map(f apply _._2))
 
   protected val grid = mutable.HashMap((
     for {
