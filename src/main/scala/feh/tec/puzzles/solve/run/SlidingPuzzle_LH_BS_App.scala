@@ -73,7 +73,7 @@ object SlidingPuzzle_LH_BS_App extends App{
 
   val frame = new Frame{
     contents = solverChooser
-    size = 600 -> 400
+    size = 800 -> 400
 
     override def closeOperation(): Unit = sys.exit()
   }

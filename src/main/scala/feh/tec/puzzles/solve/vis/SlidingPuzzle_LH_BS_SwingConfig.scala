@@ -1,29 +1,29 @@
 package feh.tec.puzzles.solve.vis
 
 import java.awt.Color
+import java.text.DateFormat
+import java.util.Calendar
 import javax.swing.{ListSelectionModel, SpinnerNumberModel}
 
 import akka.actor.ActorSystem
 import feh.dsl.swing.FormCreation.DSL
-import feh.dsl.swing2.ComponentExt.ComponentWrapper
-import feh.dsl.swing2.{Var, Control}
+import feh.dsl.swing2.{Control, Var}
 import feh.tec.astar.A_*.SortedPossibilities
-import feh.tec.astar.{NoHistory, History, BeamSearch}
-import feh.tec.puzzles.solve.vis.SlidingPuzzle_LH_BS_SwingConfig.SPair
-import feh.tec.puzzles.{GenericSlidingPuzzle, SlidingPuzzleInstance}
+import feh.tec.astar.{BeamSearch, History}
+import feh.tec.puzzles.SlidingPuzzle.SlidingPuzzleInstanceOps
+import feh.tec.puzzles.SlidingPuzzleInstance
 import feh.tec.puzzles.solve.SlidingPuzzle_LH_BS_A_*
 import feh.tec.puzzles.solve.SlidingPuzzle_LH_BS_A_*._
-import feh.tec.puzzles.solve.run.{SlidingPuzzleExample, HistoryTreeShowConf, Solver}
 import feh.tec.puzzles.solve.vis.SlidingPuzzle_LH_BS_Solver_SwingConfig.Heuristic
-import feh.tec.puzzles.vis.SlidingPuzzleExampleSwingBuilder
+import feh.tec.puzzles.solve.vis.SlidingPuzzle_LH_BS_SwingConfig.SPair
 import feh.util._
 
 import scala.concurrent.duration.DurationInt
 import scala.swing.GridBagPanel.{Anchor, Fill}
-import scala.swing.event.ListSelectionChanged
-import scala.swing._
 import scala.swing.Swing._
-import scala.util.{Success, Failure, Try}
+import scala.swing._
+import scala.swing.event.ListSelectionChanged
+import scala.util.{Failure, Success, Try}
 
 
 class SlidingPuzzle_LH_BS_SwingConfig( heuristics: Seq[Heuristic]
@@ -34,6 +34,8 @@ class SlidingPuzzle_LH_BS_SwingConfig( heuristics: Seq[Heuristic]
                                       )
   extends GridBagPanel
 {
+
+  mainPanel =>
 
 //  def foreachComponent(f: Component => Unit) = {
 //    f(solversList.component)
@@ -68,12 +70,28 @@ class SlidingPuzzle_LH_BS_SwingConfig( heuristics: Seq[Heuristic]
   lazy val createSolverPanel = new SlidingPuzzle_LH_BS_Solver_Create(builder, register)
 
   lazy val configPanel = new GridPanel(1, 1)
-  lazy val controlPanel = new SlidingPuzzle_LH_BS_Solver_Control(solve, showTree, lockAll(), unlockAll())
+  lazy val controlPanel = new SlidingPuzzle_LH_BS_Solver_Control(
+    solve,
+    showTree,
+    lockAll(),
+    unlockAll(),
+    solutionPanel.showSolution _ andThen {_ => mainPanel.revalidate(); mainPanel.repaint() }
+  )
+
+  lazy val solutionPanel = new SlidingPuzzle_LH_BS_Solver_SwingSolution
+
+  layout += solutionPanel -> (new Constraints $${
+    c =>
+      c.grid = 0 -> 0
+      c.fill = Fill.Both
+      c.gridheight = 2
+      c.weightx = 0.4
+  })
 
   layout += configPanel -> (new Constraints $${
     c =>
-      c.grid = 0 -> 0
-      c.weightx = 0.8
+      c.grid = 1 -> 0
+      c.weightx = 0.4
       c.fill = Fill.None
       c.anchor = Anchor.NorthEast
       c.insets = new Insets(10, 5, 5, 10)
@@ -81,7 +99,7 @@ class SlidingPuzzle_LH_BS_SwingConfig( heuristics: Seq[Heuristic]
 
   layout += extraPanel -> (new Constraints $${
     c =>
-      c.grid = 0 -> 1
+      c.grid = 1 -> 1
       c.fill = Fill.Horizontal
   })
 
@@ -89,11 +107,12 @@ class SlidingPuzzle_LH_BS_SwingConfig( heuristics: Seq[Heuristic]
     c =>
       c.grid = 0 -> 2
       c.fill = Fill.Horizontal
+      c.gridwidth = 2
   })
 
   layout += solversList.component -> (new Constraints $${
     c =>
-      c.grid = 1 -> 0
+      c.grid = 2 -> 0
       c.weightx = 0
       c.weighty = 1
       c.gridheight = 2
@@ -102,7 +121,7 @@ class SlidingPuzzle_LH_BS_SwingConfig( heuristics: Seq[Heuristic]
 
   layout += createSolverPanel -> (new Constraints $${
     c =>
-      c.grid = 1 -> 2
+      c.grid = 2 -> 2
       c.weighty = 0
       c.fill = Fill.Horizontal
   })
@@ -138,7 +157,8 @@ object SlidingPuzzle_LH_BS_SwingConfig{
 class SlidingPuzzle_LH_BS_Solver_Control( solve: => Result[Int]
                                         , showTree: List[History[SlidingPuzzleInstance[Int]]] => Unit
                                         , lockAll: => Unit
-                                        , unlockAll: => Unit)
+                                        , unlockAll: => Unit
+                                        , showResult: Try[SlidingPuzzleInstance[Int]] => Unit )
   extends GridPanel(1, 3)
 {
 
@@ -149,11 +169,10 @@ class SlidingPuzzle_LH_BS_Solver_Control( solve: => Result[Int]
     .triggerFor{
       lockAll
       setStatus("Working ...")
-      println("Working ...")
       val res = solve
       lastResult = Option(res)
-      setStatus(res._1 map(_ => "Success") getOrElse "")
-      res._1.failed.foreach(ex => Dialog.showMessage(null, ex.getMessage, "ERROR", Dialog.Message.Error))
+      setStatus(res._1 map(_ => "Success") getOrElse "Failure")
+      showResult(res._1)
       unlockAll
     }
     .button("Solve")
@@ -288,4 +307,53 @@ object SlidingPuzzle_LH_BS_Solver_SwingConfig{
       sps.underlying.take(if (take == 0) 1 else take).toMap.mapValues(_.toSet)
   }
 
+}
+
+
+class SlidingPuzzle_LH_BS_Solver_SwingSolution extends GridPanel(1, 1){
+
+  minimumSize   = 200 -> 100
+  preferredSize = 200 -> 100
+
+  protected def setPanel(p: Panel): Unit = {
+    contents.clear()
+    contents += p
+  }
+  
+  def showSolution(res: Try[SlidingPuzzleInstance[Int]]) = res match {
+    case Success(v) => setPanel(new SuccessPanel(v))
+    case Failure(e) => setPanel(new FailurePanel(e))
+  }
+  
+  protected abstract class Result extends BoxPanel(Orientation.Vertical) {
+    val time = Calendar.getInstance().getTime
+    
+    def comp: Component
+    
+    contents ++= Seq(
+      new Label(DateFormat.getTimeInstance.format(time)){ horizontalAlignment = Alignment.Center },
+      HGlue,
+      new ScrollPane(comp){
+        horizontalScrollBarPolicy = ScrollPane.BarPolicy.Never
+        verticalScrollBarPolicy   = ScrollPane.BarPolicy.AsNeeded
+      }
+    )
+  }
+  
+  class SuccessPanel(inst: SlidingPuzzleInstance[Int]) extends Result{
+    lazy val comp = new ListView(inst.pathFromRoot)
+  }
+  
+  class FailurePanel(ex: Throwable) extends Result{
+    def err2str = Y[Throwable, String]{
+      rec =>
+        ex =>
+          ex.getMessage + Option(ex.getCause).map(th => "\n\nCause:\n=====\n" + rec(th)).mkString("")
+    }
+    lazy val comp = new TextArea(err2str(ex)){
+      preferredSize = 200 -> 400
+      lineWrap = true
+    }
+  }
+  
 }

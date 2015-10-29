@@ -41,5 +41,5 @@
 - [x] show status
 - [ ] block interface duting execution
 - [ ] fix layout
-- [ ] show solution (out of the tree)
+- [x] show solution (out of the tree)
 - [ ] heuristics constructor

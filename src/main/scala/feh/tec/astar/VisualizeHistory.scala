@@ -177,9 +177,7 @@ trait VisualizeHistory[T] extends AwtHelper{
     new HistoryTree[HNode]{
       lazy val root = nodeOf(acc(0).head._1._1)
       lazy val solution: Option[HNode] = PartialFunction.condOpt(h){
-        case SolutionHistoryRecord(_, sol, _) =>
-          println("Solution")
-          nodeOf(sol)
+        case SolutionHistoryRecord(_, sol, _) => nodeOf(sol)
       }
     }
   }
