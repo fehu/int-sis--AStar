@@ -20,14 +20,8 @@ object SlidingPuzzle_LH_BS_App extends App{
 
   val showConf = HistoryTreeShowConf.default.copy(showRunId = true)
 
-  val heuristics = List(
-    Heuristic("Manh. dist. + solution len", Solver.H._01),
-    Heuristic("Manh. dist. + 0.5 * solution len", Solver.H._02),
-    Heuristic("*** - corr. set - corr. rows&cols", Solver.H._03)
-  )
-
   val builder = MutableSolverConstructor[Double, Int](
-    heuristic = heuristics.head.value,
+    heuristic = _ => 0,
     searchDir = SearchDirection.Min,
     maxDepth = 10,
     searchDirConfig = cfg,
@@ -36,7 +30,7 @@ object SlidingPuzzle_LH_BS_App extends App{
 
   val exampleBuilder = new SlidingPuzzleExampleSwingBuilder(boardSize, cellSize)
 
-  val solverChooser = new SlidingPuzzle_LH_BS_SwingConfig(heuristics, builder, exampleBuilder, solve, showTree)
+  val solverChooser = new SlidingPuzzle_LH_BS_SwingConfig(builder, exampleBuilder, solve, showTree)
 
   var lastExample: Option[SlidingPuzzleExample[Int]] = None
 
@@ -73,7 +67,7 @@ object SlidingPuzzle_LH_BS_App extends App{
 
   val frame = new Frame{
     contents = solverChooser
-    size = 800 -> 400
+    size = 800 -> 500
 
     override def closeOperation(): Unit = sys.exit()
   }

@@ -26,8 +26,7 @@ import scala.swing.event.ListSelectionChanged
 import scala.util.{Failure, Success, Try}
 
 
-class SlidingPuzzle_LH_BS_SwingConfig( heuristics: Seq[Heuristic]
-                                     , builder: MutableSolverConstructor[Double, Int]
+class SlidingPuzzle_LH_BS_SwingConfig( builder: MutableSolverConstructor[Double, Int]
                                      , extraPanel: Panel
                                      , solve: => Result[Int]
                                      , showTree: List[History[SlidingPuzzleInstance[Int]]] => Unit
@@ -50,6 +49,11 @@ class SlidingPuzzle_LH_BS_SwingConfig( heuristics: Seq[Heuristic]
 
   val currentSolver = Var[Option[SPair]](None)
 
+  protected def solve_ = {
+    currentSolver.get.foreach(s => s.mc.affect(_.heuristic = s.cfg.heuristic))
+    solve
+  }
+
   lazy val solversList = Control
     .custom[List[SPair], ListView[SPair]](
       solvers,
@@ -71,7 +75,7 @@ class SlidingPuzzle_LH_BS_SwingConfig( heuristics: Seq[Heuristic]
 
   lazy val configPanel = new GridPanel(1, 1)
   lazy val controlPanel = new SlidingPuzzle_LH_BS_Solver_Control(
-    solve,
+    solve_,
     showTree,
     lockAll(),
     unlockAll(),
@@ -110,7 +114,9 @@ class SlidingPuzzle_LH_BS_SwingConfig( heuristics: Seq[Heuristic]
       c.gridwidth = 2
   })
 
-  layout += solversList.component -> (new Constraints $${
+  layout += new ScrollPane(solversList.component){ horizontalScrollBarPolicy = ScrollPane.BarPolicy.Never
+                                                   verticalScrollBarPolicy   = ScrollPane.BarPolicy.AsNeeded
+    } -> (new Constraints $${
     c =>
       c.grid = 2 -> 0
       c.weightx = 0
@@ -136,7 +142,7 @@ class SlidingPuzzle_LH_BS_SwingConfig( heuristics: Seq[Heuristic]
   }
 
   def register(mc: MutableContainer[Double, Int]): Unit = {
-    val spair = SPair(mc, new SlidingPuzzle_LH_BS_Solver_SwingConfig(mc, heuristics))
+    val spair = SPair(mc, new SlidingPuzzle_LH_BS_Solver_SwingConfig(mc, new HeuristicsConstructorSwingImpl[Int]))
     solvers.affect(_ :+ spair)
     currentSolver.set(Some(spair))
     solversList.component.selectIndices(solvers.get.indexOf(spair))
@@ -222,14 +228,15 @@ class SlidingPuzzle_LH_BS_Solver_Create( builder: MutableSolverConstructor[Doubl
 }
 
 class SlidingPuzzle_LH_BS_Solver_SwingConfig( val solver: MutableContainer[Double, Int]
-                                            , heuristics: Seq[Heuristic] )
-  extends GridPanel(5, 2)
+                                            , heuristicsConstructor: HeuristicsConstructorSwing[Int] )
+  extends BoxPanel(Orientation.Vertical)
+  with HeuristicsConstructorSwing[Int]
 {
   
   implicit var cfg = mkCfg
 
   var pruneDeepSearchTakePercent: InUnitInterval = 1
-  var pruneTakePercent: InUnitInterval = 0
+  var pruneTakePercent: InUnitInterval = 1
 
   solver.affect(SlidingPuzzle_LH_BS_A_*.setSearchDir(SearchDirection.Min, _)) // TODO: HARDCODE !!!!
 
@@ -244,9 +251,7 @@ class SlidingPuzzle_LH_BS_Solver_SwingConfig( val solver: MutableContainer[Doubl
   def verifyInUnitInterval: String => Boolean = s => Try(str2UnitInterval(s)).isSuccess
 
 
-  lazy val heuristicCtrl = DSL
-    .controlForSeq(heuristics, static = true)
-    .dropDownList(h => solver.affect(_.heuristic = h.value))
+  def heuristic = heuristicsConstructor.heuristic
 
   lazy val searchDirCtrl = DSL
     .controlForSeq(SearchDirection.values.toList, static = true)
@@ -260,7 +265,7 @@ class SlidingPuzzle_LH_BS_Solver_SwingConfig( val solver: MutableContainer[Doubl
     .spinner(new SpinnerNumberModel(solver.maxDepth, 1, Int.MaxValue, 1))
 
   lazy val prunePercentCtrl = DSL
-    .controlForNumeric(pruneTakePercent)(
+    .controlForNumeric[InUnitInterval](1 - pruneTakePercent)(
       p => {
         pruneTakePercent = 1 - p
         solver.affect(_.pruneDir = pruneDir(pruneTakePercent))
@@ -268,24 +273,28 @@ class SlidingPuzzle_LH_BS_Solver_SwingConfig( val solver: MutableContainer[Doubl
     .textForm(verifyInUnitInterval)
 
   lazy val bestFracThresholdCtrl = DSL
-    .controlForNumeric(pruneDeepSearchTakePercent)(
+    .controlForNumeric[InUnitInterval](1 - pruneDeepSearchTakePercent)(
       p => {
-        pruneDeepSearchTakePercent = p
+        pruneDeepSearchTakePercent = 1 - p
         cfg = mkCfg
       }
     )
     .textForm(verifyInUnitInterval)
 
-  def controls = Seq(heuristicCtrl, searchDirCtrl, maxDepthCtrl, prunePercentCtrl, bestFracThresholdCtrl)
+  def controls = Seq(searchDirCtrl, maxDepthCtrl, prunePercentCtrl, bestFracThresholdCtrl)
 
-  def labels = Seq("heuristic", "search dir", "max depth", "prune %", "LH best %")
+  def labels = Seq("search direction", "max. depth", "prune %", "Part. sol prune %")
 
-  for {
-    (c, l) <- controls zip labels
-  } {
-    contents += new Label(l)
-    contents += c.component
+  protected class SolverConfig extends GridPanel(4, 2){
+    for {
+      (c, l) <- controls zip labels
+    } {
+      contents += new Label(l)
+      contents += c.component
+    }
   }
+
+  contents ++= Seq(heuristicsConstructor, VGlue, new SolverConfig)
 
   controls.foreach(_.formMeta.form.updateForm())
 
