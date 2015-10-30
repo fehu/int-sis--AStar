@@ -25,7 +25,7 @@ import scala.swing._
 import scala.swing.event.ListSelectionChanged
 import scala.util.{Failure, Success, Try}
 
-
+/** The main graphical panel for [[feh.tec.puzzles.solve.run.SlidingPuzzle_LH_BS_App]] application. */
 class SlidingPuzzle_LH_BS_SwingConfig( builder: MutableSolverConstructor[Double, Int]
                                      , extraPanel: Panel
                                      , solve: => Result[Int]
@@ -160,6 +160,9 @@ object SlidingPuzzle_LH_BS_SwingConfig{
   }
 }
 
+/** The control panel (buttons 'solve', 'show tree' and state) for
+ * [[feh.tec.puzzles.solve.run.SlidingPuzzle_LH_BS_App]] application.
+ */
 class SlidingPuzzle_LH_BS_Solver_Control( solve: => Result[Int]
                                         , showTree: List[History[SlidingPuzzleInstance[Int]]] => Unit
                                         , lockAll: => Unit
@@ -200,6 +203,9 @@ class SlidingPuzzle_LH_BS_Solver_Control( solve: => Result[Int]
 
 }
 
+/** The solver creation panel (buttons 'sequential' and 'parallel')
+ * for [[feh.tec.puzzles.solve.run.SlidingPuzzle_LH_BS_App]] application.
+ */
 class SlidingPuzzle_LH_BS_Solver_Create( builder: MutableSolverConstructor[Double, Int]
                                        , register: MutableContainer[Double, Int] => Unit
                                        )
@@ -227,6 +233,7 @@ class SlidingPuzzle_LH_BS_Solver_Create( builder: MutableSolverConstructor[Doubl
 
 }
 
+/** A panel for configuring the selected A* instance. */
 class SlidingPuzzle_LH_BS_Solver_SwingConfig( val solver: MutableContainer[Double, Int]
                                             , heuristicsConstructor: HeuristicsConstructorSwing[Int] )
   extends BoxPanel(Orientation.Vertical)
@@ -318,7 +325,7 @@ object SlidingPuzzle_LH_BS_Solver_SwingConfig{
 
 }
 
-
+/** A panel for showing [[feh.tec.astar.A_*.Result]]. */
 class SlidingPuzzle_LH_BS_Solver_SwingSolution extends GridPanel(1, 1){
 
   minimumSize   = 200 -> 100

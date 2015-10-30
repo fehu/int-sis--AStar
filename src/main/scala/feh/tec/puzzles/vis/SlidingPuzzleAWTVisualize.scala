@@ -6,9 +6,10 @@ import javax.swing.{JFrame, JPanel, JScrollPane, ScrollPaneConstants}
 
 import feh.tec.astar.vis.AWTVisualizeHistory
 import feh.tec.astar.{AwtHelper, History}
-import feh.tec.puzzles.{SlidingPuzzle, SlidingPuzzleInstance}
+import feh.tec.puzzles.{SlidingPuzzleInstance, SlidingPuzzle}
 import feh.util._
 
+/** [[AWTVisualizeHistory]] instance for [[SlidingPuzzleInstance]]s. */
 trait SlidingPuzzleAWTVisualize[Piece] {
   outer: AWTVisualizeHistory[SlidingPuzzleInstance[Piece]] =>
 
@@ -20,6 +21,7 @@ trait SlidingPuzzleAWTVisualize[Piece] {
 
   implicit def orderingForT: Ordering[SlidingPuzzleInstance[Piece]] = Ordering.by(_.generation)
 
+  /** [[SlidingPuzzleInstance]] visualization. */
   class AWTVisualizeNode extends VisualizeNode{
     /** Draws the node.
       */
@@ -96,7 +98,7 @@ trait SlidingPuzzleAWTVisualize[Piece] {
 
 }
 
-
+/** A generic [[SlidingPuzzleAWTVisualize]] implementation. */
 class GenericSlidingPuzzleAWTVisualize[Piece](val puzzle: SlidingPuzzle[Piece],
                                               val cellSize: Dimension,
                                               val heuristic: SlidingPuzzleInstance[Piece] => Any,
@@ -112,6 +114,7 @@ class GenericSlidingPuzzleAWTVisualize[Piece](val puzzle: SlidingPuzzle[Piece],
   protected def setCanvasSize(dim: Dimension): Unit = _setCanvasSize(dim)
 }
 
+/** A frame for [[feh.tec.astar.VisualizeHistory.HistoryTree]] visualization. */
 class FrameVisualization[T](fvh: (Dimension => Unit) => AWTVisualizeHistory[T], exitOnClose: Boolean, hist: History[T]*)
   extends AwtHelper
 {

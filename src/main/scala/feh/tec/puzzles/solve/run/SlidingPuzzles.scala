@@ -14,6 +14,7 @@ object SlidingPuzzles{
   }
 }
 
+/** A configuration container for showing history trees. */
 case class HistoryTreeShowConf(cellSize: (Int, Int),
                                distanceBetweenH: Int,
                                distanceBetweenV: Int,
@@ -26,6 +27,7 @@ object HistoryTreeShowConf{
   def default = HistoryTreeShowConf(30 -> 30, distanceBetweenH = 10, distanceBetweenV = 30, showRunId = false)
 }
 
+/** A [[SlidingPuzzle]] example (with solution, initial state and solver). */
 case class SlidingPuzzleExample[T](puzzle: SlidingPuzzle[T],
                                    initial: Option[SlidingPuzzleInstance[T]],
                                    solver: SlidingPuzzle_A_*[T])
@@ -77,6 +79,7 @@ object SlidingPuzzleExamples{
 }
 
 object Solver{
+  /** Predefined heuristics. */
   object H{
     /** heuristic = f + g
       *        f = [[feh.tec.puzzles.solve.SlidingPuzzle_A_*.Heuristics.Double.HasSingleEmpty.manhattanDistanceToSolutionSum]]

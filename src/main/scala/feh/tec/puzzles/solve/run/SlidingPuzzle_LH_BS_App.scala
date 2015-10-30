@@ -12,6 +12,7 @@ import scala.swing.Frame
 import scala.swing.Swing._
 import scala.util.Failure
 
+/** The graphic application. */
 object SlidingPuzzle_LH_BS_App extends App{
   val cfg = defaultDirConfig[Double, Int](null)
 

@@ -11,6 +11,7 @@ import scala.swing.Swing._
 import scala.swing._
 import scala.swing.event.MouseClicked
 
+/** A graphic component for creating [[feh.tec.puzzles.solve.run.SlidingPuzzleExample]]s. */
 class SlidingPuzzleExampleSwingBuilder( val boardSize: (Int, Int)
                                       , val cellSize: (Int, Int)
                                       )
@@ -25,7 +26,7 @@ class SlidingPuzzleExampleSwingBuilder( val boardSize: (Int, Int)
   contents += solutionInstBuilder
 }
 
-
+/** A graphic component for modifying [[SlidingPuzzleInstance]]s. */
 class SlidingPuzzleInstanceSwingBuilder(boardSize: (Int, Int), cellSize: (Int, Int), instLabel: String)
   extends BoxPanel(Orientation.Vertical)
 {

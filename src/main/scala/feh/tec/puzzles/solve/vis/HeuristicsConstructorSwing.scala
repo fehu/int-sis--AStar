@@ -10,10 +10,12 @@ import scala.swing.Swing._
 import scala.swing._
 import scala.util.Try
 
+/** An interface for a Heuristics constructor. */
 trait HeuristicsConstructorSwing[T] extends Component{
   def heuristic: SlidingPuzzleInstance[T] => Double
 }
 
+/** A graphical component for adjusting heuristic coefficients. */
 class HeuristicsConstructorSwingImpl[T] extends GridPanel(4, 2) with HeuristicsConstructorSwing[T]{
   
   def heuristic: SlidingPuzzleInstance[T] => Double =
