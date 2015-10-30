@@ -7,7 +7,7 @@ version := "0.6-SNAPSHOT"
 scalaVersion := "2.11.7"
 
 
-mainClass in (Compile, run) := Some("feh.tec.puzzles.solve.vis.SlidingPuzzle_LH_BS_App")
+mainClass in (Compile, run) := Some("feh.tec.puzzles.solve.run.SlidingPuzzle_LH_BS_App")
 
 // Library Dependencies
 
