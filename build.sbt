@@ -2,7 +2,7 @@ organization := "feh.tec"
 
 name := "A*"
 
-version := "0.6-SNAPSHOT"
+version := "0.6"
 
 scalaVersion := "2.11.7"
 

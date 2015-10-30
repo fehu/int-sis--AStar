@@ -2,7 +2,7 @@ A*
 ==
 _A project for master studies at [ITESM](http://www.itesm.mx/wps/wcm/connect/ITESM/Tecnologico+de+Monterrey/English)_
 
-(Version 0.6-SNAPSHOT)
+(Version 0.6)
 
 ---
 
