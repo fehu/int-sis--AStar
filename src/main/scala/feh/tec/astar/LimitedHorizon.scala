@@ -12,21 +12,26 @@ import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{Await, Promise}
 import scala.util.{Failure, Success, Try}
 
+/** Abstract <b>Limited Depth / Horizon</b> implementation. */
 trait LimitedHorizon[T] {
   self : A_*[T] =>
 
+  /** The maximum recursion depth. */
   def maxDepth: Int
 
+  /** Select the best open (partial solution 'open' pruning) */
   def selectTheBest: SortedPossibilities[Heuristic, T] => Map[Heuristic, Set[T]]
 
 
-
+  /** Handles partial solutions. */
   def handlePartialSolution(ps: PartialSolution): RecFunc.Res[T, (Try[T], History[T])]
 
+  /** Executes A* with Limited Horizon. */
   protected def execSearchLH(f: RecFunc[T, Result])(state: T): Result
 
   case class PartialSolution(best: Set[T])
 
+  /** An instance of [[SearchInnerResult]] to denote [[PartialSolution]]s. */
   case class PartialSolutionReturn(result: Try[PartialSolution],
                                    history: History[T] = NoHistory()) extends SearchInnerResult
   {
@@ -34,6 +39,7 @@ trait LimitedHorizon[T] {
   }
 
 
+  /** Returns partial solution if the maximum recursion depth was reached. */
   override protected def searchInnerExtraLogic: Decide =
     count => {
       case Some((best, open)) if count == maxDepth - 1 =>
@@ -43,12 +49,17 @@ trait LimitedHorizon[T] {
 
   val HistoryManagement: HistoryManagement
 
+  /** History management interface. */
   trait HistoryManagement{
+    /** Guard history. */
     def saveHistory(h: History[T])
+    /** List current history. */
     def listHistory: List[History[T]]
+    /** Clear current history. */
     def clearHistory(): Unit
   }
 
+  /** Runs [[A_*.searchInner]] and processes the results. */
   protected def searchLH = RecFunc[T, Result]{
     t =>
       if (isSolution(t)) {
@@ -86,6 +97,7 @@ object LimitedHorizon{
 
   object HistManagement{
 
+    /** Im memory [[LimitedHorizon.HistoryManagement]] implementation. */
     trait InMemory[T]{
       self: LimitedHorizon[T] =>
 
@@ -107,25 +119,28 @@ object LimitedHorizon{
 
   }
 
-
+  /** Defines a mutable buffer for guarding partial solutions (kind of global 'open'). */
   protected trait PartialSolutionsBuffer[T]{
     self : A_*[T] with LimitedHorizon[T] =>
 
     protected var buffer = SortedPossibilities.empty[Heuristic, T]
 
+    /** Saves the [[PartialSolution]]. */
     def guardPartialSolution(ps: PartialSolution): Unit = { buffer ++= ps.best }
 
+    /** Pops the best [[PartialSolution]] (removing from the buffer). */
     def popBestPartialSolution(): Option[T] = extractTheBest(buffer) map {
       case (best, rest) =>
         buffer = rest
         best
     }
 
+    /** Clears the [[PartialSolution]] buffer. */
     protected def clearPartialSolutions() = buffer = SortedPossibilities.empty
 
   }
 
-
+  /** Sequential [[LimitedHorizon]] executor. */
   trait Sequential[T] extends LimitedHorizon[T] with PartialSolutionsBuffer[T] {
     self : A_*[T] =>
 
@@ -149,49 +164,67 @@ object LimitedHorizon{
     }
   }
 
-  /** uses akka actors
-   * TODO: test if all executors are used
+  /** Parallel [[LimitedHorizon]] executor.
+   *  Is implemented with [[akka.actor]] actors.
    */
   trait Parallel[T] extends LimitedHorizon[T] {
     self: A_*[T] =>
 
+    /** Execution time limit. */
     def maxExecTime: FiniteDuration
+    /** The number of parallel executors. */
     def executorPoolSize: Int
-    
+
+    /** An [[ActorRefFactory]] for creating actors. */
     protected def aFactory: ActorRefFactory
-    
+
+    /** A message, requesting execution of A*
+      *
+      * @param state   initial state.
+      * @param promise a [[Promise]] for the result.
+      * @param f       a recursive function to execute.
+      */
     protected case class InitExec(state: T, promise: Promise[Result], f: RecFunc[T, Result])
+
+    /** Commands an executor to exec the given function with the given 'state' argument. */
     protected case class Exec(state: T, f: RecFunc[T, Result])
 
-//    protected case class SaveHistory(hist: History[T])
-//    protected case object ClearHistory
-//    protected case object ListHistory
 
     protected case object AlreadyRunning extends Exception("A* is already running in parallel, use another instance")
     protected case object NoExecutor extends Exception("A* has no free concurrent executors")
 
+    /** A [[ThreadLocal]] scoped state for an executor. */
     protected val executor = new ScopedState[ActorRef](null)
 
+    /** An abstract execution controller actor. */
     protected abstract class Controller extends Actor with ActorLogging{
+      /** Current result promise. */
       protected var promiseOpt: Option[Promise[Result]] = None
+      /** Current function to execute. */
       protected var func: RecFunc[T, Result] = null
 
+      /** Get a free executor. */
       protected def getFree: Option[ActorRef]
+      /** Number of free executors. */
       protected def countFree: Int
+      /** Free an executor actor. */
       protected def free: ActorRef => Unit
 
+      /** Guard a partial solution. */
       protected def guardPartialSolution: PartialSolution => Unit
+      /** Get the next state from the global 'open'. */
       protected def nextTask: Option[T]
 
-
+      /** Run next task (if any) with a free executor (if any). */
       def runNextTask() = for{
         next <- nextTask
         exec <- getFree
       } yield exec ! Exec(next, func)
 
+      /** Runs tasks as long as there are free executors and tasks to execute. */
       def runNextTasks() = while ( runNextTask().isDefined ) {}
 
-
+      /** The controller's [[Actor.receive]] function, processing incoming messages. */
       def receive: Receive = {
         case InitExec(_, promise, _) if promiseOpt.isDefined => promise.failure(AlreadyRunning)
         case InitExec(init, promise, f) => 
@@ -214,6 +247,7 @@ object LimitedHorizon{
       }
     }
 
+    /** Task executor actor. */
     protected class Executor(val controller: ActorRef) extends Actor with ActorLogging{
       def receive: Actor.Receive = {
         case Exec(st, f) =>
@@ -278,18 +312,13 @@ object LimitedHorizon{
     
     protected def executorProps(parent: ActorRef) = Props(new Executor(parent))
 
-//    def HistoryManagement: HistoryManagement = new HistoryManagement{
-//      def saveHistory(h: History[T]): Unit = ???
-//
-//      def listHistory: List[History[T]] = ???
-//
-//      def clearHistory(): Unit = ???
-//    }
   }
 
   object Parallel{
+    /** A message, notifiyng that an executor has found the result (or failed with error). */
     protected case class Finished[L, R](res: Either[L, Try[R]])
 
+    /** A custom mailbox for actors, with priority for [[Finished]] message. */
     class PriorityMailbox(settings: ActorSystem.Settings, config: Config)
       extends UnboundedStablePriorityMailbox(
         PriorityGenerator {

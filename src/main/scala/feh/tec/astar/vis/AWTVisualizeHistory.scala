@@ -7,7 +7,7 @@ import feh.util.ScopedState
 
 import scala.collection.mutable
 
-
+/** Generic [[VisualizeHistory]] implementation. */
 abstract class AWTVisualizeHistory[T] extends VisualizeHistory[T]{
   protected val graphicsState = new ScopedState[Option[java.awt.Graphics]](None)
   protected def graphics = graphicsState.get.orNull

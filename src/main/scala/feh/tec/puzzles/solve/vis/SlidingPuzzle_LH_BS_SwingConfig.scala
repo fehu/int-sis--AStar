@@ -283,7 +283,7 @@ class SlidingPuzzle_LH_BS_Solver_SwingConfig( val solver: MutableContainer[Doubl
 
   def controls = Seq(searchDirCtrl, maxDepthCtrl, prunePercentCtrl, bestFracThresholdCtrl)
 
-  def labels = Seq("search direction", "max. depth", "prune %", "Part. sol prune %")
+  def labels = Seq("search direction", "max. rec. depth", "prune %", "Part. sol prune %")
 
   protected class SolverConfig extends GridPanel(4, 2){
     for {

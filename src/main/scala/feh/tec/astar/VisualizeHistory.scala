@@ -7,14 +7,19 @@ import feh.tec.astar.HistoryEntry.Pruned
 import scala.collection.mutable
 import feh.util._
 
+/** Abstract [[History]] visualization. Builds history tree. */
 trait VisualizeHistory[T] extends AwtHelper{
   vis =>
 
+  /** Nodes visualizer. */
   val drawNode: VisualizeNode
 
+  /** Horizontal distance between siblings. */
   def distanceBetweenH: Int
+  /** Vertical distance between nodes. */
   def distanceBetweenV: Int
 
+  /** An [[Ordering]] for states of type [[T]]. */
   implicit def orderingForT: Ordering[T]
 
   protected def heuristic: T => Any
@@ -37,6 +42,7 @@ trait VisualizeHistory[T] extends AwtHelper{
     drawHistoryRepaint(tr)
   }
 
+  /** Prepares the canvas for drawing. */
   def drawHistoryPrepare(tr: HistoryTree[HNode]): Unit = {
     val deepestN = tr.root.deepChildrenLeafs
     val width = deepestN * drawNode.size.width + (deepestN - 1) * distanceBetweenH
@@ -44,6 +50,7 @@ trait VisualizeHistory[T] extends AwtHelper{
     setCanvasSize(width -> height)
   }
 
+  /** Draws the [[History]] tree. Call it when the canvas needs to be repained. */
   def drawHistoryRepaint(tr: HistoryTree[HNode]): Unit = {
     // draw nodes
     tr.byDepth.values.flatten.foreach(drawNode.draw)
@@ -75,6 +82,7 @@ trait VisualizeHistory[T] extends AwtHelper{
   protected def shiftRight: Point => Point    = p => p.x + drawNode.size.width/2 -> p.y
   protected def shiftFullDown: Point => Point = p => p.x -> (p.y + drawNode.size.height)
 
+  /** Set positions for the nodes of a [[HistoryTree]]. */
   def setPositions(tr: HistoryTree[HNode]): tr.type = {
     // resolve the `deepChildrenLeafs`
     tr.byDepth.toList.sortBy(-_._1).foreach{
@@ -126,6 +134,7 @@ trait VisualizeHistory[T] extends AwtHelper{
     tr
   }
 
+  /** Builds a [[HistoryTree]] from [[History]]. */
   def abstractHistoryTree(h: History[T]): HistoryTree[HNode] = {
     if (h.lastOption.isEmpty) sys.error("Empty history")
 
@@ -182,6 +191,7 @@ trait VisualizeHistory[T] extends AwtHelper{
     }
   }
 
+  /** Abstract [[History]] tree. */
   trait HistoryTree[Node <: AbstractHistoryNode[Node]]{
     val root: Node
     val solution: Option[Node]
@@ -216,23 +226,41 @@ trait VisualizeHistory[T] extends AwtHelper{
     }
   }
 
+  /** Abstract [[HistoryTree]] node. */
   trait AbstractHistoryNode[Node <: AbstractHistoryNode[Node]]{
+    /** The order of the recursive call. */
     def order: Option[Int]
+    /** The state processed. */
     def state: T
+    /** The depth of a node (the number of parents). */
     def depth: Int
+    /** Parent node. */
     def parent: Option[Node]
+    /** Children nodes. */
     def children: Set[Node]
 
+    /** State's desription, */
     lazy val description = vis.description(state)
+    /** State's heuristic value as string. */
     lazy val heuristic = vis.heuristic(state).toString
   }
 
+  /** An [[AbstractHistoryNode]] with position. */
   trait HistoryNode[Node <: HistoryNode[Node]] extends AbstractHistoryNode[Node]{
     /** left-upper corner */
     def position: Point
+    /** The number of leafs that has this state and all it's children, children of children, etc... */
     def deepChildrenLeafs: Int
   }
 
+  /** A [[HistoryTree]] node implementation.
+    *
+    * @param state  the processed state.
+    * @param depth  the depth (number of parents) of the state.
+    * @param parent the parent node.
+    * @param runId  the id of recusrive run.
+    * @param pruned was the state pruned?
+    */
   class HNode(val state: T,
               val depth: Int,
               val parent: Option[HNode],
