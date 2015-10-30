@@ -5,26 +5,31 @@ import feh.util._
 
 import scala.util.Try
 
-/** An abstract sliding puzzle.
+/** An abstract sliding puzzle descriptor.
  * @see [[https://en.wikipedia.org/wiki/Sliding_puzzle]]
  * @see [[http://mypuzzle.org/sliding]]
  */
 trait SlidingPuzzle[Piece] {
 
+  /** Puzzle width. */
   def width: Int
+  /** Puzzle height */
   def height: Int
 
+  /** Puzzle size. */
   def size = (width, height)
 
   /** The number of lacking pieces (empty spaces) in the puzzle */
   def emptySpaces: Int
 
+  /** The number of non-empty pieces in the puzzle. */
   def piecesCount = width * height - emptySpaces
 
 
-
+  /** The solution [[SlidingPuzzleInstance]]. */
   def solution: SlidingPuzzleInstance[Piece]
 
+  /** A random [[SlidingPuzzleInstance]]. */
   def randomInstance: SlidingPuzzleInstance[Piece]
 
 
@@ -59,6 +64,7 @@ trait SlidingPuzzleInstance[Piece]{
 
   def asMap: Map[Coordinate, Option[Piece]]
 
+  /** Coordinates of epty pieces. */
   def emptyPositions: Seq[Coordinate]
 
   /** Try to move a piece `from` in the direction `dir`.
@@ -128,11 +134,13 @@ object SlidingPuzzle{
 
   implicit class SlidingPuzzleInstanceOps[Piece](val inst: SlidingPuzzleInstance[Piece]){
 
+    /** Returns neighbours coordinates and directions to them. */
     def neighbouringPiecesCoordinates(c: Coordinate): Seq[(Direction, Coordinate)] = {
       val dirs = Direction.all.toList
       dirs.zipMap(neighbourRelatively(inst.puzzle)(c)).collect{ case (dir, Some(cor)) => dir -> cor }
     }
 
+    /** The sequence of node's parents, starting with the (initial) root. */
     def pathFromRoot = Y[SlidingPuzzleInstance[Piece], List[SlidingPuzzleInstance[Piece]]](
       rec =>
         piece =>
@@ -143,6 +151,7 @@ object SlidingPuzzle{
     )(inst).reverse
   }
 
+  /** Try get a neighbouring piece using relative direction. */
   def neighbourRelatively: SlidingPuzzle[_] => Coordinate => Direction => Option[Coordinate] =
     puzzle =>
       coord =>

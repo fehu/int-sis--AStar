@@ -2,6 +2,7 @@ package feh.tec.puzzles
 
 import feh.util._
 
+/** A generic [[SlidingPuzzle]] implementation. */
 abstract class GenericSlidingPuzzle[Piece](val width: Int,
                                            val height: Int,
                                            val emptySpaces: Int,

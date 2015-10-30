@@ -46,11 +46,12 @@ object SlidingPuzzle_A_*{
     type Heuristic = H
   }
 
-
+  /** Some heuristics for [[SlidingPuzzleInstance]]s. */
   object Heuristics{
 
     object Double{
 
+      /** The sum of manhattan distances from the piece to it's correct position. */
       def manhattanDistanceToSolution[Piece]: SlidingPuzzleInstance[Piece] => (Coordinate, Piece) => Double =
         inst =>
           (c, piece) => {
@@ -58,9 +59,10 @@ object SlidingPuzzle_A_*{
             dx.abs + dy.abs
           }
 
-
+      /** The number of actions taken to arrive to this state (state's parents).  */
       def solutionLength: SlidingPuzzleInstance[_] => Double = _.generation
 
+      /** The number of correctly positioned pieces. */
       def correctlySet: SlidingPuzzleInstance[_] => Double =
         inst => (
           for {
@@ -70,12 +72,15 @@ object SlidingPuzzle_A_*{
           } yield 1
         ).sum
 
+      /** The number of correctly set rows and columns. */
       def correctRowsAndCols: SlidingPuzzleInstance[_] => Double =
         inst => correctRows(inst) + correctCols(inst)
 
+      /** The number of correctly set rows. */
       def correctRows: SlidingPuzzleInstance[_] => Double =
         inst => correctRowsInner(inst.listRows, inst.puzzle.solution.listRows)
 
+      /** The number of correctly set columns. */
       def correctCols: SlidingPuzzleInstance[_] => Double =
         inst => correctRowsInner(inst.listRows.transpose, inst.puzzle.solution.listRows.transpose)
 
@@ -84,6 +89,7 @@ object SlidingPuzzle_A_*{
 
       object HasSingleEmpty{
 
+        /** The sum of manhattan distances from each piece to it's correct position. */
         def manhattanDistanceToSolutionSum[Piece]: SlidingPuzzleInstance[Piece] => Double =
           inst => {
             // distance for pieces
@@ -98,9 +104,6 @@ object SlidingPuzzle_A_*{
             dPieces.sum + dEmpty
           }
 
-        def correctRows[Piece]: SlidingPuzzleInstance[Piece] => Double = ???
-        def correctCols[Piece]: SlidingPuzzleInstance[Piece] => Double = ???
-
       }
 
     }
@@ -108,20 +111,6 @@ object SlidingPuzzle_A_*{
   }
 
   object Solve{
-    /** Solves a [[feh.tec.puzzles.SlidingPuzzle]] using [[MinimizingHeuristic]]
-     *  where heuristic = f - g
-     *        f = [[Heuristics.Double.HasSingleEmpty.manhattanDistanceToSolutionSum]]
-     *        g = [[Heuristics.Double.solutionLength]]
-     */
-    @deprecated
-    def solver_v1[Piece]: SlidingPuzzle_A_*[Piece] = {
-      val f = Heuristics.Double.HasSingleEmpty.manhattanDistanceToSolutionSum[Piece]
-      val g = Heuristics.Double.solutionLength
-      val heristic = (x: SlidingPuzzleInstance[Piece]) => f(x) + g(x)
-
-      minimizing(heristic)
-    }
-
     def minimizing[Piece, H: Ordering](heristic: SlidingPuzzleInstance[Piece] => H) =
       new MinimizingHeuristic[Piece, H](heristic)
   }

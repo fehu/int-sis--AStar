@@ -12,7 +12,7 @@ import scala.concurrent.duration.FiniteDuration
 import scala.util.Try
 
 /**
- * A generic mutable solver for [[feh.tec.puzzles.SlidingPuzzle]]s
+ * A generic <b>mutable</b> solver for [[feh.tec.puzzles.SlidingPuzzle]]s
  * with [[feh.tec.astar.LimitedHorizon]] and [[feh.tec.astar.BeamSearch]].
  */
 
@@ -37,6 +37,7 @@ abstract class SlidingPuzzle_Mutable_LH_BS_A_*[H, Piece] protected[solve] (
   def prune: Prune[H, SlidingPuzzleInstance[Piece]] = pruneDir(pruneTake)
 
   private var _isRunning = false
+  /** Is currently running? */
   def isRunning = synchronized( _isRunning )
 
   protected def started() = synchronized( _isRunning = true )
@@ -74,7 +75,11 @@ object SlidingPuzzle_LH_BS_A_*{
   type HandlePartialSolution[Piece] = LimitedHorizon[SlidingPuzzleInstance[Piece]]#PartialSolution
                                    => RecFunc.Res[SlidingPuzzleInstance[Piece], Result[Piece]]
 
+  /** A container for [[SlidingPuzzle_Mutable_LH_BS_A_*]], that permits access
+   *  if and only if not [[SlidingPuzzle_Mutable_LH_BS_A_*.isRunning]].
+   */
   class MutableContainer[H, Piece](protected val underlying: SlidingPuzzle_Mutable_LH_BS_A_*[H, Piece]){
+    /** Try to affect the underlying [[SlidingPuzzle_Mutable_LH_BS_A_*]] (only if it isn't running). */
     def affect[R](f: SlidingPuzzle_Mutable_LH_BS_A_*[H, Piece] => R): Option[R] =
       if (underlying.isRunning) None
       else Some(f(underlying))
@@ -89,7 +94,9 @@ object SlidingPuzzle_LH_BS_A_*{
     def execType = underlying.execType
   }
   
-
+  /** A constructor class for [[MutableContainer]]s with underlying
+   *  [[feh.tec.astar.LimitedHorizon.Sequential]] or [[feh.tec.astar.LimitedHorizon.Parallel]].
+   */
   case class MutableSolverConstructor[H: Ordering, Piece]( heuristic      : SlidingPuzzleInstance[Piece] => H
                                                          , searchDir      : SearchDirection
                                                          , maxDepth       : Int
@@ -102,6 +109,7 @@ object SlidingPuzzle_LH_BS_A_*{
     def selectTheBest  = setup.selectTheBest
     def extractTheBest = setup.extractTheBest
 
+    /** [[MutableContainer]] with a [[feh.tec.astar.LimitedHorizon.Sequential]] underlying solver. */
     def sequential: MutableContainer[H, Piece] =
       new MutableContainer[H, Piece](
         new SlidingPuzzle_Mutable_LH_BS_A_*[H, Piece](heuristic, maxDepth, pruneDir, pruneTake, selectTheBest, extractTheBest)
@@ -111,6 +119,7 @@ object SlidingPuzzle_LH_BS_A_*{
         }
       )
 
+    /** [[MutableContainer]] with a [[feh.tec.astar.LimitedHorizon.Parallel]] underlying solver. */
     def parallel(maxExecutionTime: FiniteDuration, executorPool: Int)
                 (implicit actorFactory: ActorRefFactory): MutableContainer[H, Piece] =
       new MutableContainer[H, Piece](
@@ -127,10 +136,12 @@ object SlidingPuzzle_LH_BS_A_*{
       )
   }
 
+  /** The functions that determine [[SearchDirection]] (Min or Max) */
   case class SearchDirSetup[H, Piece]( extractTheBest: ExtractTheBest[H, Piece]
                                      , selectTheBest : SelectTheBest[H, Piece]
                                      , pruneTake     : PruneTake[H, SlidingPuzzleInstance[Piece]]
                                      )
+  /** The [[SearchDirSetup]] for cases of [[SearchDirection.Min]] and [[SearchDirection.Max]]. */
   case class SearchDirConfig[H, Piece](setup: Map[SearchDirection, SearchDirSetup[H, Piece]])
 
 
@@ -156,7 +167,7 @@ object SlidingPuzzle_LH_BS_A_*{
 
 
 
-
+  /** Sets the corresponding solver functions, depending on [[SearchDirection]] (Max or Min). */
   def setSearchDir[H, Piece](searchDir: SearchDirection, mutableSolver: SlidingPuzzle_Mutable_LH_BS_A_*[H, Piece])
                             (implicit cfg: SearchDirConfig[H, Piece]): mutableSolver.type = {
     val setup = cfg.setup(searchDir)

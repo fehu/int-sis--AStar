@@ -1,16 +1,12 @@
 package feh.tec.puzzles.solve.run
 
-import akka.actor.ActorRefFactory
-import feh.tec.astar.A_*.SortedPossibilities
 import feh.tec.astar.AwtHelper._
-import feh.tec.astar.{History, LimitedHorizon}
+import feh.tec.astar.History
 import feh.tec.puzzles._
-import feh.tec.puzzles.solve.SlidingPuzzle_A_*.{Heuristics, MinimizingHeuristic, Solve}
-import feh.tec.puzzles.solve.{SlidingPuzzle_A_*, SlidingPuzzle_HorLim_A_*}
+import feh.tec.puzzles.solve.SlidingPuzzle_A_*
+import feh.tec.puzzles.solve.SlidingPuzzle_A_*.{Heuristics, Solve}
 import feh.tec.puzzles.vis.{FrameVisualization, GenericSlidingPuzzleAWTVisualize}
 import feh.util._
-
-import scala.concurrent.duration.FiniteDuration
 
 object SlidingPuzzles{
   def exampleFor[T](puzzle: SlidingPuzzle[T], initial: SlidingPuzzleInstance[T] = null) = new {
@@ -125,56 +121,4 @@ object Solver{
     */
   def _03[T] = Solve.minimizing[T, Double](H._03)
 
-
-  object LimHorSeq{
-
-    /** Minimizing heuristic [[H._03]] with [[feh.tec.astar.LimitedHorizon]].
-      * Selects as best the nodes with `heuristic _ >= (heuristic best)*bestFracThreshold`
-      */
-    def _03[T](horLimit: Int, bestFracThreshold: InUnitInterval) =
-      new MinimizingHeuristic[T, Double](H._03)
-        with SlidingPuzzle_HorLim_A_*[T]
-        with LimitedHorizon.Sequential[SlidingPuzzleInstance[T]]
-        with LimitedHorizon.HistManagement.InMemory[SlidingPuzzleInstance[T]]
-      {
-        def maxDepth: Int = horLimit
-
-        def selectTheBest: (SortedPossibilities[Double, SlidingPuzzleInstance[T]]) => Map[Double, Set[SlidingPuzzleInstance[T]]] = {
-          sps =>
-            val bestH = sps.head._1
-            val threshold = bestH * bestFracThreshold
-            sps.underlying.filterKeys(_ >= threshold).toMap.mapValues(_.toSet)
-        }
-      }
-  }
-
-  object LimHorPar{
-
-    /** Minimizing heuristic [[H._03]] with [[feh.tec.astar.LimitedHorizon]].
-      * Selects as best the nodes with `heuristic _ >= (heuristic best)*bestFracThreshold`.
-      * Executes in parallel.
-      */
-    def _03[T](horLimit: Int, bestFracThreshold: InUnitInterval, execTimeout: FiniteDuration, executors: Int)
-              (implicit afact: ActorRefFactory) =
-      new MinimizingHeuristic[T, Double](H._03)
-        with SlidingPuzzle_HorLim_A_*[T]
-        with LimitedHorizon.Parallel[SlidingPuzzleInstance[T]]
-        with LimitedHorizon.HistManagement.InMemory[SlidingPuzzleInstance[T]]
-      {
-        def maxDepth: Int = horLimit
-        def maxExecTime = execTimeout
-        def executorPoolSize = executors
-        protected def aFactory = afact
-
-        def selectTheBest: (SortedPossibilities[Double, SlidingPuzzleInstance[T]]) => Map[Double, Set[SlidingPuzzleInstance[T]]] = {
-          sps =>
-            val bestH = sps.head._1
-            val threshold = bestH * bestFracThreshold
-            sps.underlying.filterKeys(_ >= threshold).toMap.mapValues(_.toSet)
-        }
-
-      }
-
-
-  }
 }
