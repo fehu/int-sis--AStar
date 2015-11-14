@@ -1,12 +1,9 @@
-package feh.tec.astar
+package feh.tec.puzzles
 
-import feh.tec.astar.SlidingPuzzleInstanceSpec.InstanceData
 import feh.tec.puzzles.SlidingPuzzle.{Coordinate, Direction, GenericSlidingPuzzleInstance}
-import feh.tec.puzzles.{SlidingPuzzleInt3x3v2, SlidingPuzzle, SlidingPuzzleInstance, SlidingPuzzleInt3x3v1}
-import feh.util._
+import feh.tec.puzzles.SlidingPuzzleInstanceSpec.InstanceData
 import org.scalacheck.{Arbitrary, Gen, Prop}
 import org.specs2._
-import org.specs2.specification.core.Fragments
 
 import scala.language.{existentials, higherKinds}
 import scala.util.{Failure, Success}
