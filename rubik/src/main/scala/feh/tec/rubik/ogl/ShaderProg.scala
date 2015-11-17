@@ -19,14 +19,14 @@ class ShaderProg(val indices: Array[Int],
   protected lazy val ibb = BufferUtils.createIntBuffer(indices.length)
   protected lazy val cfb = BufferUtils.createFloatBuffer(vertices.length)
 
-  lazy val vertexBuffer = new AttributeBuffer(
+  protected lazy val vertexBuffer = new AttributeBuffer(
     buffUsage, vertices.length / num_components,
     num_components, components
   )
 
-  lazy val indexBuffer = new ex.IndexBuffer(buffUsage, indices.length)
+  protected lazy val indexBuffer = new ex.IndexBuffer(buffUsage, indices.length)
 
-  lazy val pp = new Program("test")(
+  protected lazy val pp = new Program("test")(
     Program.Shader.Vertex  (readResource(vertShaderResource)),
     Program.Shader.Fragment(readResource(fragShaderResource))
   )
@@ -70,7 +70,7 @@ class ShaderProg(val indices: Array[Int],
     indexBuffer.release()
   }
   
-  def draw(camera: Matrix.Camera, drawGL: IndexBuffer.Access => Unit)
+  def draw(transform: Matrix.Plain, doDraw: DrawArg => Unit)
           (implicit gl: Macrogl): Unit =
     for {
       _ <- using.program(pp)
@@ -81,8 +81,8 @@ class ShaderProg(val indices: Array[Int],
       gl.clearColor(0.0f, 0.0f, 0.0f, 1.0f)
       raster.clear(Macrogl.COLOR_BUFFER_BIT | Macrogl.DEPTH_BUFFER_BIT)
 
-      pp.uniform.viewTransform = camera.transform
-      drawGL(b)
+      pp.uniform.viewTransform = transform
+      doDraw(DrawArg(pp, vertexBuffer, b))
     }
 
 
@@ -96,7 +96,9 @@ case class ShaderProgramConf(lightColor    : (Float, Float, Float),
                              diffuse       : Float )
 
 
-case class ShaderProgContainer(prog: ShaderProg, drawGL: IndexBuffer.Access => Unit)
+case class DrawArg(pp: Program, vertexBuffer: AttributeBuffer, b: IndexBuffer.Access)
+
+case class ShaderProgContainer(prog: ShaderProg, doDraw: DrawArg => Unit)
 
 /**  */
 trait ShadersSupport extends DefaultApp3DExec
@@ -111,7 +113,7 @@ trait ShadersSupport extends DefaultApp3DExec
 
   override protected def update() = {
     super.update()
-    shaderProgs.foreach( c => c.prog.draw(camera, c.drawGL) )
+    shaderProgs.foreach( c => c.prog.draw(camera.transform, c.doDraw) )
   }
 
   override protected def terminateApp() = {

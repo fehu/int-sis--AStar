@@ -1,13 +1,16 @@
 package feh.tec.rubik.ogl
 
 import feh.tec.rubik.{CubeOrientation, Rubik, RubikCube}
-import feh.tec.rubik.RubikCube.SideName
+import feh.tec.rubik.RubikCube.{WithSideName, WithSideNameWrapper, Corner, SideName}
 import feh.tec.rubik.ogl.CubeColorScheme.GLFColor
+import feh.util._
 import org.macrogl.ex.IndexBuffer
 import org.macrogl.{AttributeBuffer, Macrogl, Matrix, Program}
 
 
-trait CubeColorScheme[T] extends (T => GLFColor)
+trait CubeColorScheme[T] extends (T => GLFColor){
+  def asMap: Map[T, GLFColor]
+}
 
 object CubeColorScheme{
   type GLFColor = (Float, Float, Float)
@@ -15,10 +18,62 @@ object CubeColorScheme{
 
 
 /** Renders given Rubik's Cube */
-class CubeRenderer[T: CubeColorScheme](rubik: Rubik[T], pp: Program, vertexBuffer: AttributeBuffer){
+class RubikRender[T: CubeColorScheme: WithSideName](rubik: Rubik[T]){
+  def defaultColor = (0.5f, 0.5f, 0.5f)
 
-  def render(b: IndexBuffer.Access)  = {
+  def shaders = shadersMap.values.toSeq
+
+  protected lazy val shadersMap = rubik.cubes.map{
+    case ((x, y, z), (c, o)) =>
+      val vertices = Cube.coloredVertices(defaultColor, mkMp(c.labels))
+      val transform = cubePosition(x, y, z) // todo: use Orientation
+      c -> mkShader(vertices, transform)
+  }
+
+  private def colors = implicitly[CubeColorScheme[T]]
+  private def mkMp(s: Seq[T]) = s.map(t => t.side -> colors(t)).toMap
+  private lazy val pathRoot = Path("/org/macrogl/examples/", '/')
+
+  protected def mkShader(vertices: Array[Float], transform: Matrix.Plain) = ShaderProgContainer(
+    new ShaderProg(
+      Cube.indices,
+      vertices,
+      Cube.num_components,
+      Cube.components,
+      pathRoot / "BasicLighting.vert",
+      pathRoot / "BasicLighting.frag",
+      ShaderProgramConf(
+        lightColor = (1.0f, 1.0f, 1.0f),
+        lightDirection = (0.0f, -1.0f, -1.0f),
+        ambient = 0.25f,
+        diffuse = 0.95f
+      )
+    ),
+    {
+      case DrawArg(pp, vertexBuf, b) =>
+        pp.uniform.worldTransform = transform
+        b.render(Macrogl.TRIANGLES, vertexBuf)
+    }
+  )
+
+  def cubePosition(x: Int, y: Int, z: Int, c: Double = 2.05) = new Matrix.Plain(
+    Array[Double](
+        1, 0, 0, 0,
+        0, 1, 0, 0,
+        0, 0, 1, 0,
+        c*x, c*y, -5 + c*z, 1)
+  )
+
+}
+
+
+
+
+class CubeRenderer[T: CubeColorScheme](rubik: Rubik[T]){
+
+  def render(arg: DrawArg)  = {
     val cubes = rubik.cubes
+    import arg._
 
     for { ((x, y, z), (c, CubeOrientation(o))) <- cubes }{
 
