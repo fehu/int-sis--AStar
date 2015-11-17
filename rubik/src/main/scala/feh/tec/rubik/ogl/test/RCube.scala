@@ -2,7 +2,7 @@ package feh.tec.rubik.ogl.test
 
 import feh.tec.rubik.RubikSubCubesDefault.WithSideNameIdentity
 import feh.tec.rubik.RubikCube._
-import feh.tec.rubik.ogl.App3DControls.KeyEvent
+import feh.tec.rubik.ogl.App3DControls.{MutableStateHook, KeyEvent}
 import feh.tec.rubik.ogl._
 import feh.tec.rubik.{Rubik, RubikSubCubesDefault}
 import org.lwjgl.input.{Keyboard, Mouse}
@@ -59,6 +59,8 @@ object RCube extends ShadersSupport with FlyingCamera with App3DExit{
 
   override protected def initApp() = {
     super.initApp()
+
+    controlHooks += MutableStateHook(resetRequested, ifTrue( resetCamera() ))
     Mouse.setCursorPosition(displayX / 2, displayY / 2)
   }
 }

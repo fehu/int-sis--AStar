@@ -2,7 +2,7 @@ package feh.tec.rubik.ogl.test
 
 import feh.tec.rubik.RubikSubCubesDefault.WithSideNameIdentity
 import feh.tec.rubik.RubikCube._
-import feh.tec.rubik.ogl.App3DControls.KeyEvent
+import feh.tec.rubik.ogl.App3DControls.{MutableStateHook, KeyEvent}
 import feh.tec.rubik.ogl.{Cube, _}
 import feh.tec.rubik.{Rubik, RubikSubCubesDefault}
 import feh.util.Path
@@ -79,16 +79,25 @@ object Cubes extends ShadersSupport with FlyingCamera with App3DExit{
 
 
   implicit def colors = DefaultRubikColorScheme
-  val rubic = new Rubik[SideName](RubikSubCubesDefault.cubes)
+  val rubik = new Rubik[SideName](RubikSubCubesDefault.cubes)
 
-  val cRenderer = new CubeRenderer(rubic)
+  //  val cRenderer = new CubeRenderer(rubic)
+  //  protected val shaderProgs = ShaderProgContainer(CubesShader.prog, cRenderer.render) :: Nil
 
-  protected val shaderProgs = ShaderProgContainer(CubesShader.prog, cRenderer.render) :: Nil
+  //  val rr = new RubikRender(rubik)
+  protected val shaderProgs = ShaderProgContainer(CubesShader.prog, {
+    case DrawArg(pp, vertexBuf, b) =>
+      pp.uniform.worldTransform = cubePosition(0, 1)
+      b.render(Macrogl.TRIANGLES, vertexBuf)
+  }) :: Nil
 
   run()
 
   override protected def initApp() = {
     super.initApp()
+
+    controlHooks += MutableStateHook(resetRequested, ifTrue( resetCamera() ))
     Mouse.setCursorPosition(displayX / 2, displayY / 2)
   }
 }
+

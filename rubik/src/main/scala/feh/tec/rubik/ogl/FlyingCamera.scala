@@ -1,7 +1,6 @@
 package feh.tec.rubik.ogl
 
 import feh.tec.rubik.ogl.App3DControls.{MutableStateHook, KeyEvent, MutableState, MousePosition}
-import feh.tec.rubik.ogl.test.Cubes._
 import org.lwjgl.input.Keyboard
 import org.macrogl.Matrix
 import Utils.CameraExt
@@ -12,6 +11,7 @@ trait FlyingCamera extends App3DFullControls{
   def displayY: Int
 
   def mouseSensibility: Double
+  def cameraSpeed: Double
 
 
 
@@ -50,7 +50,6 @@ trait FlyingCamera extends App3DFullControls{
     super.initApp()
 
     controlHooks ++= Seq(
-      MutableStateHook(resetRequested, ifTrue( resetCamera() )),
       MutableStateHook(movingForward,  ifTrue( affectCamera(_.moveForward) )),
       MutableStateHook(movingBackward, ifTrue( affectCamera(_.moveBackward) )),
       MutableStateHook(movingRight,    ifTrue( affectCamera(_.moveRight) )),

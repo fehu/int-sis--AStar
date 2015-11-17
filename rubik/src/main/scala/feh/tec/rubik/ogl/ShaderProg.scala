@@ -1,5 +1,7 @@
 package feh.tec.rubik.ogl
 
+import java.util.UUID
+
 import feh.util.Path
 import org.lwjgl.BufferUtils
 import org.lwjgl.opengl.{GL11, GL15}
@@ -14,7 +16,8 @@ class ShaderProg(val indices: Array[Int],
                  val vertShaderResource: Path,
                  val fragShaderResource: Path,
                  val shaderConf: ShaderProgramConf,
-                 val buffUsage: Int = GL15.GL_STATIC_DRAW)
+                 val buffUsage: Int = GL15.GL_STATIC_DRAW,
+                 val name: String = UUID.randomUUID().toString)
 {
   protected lazy val ibb = BufferUtils.createIntBuffer(indices.length)
   protected lazy val cfb = BufferUtils.createFloatBuffer(vertices.length)
@@ -26,7 +29,7 @@ class ShaderProg(val indices: Array[Int],
 
   protected lazy val indexBuffer = new ex.IndexBuffer(buffUsage, indices.length)
 
-  protected lazy val pp = new Program("test")(
+  protected lazy val pp = new Program(name)(
     Program.Shader.Vertex  (readResource(vertShaderResource)),
     Program.Shader.Fragment(readResource(fragShaderResource))
   )
