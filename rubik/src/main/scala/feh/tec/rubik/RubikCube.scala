@@ -74,14 +74,20 @@ object RubikCube{
   )
 
 
+  trait WithSideName[T] { def side: T => SideName }
+
+  implicit class WithSideNameWrapper[T: WithSideName](t: T){
+    def side = implicitly[WithSideName[T]].side(t)
+  }
+
   /** A smaller cube, that the Rubik's Cube is composed of. */
   sealed trait Cube[T] {
     def labels: Seq[T]
   }
 
-  case class Center[T](name: SideName) extends Cube[T] { def labels = Nil }
-  case class Middle[T](label1: T, label2: T) extends Cube[T]{ def labels = label1 :: label2 :: Nil }
-  case class Corner[T](label1: T, label2: T, label3: T) extends Cube[T]{ def labels = label1 :: label2 :: label3 :: Nil }
+  case class Center[T: WithSideName](label: T) extends Cube[T] { def labels = Nil }
+  case class Middle[T: WithSideName](label1: T, label2: T) extends Cube[T]{ def labels = label1 :: label2 :: Nil }
+  case class Corner[T: WithSideName](label1: T, label2: T, label3: T) extends Cube[T]{ def labels = label1 :: label2 :: label3 :: Nil }
 
 //  object Orientation extends Enumeration{
 //    val X, Y, Z = Value
@@ -267,7 +273,12 @@ object RubikSubCubes{
 
 object RubikSubCubesDefault {
 
+  def cubes = ( RubikSubCubesDefault.centers ++ RubikSubCubesDefault.middles ++ RubikSubCubesDefault.corners
+    ).asInstanceOf[Set[Cube[SideName]]]
+
   lazy val centers: Set[Center[SideName]] = SideName.values.map(Center.apply[SideName])
+
+  implicit object WithSideNameIdentity extends WithSideName[SideName]{ def side = identity }
 
   lazy val middles = {
     val YZ = yz
@@ -422,139 +433,3 @@ object Test extends App{
   println(r)
 
 }
-
-/*
-    def mkDependentSideCubes(c         : SideName,
-                             mids      : Seq[Middle[SideName]],
-                             neighbours: Map[EdgeName, Side[SideName]],
-                             row       : Int = 1): (List[List[CubeSide[SideName]]], Seq[Middle[SideName]]) =
-    {
-
-      row match {
-        case 1 =>
-          val c1 = mkCorner(c, EdgeName.Left, EdgeName.Top, neighbours)
-          val (m, newMids) = mkMiddle(EdgeName.Top, neighbours, mids)
-          val c2 = mkCorner(c, EdgeName.Right, EdgeName.Top, neighbours)
-          val crow = c1 :: m :: c2 :: Nil
-
-          val (lst, mids_) = mkDependentSideCubes(c, newMids, neighbours, row + 1)
-          (crow :: lst) -> mids_
-
-        case 2 =>
-          val (m1, newMids1) = mkMiddle(EdgeName.Left, neighbours, mids)
-          val center = CubeSide(Center(c), c)
-          val (m2, newMids2) = mkMiddle(EdgeName.Right, neighbours, newMids1)
-          val crow = m1 :: center :: m2 :: Nil
-
-          val (lst, mids_) = mkDependentSideCubes(c, newMids2, neighbours, row + 1)
-          (crow :: lst) -> mids_
-
-        case 3 =>
-          val c1 = mkCorner(c, EdgeName.Left, EdgeName.Bottom, neighbours)
-          val (m, newMids) = mkMiddle(EdgeName.Bottom, neighbours, mids)
-          val c2 = mkCorner(c, EdgeName.Right, EdgeName.Bottom, neighbours)
-          val crow = c1 :: m :: c2 :: Nil
-
-          List(crow) -> mids
-      }
-    }
-
-    def mkCorner(side: SideName, e1: EdgeName, e2: EdgeName, neighbours: Map[EdgeName, Side[SideName]]) = {
-      def edgeOpt(e: EdgeName) = neighbours.get(e).map(_.edge.byName(e.opposite))
-
-      def mk(c1Opt: Option[RubikCube.CubeSide[RubikCube.SideName]],
-             c2Opt: Option[RubikCube.CubeSide[RubikCube.SideName]]) =
-      {
-        if (c1Opt.isEmpty   && c2Opt.isEmpty  ) ???
-
-        val cl =
-          if (c1Opt.isDefined && c2Opt.isDefined){
-            val c1 = c1Opt.get
-            val c2 = c2Opt.get
-            assert(c1.cube == c2.cube)
-            c1.cube -> chooseLabel(c1.cube.labels, Set(c1.label, c2.label), unique = true)
-          }
-          else {
-            val c = c1Opt.orElse(c2Opt).get
-            c.cube -> chooseLabel(c.cube.labels, Set(c.label))
-          }
-        (CubeSide.apply[SideName] _).tupled(cl)
-      }
-
-      e1 -> e2 match {
-
-        case (EdgeName.Left, EdgeName.Top) | (EdgeName.Top, EdgeName.Left) =>
-          val et = edgeOpt(EdgeName.Top)
-          val el = edgeOpt(EdgeName.Left)
-          side match {
-            case SideName.Front => mk(et.map(_.left), el.map(_.right))
-            case SideName.Right => mk(et.map(_.right), el.map(_.left))
-            case SideName.Left  => mk(et.map(_.left), el.map(_.right))
-            case SideName.Up    => mk(et.map(_.right), el.map(_.left))
-            case SideName.Down  => mk(et.map(_.left), el.map(_.right))
-            case SideName.Back  => mk(et.map(_.right), el.map(_.left))
-          }
-
-        case (EdgeName.Right, EdgeName.Top) | (EdgeName.Top, EdgeName.Right) =>
-          val et = edgeOpt(EdgeName.Top)
-          val er = edgeOpt(EdgeName.Right)
-          
-          side match {
-            case SideName.Front | SideName.Left  | SideName.Down => mk(et.map(_.right), er.map(_.left))
-            case SideName.Back  | SideName.Right | SideName.Up   => mk(et.map(_.left), er.map(_.left))
-          }
-          
-
-        case (EdgeName.Left, EdgeName.Bottom) | (EdgeName.Bottom, EdgeName.Left) =>
-          mk(edgeOpt(EdgeName.Bottom).map(_.left), edgeOpt(EdgeName.Left).map(_.right))
-
-        case (EdgeName.Right, EdgeName.Bottom) | (EdgeName.Bottom, EdgeName.Right) =>
-          mk(edgeOpt(EdgeName.Bottom).map(_.right), edgeOpt(EdgeName.Right).map(_.left))
-
-      }
-
-    }
-
-    def mkMiddleOpt(e: EdgeName, neighbours: Map[EdgeName, Side[SideName]]) =
-      neighbours.get(e).map(_.edge.byName(e.opposite)).map{
-        edge =>
-          val CubeSide(c, l) = edge.middle
-          CubeSide(c, chooseLabel(c.labels, Set(l), unique = true))
-      }
-
-    def mkMiddle(e: EdgeName, neighbours: Map[EdgeName, Side[SideName]], free: Seq[Middle[SideName]]) =
-      mkMiddleOpt(e, neighbours)
-        .map(_ -> free)
-        .getOrElse{
-          val Some((m, newFree)) = free.randomPop
-          CubeSide(m, m.labels.randomChoice.get) -> newFree
-        }
-
-    def chooseLabel(from: Seq[SideName], except: Set[SideName], unique: Boolean = false) ={
-      val toSel = from.filterNot(except.contains)
-      if(unique) toSel.ensuring(_.size == 1).head
-      else toSel.randomChoice.get
-    }
-
-
-    val depFB_L = Map(EdgeName.Right -> front, EdgeName.Left -> back)
-    val (lefts, mids1)  = mkDependentSideCubes(SideName.Left, rMiddles.drop(8), depFB_L)
-    val left = Side(lefts)
-
-    val depFB_R = Map(EdgeName.Left -> front, EdgeName.Right -> back)
-    val (rights, mids2)  = mkDependentSideCubes(SideName.Right, mids1, depFB_R)
-    val right = Side(rights)
-
-    val delLR = Map(EdgeName.Left -> left, EdgeName.Right -> right)
-
-    val depFBLR_U = delLR ++  Map(EdgeName.Bottom -> front, EdgeName.Top -> back)
-    val (ups, mids3)  = mkDependentSideCubes(SideName.Up, mids2, depFBLR_U)
-    val up = Side(ups)
-
-    val depFBLR_D = delLR ++ Map(EdgeName.Bottom -> back, EdgeName.Top -> front)
-    val (downs, mids4)  = mkDependentSideCubes(SideName.Down, mids3, depFBLR_D)
-    val down = Side(downs)
-
-
-    RubikCube(front, right, left, up, down, back)*/
-    

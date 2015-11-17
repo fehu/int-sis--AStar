@@ -1,70 +1,44 @@
 package feh.tec.rubik.ogl
 
-import feh.tec.rubik.{RubikSubCubesDefault, RubikCube}
-import feh.tec.rubik.RubikCube.{Side, SideName}
-import feh.tec.rubik.ogl.Render.GLFColor
-import org.lwjgl.BufferUtils
-import org.lwjgl.input.{Mouse, Keyboard}
-import org.lwjgl.opengl._
-import org.macrogl._
+import feh.tec.rubik.{CubeOrientation, Rubik, RubikCube}
+import feh.tec.rubik.RubikCube.SideName
+import feh.tec.rubik.ogl.CubeColorScheme.GLFColor
+import org.macrogl.ex.IndexBuffer
+import org.macrogl.{AttributeBuffer, Macrogl, Matrix, Program}
+
 
 trait CubeColorScheme[T] extends (T => GLFColor)
 
-
+object CubeColorScheme{
+  type GLFColor = (Float, Float, Float)
+}
 
 
 /** Renders given Rubik's Cube */
-class CubeRenderer[T: CubeColorScheme] extends Renderer[RubikCube[T]]{
-  def render(t: RubikCube[T]): Render = ???
-}
+class CubeRenderer[T: CubeColorScheme](rubik: Rubik[T], pp: Program, vertexBuffer: AttributeBuffer){
 
+  def render(b: IndexBuffer.Access)  = {
+    val cubes = rubik.cubes
 
-class SideRenderer[T](implicit val cs: CubeColorScheme[T], sqr: SquareRenderer) extends Renderer[Side[T]]{
-  def render(t: Side[T]): Render ={
-    val squares =
-      for{
-        i <- 0 until 3
-        j <- 0 until 3
-        sCube = t.cubes(i)(j)
-      } yield sqr.render(i -> j).color(cs(sCube.label))
+    for { ((x, y, z), (c, CubeOrientation(o))) <- cubes }{
 
-    squares.reduceLeft(_ andThen _)
-  }
-
-}
-
-
-class SquareRenderer extends Renderer[(Int, Int)]{
-
-  def render(t: (Int, Int)): Render = Render(GL11.GL_QUADS, {
-    val x = t._1
-    val y = t._2
-
-    GL11.glVertex3f(0 + x, 0 + y, 0)
-    GL11.glVertex3f(0 + x, 1 + y, 0)
-    GL11.glVertex3f(1 + x, 1 + y, 0)
-    GL11.glVertex3f(1 + x, 0 + y, 0)
-  })
-
-}
-
-
-class RenderExec(render: => Unit, sync: Int = 60){
-
-  def run() = {
-    while (!Display.isCloseRequested) {
-      try{
-        render
-        Display.update()
-        Display.sync(sync)
-      } catch {
-        case thr: Throwable => thr.printStackTrace()
-      }
+      pp.uniform.worldTransform = cubePosition(x, y, z)
+      b.render(Macrogl.TRIANGLES, vertexBuffer)
     }
-    Display.destroy()
+
   }
 
+  def cubePosition(x: Int, y: Int, z: Int, c: Double = 2.05) = new Matrix.Plain(
+    Array[Double](
+        1, 0, 0, 0,
+        0, 1, 0, 0,
+        0, 0, 1, 0,
+        c*x, c*y, -5 + c*z, 1)
+  )
+
 }
+
+
 
 object DefaultRubikColorScheme extends CubeColorScheme[SideName]{
   import SideName._

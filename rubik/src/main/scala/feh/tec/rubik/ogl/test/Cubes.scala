@@ -1,6 +1,10 @@
 package feh.tec.rubik.ogl.test
 
+import feh.tec.rubik.RubikSubCubesDefault.WithSideNameIdentity
+import feh.tec.rubik.RubikCube._
+import feh.tec.rubik.{Rubik, RubikSubCubesDefault}
 import feh.tec.rubik.ogl.App3DControls.{MutableStateHook, MutableState, KeyEvent, MousePosition}
+import feh.tec.rubik.ogl.Cube
 import feh.tec.rubik.ogl._
 import feh.util.Path
 import Utils.CameraExt
@@ -115,6 +119,12 @@ object Cubes extends ShaderApp with App3DFullControls with App3DExit{
     resetRequested set false
   }
 
+  implicit def colors = DefaultRubikColorScheme
+
+  val rubic = new Rubik[SideName](RubikSubCubesDefault.cubes)
+
+  val cRenderer = new CubeRenderer(rubic, pp, vertexBuffer)
+
 
   override protected def update() = {
     super.update()
@@ -131,14 +141,9 @@ object Cubes extends ShaderApp with App3DFullControls with App3DExit{
       raster.clear(Macrogl.COLOR_BUFFER_BIT | Macrogl.DEPTH_BUFFER_BIT)
 
       pp.uniform.viewTransform = camera.transform
-      pp.uniform.worldTransform = cubePosition(0, 0)
-      b.render(Macrogl.TRIANGLES, vertexBuffer)
 
-      pp.uniform.worldTransform = cubePosition(0, 1)
-      b.render(Macrogl.TRIANGLES, vertexBuffer)
+      cRenderer.render(b)
 
-      pp.uniform.worldTransform = cubePosition(1, 1)
-      b.render(Macrogl.TRIANGLES, vertexBuffer)
     }
   }
 
