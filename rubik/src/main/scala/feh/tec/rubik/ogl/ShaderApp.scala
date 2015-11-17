@@ -1,10 +1,9 @@
 package feh.tec.rubik.ogl
 
-import feh.tec.rubik.ogl.RendererTest._
 import feh.util.Path
 import org.lwjgl.BufferUtils
-import org.lwjgl.opengl.{GL11, GL15, ContextAttribs, DisplayMode}
-import org.macrogl.{using, Program, ex, AttributeBuffer}
+import org.lwjgl.opengl.{GL11, GL15}
+import org.macrogl.{AttributeBuffer, Program, ex, using}
 
 /**  */
 trait ShaderApp extends App3D

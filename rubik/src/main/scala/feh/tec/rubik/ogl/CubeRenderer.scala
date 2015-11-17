@@ -23,6 +23,7 @@ class CubeRenderer[T: CubeColorScheme](rubik: Rubik[T], pp: Program, vertexBuffe
     for { ((x, y, z), (c, CubeOrientation(o))) <- cubes }{
 
       pp.uniform.worldTransform = cubePosition(x, y, z)
+      pp.uniform.color = (1f, 1f, 1f)
       b.render(Macrogl.TRIANGLES, vertexBuffer)
     }
 
@@ -56,42 +57,42 @@ object DefaultRubikColorScheme extends CubeColorScheme[SideName]{
 
 /** from https://github.com/storm-enroute/macrogl/blob/master/src/test/scala/org/macrogl/examples/BasicLighting.scala */
 object Cube {
-  val num_components = 9
+  val num_components = 6
 
-  val components = Array((0, 3), (3, 3), (6, 3))
+  val components = Array((0, 3), (3, 3))
 
-  // position, normal, color
+  // position, normal
   val vertices = Array[Float](
       // bottom
-      -1.0f, -1.0f, -1.0f, 0, -1, 0, 1, 0, 0,
-       1.0f, -1.0f, -1.0f, 0, -1, 0, 1, 0, 0,
-      -1.0f, -1.0f,  1.0f, 0, -1, 0, 1, 0, 0,
-       1.0f, -1.0f,  1.0f, 0, -1, 0, 1, 0, 0,
+      -1.0f, -1.0f, -1.0f, 0, -1, 0,
+       1.0f, -1.0f, -1.0f, 0, -1, 0,
+      -1.0f, -1.0f,  1.0f, 0, -1, 0,
+       1.0f, -1.0f,  1.0f, 0, -1, 0,
       // top
-      -1.0f, 1.0f, -1.0f, 0, 1, 0, 0, 1, 0,
-      -1.0f, 1.0f,  1.0f, 0, 1, 0, 0, 1, 0,
-       1.0f, 1.0f, -1.0f, 0, 1, 0, 0, 1, 0,
-       1.0f, 1.0f,  1.0f, 0, 1, 0, 0, 1, 0,
+      -1.0f, 1.0f, -1.0f, 0, 1, 0,
+      -1.0f, 1.0f,  1.0f, 0, 1, 0,
+       1.0f, 1.0f, -1.0f, 0, 1, 0,
+       1.0f, 1.0f,  1.0f, 0, 1, 0,
       // front
-      -1.0f,  1.0f, 1.0f, 0, 0, 1, 0, 0, 1,
-      -1.0f, -1.0f, 1.0f, 0, 0, 1, 0, 0, 1,
-       1.0f,  1.0f, 1.0f, 0, 0, 1, 0, 0, 1,
-       1.0f, -1.0f, 1.0f, 0, 0, 1, 0, 0, 1,
+      -1.0f,  1.0f, 1.0f, 0, 0, 1,
+      -1.0f, -1.0f, 1.0f, 0, 0, 1,
+       1.0f,  1.0f, 1.0f, 0, 0, 1,
+       1.0f, -1.0f, 1.0f, 0, 0, 1,
       // back
-       1.0f,  1.0f, -1.0f, 0, 0, -1, 1, 1, 0,
-       1.0f, -1.0f, -1.0f, 0, 0, -1, 1, 1, 0,
-      -1.0f,  1.0f, -1.0f, 0, 0, -1, 1, 1, 0,
-      -1.0f, -1.0f, -1.0f, 0, 0, -1, 1, 1, 0,
+       1.0f,  1.0f, -1.0f, 0, 0, -1,
+       1.0f, -1.0f, -1.0f, 0, 0, -1,
+      -1.0f,  1.0f, -1.0f, 0, 0, -1,
+      -1.0f, -1.0f, -1.0f, 0, 0, -1,
       // left
-      -1.0f,  1.0f,  1.0f, -1, 0, 0, 1, 0, 1,
-      -1.0f,  1.0f, -1.0f, -1, 0, 0, 1, 0, 1,
-      -1.0f, -1.0f,  1.0f, -1, 0, 0, 1, 0, 1,
-      -1.0f, -1.0f, -1.0f, -1, 0, 0, 1, 0, 1,
+      -1.0f,  1.0f,  1.0f, -1, 0, 0,
+      -1.0f,  1.0f, -1.0f, -1, 0, 0,
+      -1.0f, -1.0f,  1.0f, -1, 0, 0,
+      -1.0f, -1.0f, -1.0f, -1, 0, 0,
       // right
-      1.0f,  1.0f, -1.0f, 1, 0, 0, 0, 1, 1,
-      1.0f,  1.0f,  1.0f, 1, 0, 0, 0, 1, 1,
-      1.0f, -1.0f, -1.0f, 1, 0, 0, 0, 1, 1,
-      1.0f, -1.0f,  1.0f, 1, 0, 0, 0, 1, 1)
+      1.0f,  1.0f, -1.0f, 1, 0, 0,
+      1.0f,  1.0f,  1.0f, 1, 0, 0,
+      1.0f, -1.0f, -1.0f, 1, 0, 0,
+      1.0f, -1.0f,  1.0f, 1, 0, 0)
 
   // todo ??? no idea what it is
   val indices = Array[Int](

@@ -2,18 +2,15 @@ package feh.tec.rubik.ogl.test
 
 import feh.tec.rubik.RubikSubCubesDefault.WithSideNameIdentity
 import feh.tec.rubik.RubikCube._
+import feh.tec.rubik.ogl.App3DControls.KeyEvent
+import feh.tec.rubik.ogl.{Cube, _}
 import feh.tec.rubik.{Rubik, RubikSubCubesDefault}
-import feh.tec.rubik.ogl.App3DControls.{MutableStateHook, MutableState, KeyEvent, MousePosition}
-import feh.tec.rubik.ogl.Cube
-import feh.tec.rubik.ogl._
 import feh.util.Path
-import Utils.CameraExt
-
 import org.lwjgl.input.{Keyboard, Mouse}
 import org.lwjgl.opengl.{ContextAttribs, DisplayMode}
 import org.macrogl._
 
-object Cubes extends ShaderApp with App3DFullControls with App3DExit{
+object Cubes extends ShaderApp with FlyingCamera with App3DExit{
 
   val displayX = 800
   val displayY = 600
@@ -48,40 +45,16 @@ object Cubes extends ShaderApp with App3DFullControls with App3DExit{
   val shaderConf = ShaderProgramConf(
     lightColor = (1.0f, 1.0f, 1.0f),
     lightDirection = (0.0f, -1.0f, -1.0f),
-    ambient = 0.05f,
+    ambient = 0.25f,
     diffuse = 0.95f
   )
 
-  protected def onMouseClick = Map()
-  protected def mouseControl = {
-    case MousePosition(x, y) =>
-      val xOffset = displayX / 2 - x
-      val yOffset = displayY / 2 - y
-      camera.setOrientation(xOffset * 0.01, yOffset * 0.01)
-  }
+  def mouseSensibility = 0.05
 
-  protected val resetRequested  = new MutableState(false)
-
-  protected val movingForward   = new MutableState(false)
-  protected val movingBackward  = new MutableState(false)
-  protected val movingLeft      = new MutableState(false)
-  protected val movingRight     = new MutableState(false)
-  protected val movingUp        = new MutableState(false)
-  protected val movingDown      = new MutableState(false)
-  
   protected val onKeyPressed: PartialFunction[KeyEvent, Unit] = {
     case KeyEvent(Keyboard.KEY_ESCAPE) => exitRequested.set(true)
     case KeyEvent(Keyboard.KEY_F5)     => resetRequested.set(true)
   }
-
-  protected val onKeyDown = Map(
-    (KeyEvent(Keyboard.KEY_W),        () => !movingBackward.get)  -> movingForward.set _,
-    (KeyEvent(Keyboard.KEY_S),        () => !movingForward.get)   -> movingBackward.set _,
-    (KeyEvent(Keyboard.KEY_A),        () => !movingRight.get)     -> movingLeft.set _,
-    (KeyEvent(Keyboard.KEY_D),        () => !movingLeft.get)      -> movingRight.set _,
-    (KeyEvent(Keyboard.KEY_SPACE),    () => !movingDown.get)      -> movingUp.set _,
-    (KeyEvent(Keyboard.KEY_LCONTROL), () => !movingUp.get)        -> movingDown.set _
-  )
 
 
   def cubePosition(x: Int, y: Int) = new Matrix.Plain(
@@ -91,22 +64,6 @@ object Cubes extends ShaderApp with App3DFullControls with App3DExit{
         0, 0, 1, 0,
         2.05*x, 2.05*y, -5, 1)
   )
-
-
-  def affectCamera(dir: Matrix.Camera => (Double => Unit)) = dir(camera)(cameraSpeed * dtSeconds)
-  
-  controlHooks ++= Seq(
-    MutableStateHook(resetRequested, ifTrue( resetCamera() )),
-    MutableStateHook(movingForward,  ifTrue( affectCamera(_.moveForward) )),
-    MutableStateHook(movingBackward, ifTrue( affectCamera(_.moveBackward) )),
-    MutableStateHook(movingRight,    ifTrue( affectCamera(_.moveRight) )),
-    MutableStateHook(movingLeft,     ifTrue( affectCamera(_.moveLeft) )),
-    MutableStateHook(movingUp,       ifTrue( affectCamera(_.moveUpwards) )),
-    MutableStateHook(movingDown,     ifTrue( affectCamera(_.moveDownwards) ))
-  )
-
-
-  def ifTrue(f: => Unit): Boolean => Unit = b => if (b) f
 
   def resetCamera() = {
     camera.position(0) = 0
