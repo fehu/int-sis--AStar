@@ -155,6 +155,7 @@ object RendererTest extends App{
   GL11.glEnable(GL11.GL_CULL_FACE)
   GL11.glEnable(GL11.GL_DEPTH_TEST)
 
+  Mouse.setCursorPosition(400, 300)
 
   while (!Display.isCloseRequested && !closeRequested) {
     val time = System.currentTimeMillis
@@ -183,8 +184,7 @@ object RendererTest extends App{
 
     val xOffset = 400 - Mouse.getX
     val yOffset = 300 - Mouse.getY
-    camera.setOrientation(xOffset * 0.1, yOffset * 0.1) // offsetOrientation
-    Mouse.setCursorPosition(400, 300)
+    camera.setOrientation(xOffset * 0.01, yOffset * 0.01) // offsetOrientation
 
     // update animations
     val angle = time / 1000.0
@@ -285,6 +285,7 @@ object RendererTest extends App{
 //  Display.destroy()
 }
 
+/** from https://github.com/storm-enroute/macrogl/blob/master/src/test/scala/org/macrogl/examples/BasicLighting.scala */
 object Cube {
   val num_components = 9
 
@@ -294,35 +295,36 @@ object Cube {
   val vertices = Array[Float](
       // bottom
       -1.0f, -1.0f, -1.0f, 0, -1, 0, 1, 0, 0,
-      1.0f, -1.0f, -1.0f, 0, -1, 0, 1, 0, 0,
-      -1.0f, -1.0f, 1.0f, 0, -1, 0, 1, 0, 0,
-      1.0f, -1.0f, 1.0f, 0, -1, 0, 1, 0, 0,
+       1.0f, -1.0f, -1.0f, 0, -1, 0, 1, 0, 0,
+      -1.0f, -1.0f,  1.0f, 0, -1, 0, 1, 0, 0,
+       1.0f, -1.0f,  1.0f, 0, -1, 0, 1, 0, 0,
       // top
       -1.0f, 1.0f, -1.0f, 0, 1, 0, 0, 1, 0,
-      -1.0f, 1.0f, 1.0f, 0, 1, 0, 0, 1, 0,
-      1.0f, 1.0f, -1.0f, 0, 1, 0, 0, 1, 0,
-      1.0f, 1.0f, 1.0f, 0, 1, 0, 0, 1, 0,
+      -1.0f, 1.0f,  1.0f, 0, 1, 0, 0, 1, 0,
+       1.0f, 1.0f, -1.0f, 0, 1, 0, 0, 1, 0,
+       1.0f, 1.0f,  1.0f, 0, 1, 0, 0, 1, 0,
       // front
-      -1.0f, 1.0f, 1.0f, 0, 0, 1, 0, 0, 1,
+      -1.0f,  1.0f, 1.0f, 0, 0, 1, 0, 0, 1,
       -1.0f, -1.0f, 1.0f, 0, 0, 1, 0, 0, 1,
-      1.0f, 1.0f, 1.0f, 0, 0, 1, 0, 0, 1,
-      1.0f, -1.0f, 1.0f, 0, 0, 1, 0, 0, 1,
+       1.0f,  1.0f, 1.0f, 0, 0, 1, 0, 0, 1,
+       1.0f, -1.0f, 1.0f, 0, 0, 1, 0, 0, 1,
       // back
-      1.0f, 1.0f, -1.0f, 0, 0, -1, 1, 1, 0,
-      1.0f, -1.0f, -1.0f, 0, 0, -1, 1, 1, 0,
-      -1.0f, 1.0f, -1.0f, 0, 0, -1, 1, 1, 0,
+       1.0f,  1.0f, -1.0f, 0, 0, -1, 1, 1, 0,
+       1.0f, -1.0f, -1.0f, 0, 0, -1, 1, 1, 0,
+      -1.0f,  1.0f, -1.0f, 0, 0, -1, 1, 1, 0,
       -1.0f, -1.0f, -1.0f, 0, 0, -1, 1, 1, 0,
       // left
-      -1.0f, 1.0f, 1.0f, -1, 0, 0, 1, 0, 1,
-      -1.0f, 1.0f, -1.0f, -1, 0, 0, 1, 0, 1,
-      -1.0f, -1.0f, 1.0f, -1, 0, 0, 1, 0, 1,
+      -1.0f,  1.0f,  1.0f, -1, 0, 0, 1, 0, 1,
+      -1.0f,  1.0f, -1.0f, -1, 0, 0, 1, 0, 1,
+      -1.0f, -1.0f,  1.0f, -1, 0, 0, 1, 0, 1,
       -1.0f, -1.0f, -1.0f, -1, 0, 0, 1, 0, 1,
       // right
-      1.0f, 1.0f, -1.0f, 1, 0, 0, 0, 1, 1,
-      1.0f, 1.0f, 1.0f, 1, 0, 0, 0, 1, 1,
+      1.0f,  1.0f, -1.0f, 1, 0, 0, 0, 1, 1,
+      1.0f,  1.0f,  1.0f, 1, 0, 0, 0, 1, 1,
       1.0f, -1.0f, -1.0f, 1, 0, 0, 0, 1, 1,
-      1.0f, -1.0f, 1.0f, 1, 0, 0, 0, 1, 1)
+      1.0f, -1.0f,  1.0f, 1, 0, 0, 0, 1, 1)
 
+  // todo ??? no idea what it is
   val indices = Array[Int](
       // bottom
       0, 1, 2, 1, 3, 2,
