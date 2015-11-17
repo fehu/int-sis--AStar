@@ -80,12 +80,13 @@ object Cubes extends ShaderApp with App3DFullControls with App3DExit{
   )
 
 
-  val cubeTransform = new Matrix.Plain(
+  def cubePosition(x: Int, y: Int) = new Matrix.Plain(
     Array[Double](
         1, 0, 0, 0,
         0, 1, 0, 0,
         0, 0, 1, 0,
-        0, 0, -5, 1))
+        2.05*x, 2.05*y, -5, 1)
+  )
 
 
   def affectCamera(dir: Matrix.Camera => (Double => Unit)) = dir(camera)(cameraSpeed * dtSeconds)
@@ -130,11 +131,14 @@ object Cubes extends ShaderApp with App3DFullControls with App3DExit{
       raster.clear(Macrogl.COLOR_BUFFER_BIT | Macrogl.DEPTH_BUFFER_BIT)
 
       pp.uniform.viewTransform = camera.transform
-      pp.uniform.worldTransform = cubeTransform
+      pp.uniform.worldTransform = cubePosition(0, 0)
       b.render(Macrogl.TRIANGLES, vertexBuffer)
 
-//      pp.uniform.worldTransform = rightTransform
-//      b.render(Macrogl.TRIANGLES, vertexBuffer)
+      pp.uniform.worldTransform = cubePosition(0, 1)
+      b.render(Macrogl.TRIANGLES, vertexBuffer)
+
+      pp.uniform.worldTransform = cubePosition(1, 1)
+      b.render(Macrogl.TRIANGLES, vertexBuffer)
     }
   }
 
