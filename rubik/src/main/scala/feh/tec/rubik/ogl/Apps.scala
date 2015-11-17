@@ -38,7 +38,7 @@ trait DefaultApp3DExec extends App3D{
 
   def stopCondition: Boolean = Display.isCloseRequested
 
-  protected def update(): Unit
+  protected def update(): Unit = {}
 
   protected var dtSeconds = 0.0
   protected var prevTime = System.currentTimeMillis
@@ -76,7 +76,9 @@ trait App3DControls extends DefaultApp3DExec{
   protected var controlHooks: Set[MutableStateHook[_]] = Set()
   protected def processInput(): Unit = {}
 
-  protected def update(): Unit = {
+  override protected def update(): Unit = {
+    super.update()
+
     processInput()
     controlHooks.foreach(_.runHook())
   }

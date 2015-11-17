@@ -10,7 +10,28 @@ import org.lwjgl.input.{Keyboard, Mouse}
 import org.lwjgl.opengl.{ContextAttribs, DisplayMode}
 import org.macrogl._
 
-object Cubes extends ShaderApp with FlyingCamera with App3DExit{
+object CubesShader {
+
+  val pathRoot = Path("/org/macrogl/examples/", '/')
+
+  lazy val prog = new ShaderProg(
+    Cube.indices,
+    Cube.coloredVertices((0.1f, 0.1f, 0.1f), DefaultRubikColorScheme.asMap),
+    Cube.num_components,
+    Cube.components,
+    pathRoot / "BasicLighting.vert",
+    pathRoot / "BasicLighting.frag",
+    ShaderProgramConf(
+      lightColor = (1.0f, 1.0f, 1.0f),
+      lightDirection = (0.0f, -1.0f, -1.0f),
+      ambient = 0.25f,
+      diffuse = 0.95f
+    )
+  )
+}
+
+
+object Cubes extends ShadersSupport with FlyingCamera with App3DExit{
 
   val displayX = 800
   val displayY = 600
@@ -28,26 +49,6 @@ object Cubes extends ShaderApp with FlyingCamera with App3DExit{
 
 
   def exitKey: Int = Keyboard.KEY_ESCAPE
-
-  def indices        = Cube.indices
-  def vertices       = Cube.vertices
-  def num_components = Cube.num_components
-  def components     = Cube.components
-
-  val pathRoot = Path("/org/macrogl/examples/", '/')
-
-  val vertShaderResource = pathRoot / "BasicLighting.vert"
-  val fragShaderResource = pathRoot / "BasicLighting.frag"
-
-  println("vertShaderResource = " + vertShaderResource.mkString("/"))
-  println("fragShaderResource = " + fragShaderResource.mkString("/"))
-
-  val shaderConf = ShaderProgramConf(
-    lightColor = (1.0f, 1.0f, 1.0f),
-    lightDirection = (0.0f, -1.0f, -1.0f),
-    ambient = 0.25f,
-    diffuse = 0.95f
-  )
 
   def mouseSensibility = 0.05
 
@@ -76,35 +77,13 @@ object Cubes extends ShaderApp with FlyingCamera with App3DExit{
     resetRequested set false
   }
 
-  implicit def colors = DefaultRubikColorScheme
 
+  implicit def colors = DefaultRubikColorScheme
   val rubic = new Rubik[SideName](RubikSubCubesDefault.cubes)
 
-  val cRenderer = new CubeRenderer(rubic, pp, vertexBuffer)
+  val cRenderer = new CubeRenderer(rubic, CubesShader.prog.pp, CubesShader.prog.vertexBuffer)
 
-
-  override protected def update() = {
-    super.update()
-
-    // draw
-    val gl = implicitly[Macrogl]
-    for {
-      _ <- using.program(pp)
-      _ <- using.vertexbuffer(vertexBuffer)
-      b <- ex.using.indexbuffer(indexBuffer)
-    } {
-      gl.checkError()
-      gl.clearColor(0.0f, 0.0f, 0.0f, 1.0f)
-      raster.clear(Macrogl.COLOR_BUFFER_BIT | Macrogl.DEPTH_BUFFER_BIT)
-
-      pp.uniform.viewTransform = camera.transform
-
-      cRenderer.render(b)
-
-    }
-  }
-
-
+  protected val shaderProgs = ShaderProgContainer(CubesShader.prog, cRenderer.render) :: Nil
 
   run()
 

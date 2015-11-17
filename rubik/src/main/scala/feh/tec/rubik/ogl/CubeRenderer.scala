@@ -23,7 +23,6 @@ class CubeRenderer[T: CubeColorScheme](rubik: Rubik[T], pp: Program, vertexBuffe
     for { ((x, y, z), (c, CubeOrientation(o))) <- cubes }{
 
       pp.uniform.worldTransform = cubePosition(x, y, z)
-      pp.uniform.color = (1f, 1f, 1f)
       b.render(Macrogl.TRIANGLES, vertexBuffer)
     }
 
@@ -43,26 +42,28 @@ class CubeRenderer[T: CubeColorScheme](rubik: Rubik[T], pp: Program, vertexBuffe
 
 object DefaultRubikColorScheme extends CubeColorScheme[SideName]{
   import SideName._
+  
+  lazy val asMap = Map(
+    Front  -> (1f, 0f, 0f),
+    Right  -> (0f, 1f, 0f),
+    Left   -> (0f, 0f, 1f),
+    Up     -> (1f, 1f, 0f),
+    Down   -> (1f, 1f, 1f),
+    Back   -> (1f, 0.65f, 0f)
+  )
 
-  def apply(v1: SideName) = v1 match {
-    case Front => (1, 0, 0)
-    case Right => (0, 1, 0)
-    case Left  => (0, 0, 1)
-    case Up    => (1, 1, 0)
-    case Down  => (1, 1, 1)
-    case Back  => (1, 0.65f, 0)
-  }
+  def apply(v1: SideName) = asMap(v1)
 }
 
 
 /** from https://github.com/storm-enroute/macrogl/blob/master/src/test/scala/org/macrogl/examples/BasicLighting.scala */
 object Cube {
-  val num_components = 6
+  val num_components = 9
 
-  val components = Array((0, 3), (3, 3))
+  val components = Array((0, 3), (3, 3), (6, 3))
 
   // position, normal
-  val vertices = Array[Float](
+  protected val vertices = Array[Float](
       // bottom
       -1.0f, -1.0f, -1.0f, 0, -1, 0,
        1.0f, -1.0f, -1.0f, 0, -1, 0,
@@ -94,6 +95,33 @@ object Cube {
       1.0f, -1.0f, -1.0f, 1, 0, 0,
       1.0f, -1.0f,  1.0f, 1, 0, 0)
 
+
+  def coloredVertices(default: GLFColor, colors: Map[SideName, GLFColor]): Array[Float] =
+    coloredVertices(Array(
+      colors.getOrElse(SideName.Down,  default),
+      colors.getOrElse(SideName.Up,    default),
+      colors.getOrElse(SideName.Front, default),
+      colors.getOrElse(SideName.Back,  default),
+      colors.getOrElse(SideName.Left,  default),
+      colors.getOrElse(SideName.Right, default)
+    ))
+
+  def coloredVertices(colors: Array[GLFColor]): Array[Float] = {
+    val target = Array.ofDim[Float](4*6*num_components)
+
+    for {
+      k <- 0 until 6
+      i <- k*4 until (k+1)*4
+      ii = i*num_components
+      num_c = num_components-3
+    }{
+      for (j <- 0 until num_c) target(ii+j) = vertices(i*num_c+j)
+      for (j <- 0 until 3) target(ii+num_c+j) = colors(k).productElement(j).asInstanceOf[Float]
+    }
+
+    target
+  }
+
   // todo ??? no idea what it is
   val indices = Array[Int](
       // bottom
@@ -109,4 +137,3 @@ object Cube {
       // right
       20, 21, 22, 21, 23, 22)
 }
-
