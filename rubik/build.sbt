@@ -6,8 +6,14 @@ CommonSettings()
 
 TestSettings()
 
-libraryDependencies += "org.lwjgl.lwjgl" % "lwjgl" % "2.8.4"
+resolvers ++= Seq(
+  "Sonatype OSS Snapshots" at
+    "https://oss.sonatype.org/content/repositories/snapshots",
+  "Sonatype OSS Releases" at
+    "https://oss.sonatype.org/content/repositories/releases"
+)
 
-javaOptions in Runtime += "-Djava.library.path=" +
-                          (baseDirectory.value / "native") // "lwjgl-platform-2.9.0-natives-linux.jar"
+libraryDependencies ++= Seq(
+  "com.storm-enroute" %% "macrogl" % "0.4-SNAPSHOT")
 
+LWJGLPlugin.lwjglSettings
