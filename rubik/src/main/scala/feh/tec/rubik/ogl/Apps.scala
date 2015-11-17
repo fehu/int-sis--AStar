@@ -120,16 +120,22 @@ object App3DControls{
 
 trait App3DKeyControls extends App3DControls{
 
-  protected def onKeyDown: Map[KeyEvent, () => Unit]
+  type IfNot = () => Boolean
+
+  protected def onKeyDown: Map[(KeyEvent, IfNot), Boolean => Unit]
   protected def onKeyPressed: PartialFunction[KeyEvent, Unit]
 
   override protected def processInput(): Unit = {
     super.processInput()
 
-    if (Keyboard.getEventKeyState) onKeyPressed.lift(KeyEvent())
+    while (Keyboard.next()) {
 
-    onKeyDown.foreach{
-      case (KeyEvent(k), f) => if (Keyboard.isKeyDown(k)) f()
+      onKeyDown.foreach {
+        case ((KeyEvent(k), b), f) => f(Keyboard.isKeyDown(k) && b())
+      }
+
+      if (Keyboard.getEventKeyState) onKeyPressed.lift(KeyEvent())
+
     }
   }
 

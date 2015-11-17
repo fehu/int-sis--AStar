@@ -79,6 +79,7 @@ object DefaultRubikColorScheme extends CubeColorScheme[SideName]{
   }
 }
 
+@deprecated("delete it")
 object RendererTest extends App{
   val contextAttributes = new ContextAttribs(3, 2)
     .withForwardCompatible(true).withProfileCore(true)

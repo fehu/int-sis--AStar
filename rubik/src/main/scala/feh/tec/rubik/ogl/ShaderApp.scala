@@ -72,6 +72,15 @@ trait ShaderApp extends App3D
     GL11.glEnable(GL11.GL_DEPTH_TEST)
   }
 
+
+  override protected def terminateApp() = {
+    pp.release()
+    vertexBuffer.release()
+    indexBuffer.release()
+
+    super.terminateApp()
+  }
+
   private def readResource(path: Path) = io.Source.fromURL(getClass.getResource(path.mkString("/"))).mkString
 }
 
