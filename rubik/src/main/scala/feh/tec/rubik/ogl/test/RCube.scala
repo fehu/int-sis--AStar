@@ -5,6 +5,7 @@ import feh.tec.rubik.RubikCube._
 import feh.tec.rubik.ogl.App3DControls.{MutableStateHook, KeyEvent}
 import feh.tec.rubik.ogl._
 import feh.tec.rubik.{Rubik, RubikSubCubesDefault}
+import feh.util.Path
 import org.lwjgl.input.{Keyboard, Mouse}
 import org.lwjgl.opengl.{ContextAttribs, DisplayMode}
 import org.macrogl._
@@ -51,9 +52,21 @@ object RCube extends ShadersSupport with FlyingCamera with App3DExit{
   val rubik = new Rubik[SideName](RubikSubCubesDefault.cubes)
 
 
-  val rr = new RubikRender(rubik)
+  private lazy val pathRoot = Path("/org/macrogl/examples/", '/')
+  def shader = new ShaderProg(
+    pathRoot / "BasicLighting.vert",
+    pathRoot / "BasicLighting.frag",
+    ShaderProgramConf(
+      lightColor = (1.0f, 1.0f, 1.0f),
+      lightDirection = (0.0f, -1.0f, -1.0f),
+      ambient = 0.25f,
+      diffuse = 0.95f
+    )
+  )
 
-  protected val shaderProgs = rr.shaders
+  val rr = new RubikRender(rubik, shader)
+
+  protected val shaderProg = rr.shaderContainer
 
   run()
 

@@ -18,37 +18,23 @@ object CubeColorScheme{
 
 
 /** Renders given Rubik's Cube */
-class RubikRender[T: CubeColorScheme: WithSideName](rubik: Rubik[T]){
+class RubikRender[T: CubeColorScheme: WithSideName](val rubik: Rubik[T], val shader: ShaderProg){
   def defaultColor = (0.5f, 0.5f, 0.5f)
 
-  def shaders = shadersMap.values.toSeq
+  lazy val shaderContainer = ShaderProgContainer(shader, shadersMap.values.toSeq)
 
   protected lazy val shadersMap = rubik.cubes.map{
     case ((x, y, z), (c, o)) =>
       val vertices = Cube.coloredVertices(defaultColor, mkMp(c.labels))
       val transform = cubePosition(x, y, z) // todo: use Orientation
-      c -> mkShader(vertices, transform)
+      c -> mkShaderInst(vertices, transform)
   }
 
   private def colors = implicitly[CubeColorScheme[T]]
   private def mkMp(s: Seq[T]) = s.map(t => t.side -> colors(t)).toMap
-  private lazy val pathRoot = Path("/org/macrogl/examples/", '/')
 
-  protected def mkShader(vertices: Array[Float], transform: Matrix.Plain) = ShaderProgContainer(
-    new ShaderProg(
-      Cube.indices,
-      vertices,
-      Cube.num_components,
-      Cube.components,
-      pathRoot / "BasicLighting.vert",
-      pathRoot / "BasicLighting.frag",
-      ShaderProgramConf(
-        lightColor = (1.0f, 1.0f, 1.0f),
-        lightDirection = (0.0f, -1.0f, -1.0f),
-        ambient = 0.25f,
-        diffuse = 0.95f
-      )
-    ),
+  protected def mkShaderInst(vertices: Array[Float], transform: Matrix.Plain) = ShaderProgInstanceContainer(
+    new shader.Instance(Cube.indices, vertices, Cube.num_components, Cube.components),
     {
       case DrawArg(pp, vertexBuf, b) =>
         pp.uniform.worldTransform = transform
@@ -75,7 +61,7 @@ class CubeRenderer[T: CubeColorScheme](rubik: Rubik[T]){
     val cubes = rubik.cubes
     import arg._
 
-    for { ((x, y, z), (c, CubeOrientation(o))) <- cubes }{
+    for { ((x, y, z), (c, _/* TODO */)) <- cubes }{
 
       pp.uniform.worldTransform = cubePosition(x, y, z)
       b.render(Macrogl.TRIANGLES, vertexBuffer)

@@ -119,7 +119,7 @@ class Rubik[T: WithSideName](initialCubes: Set[Cube[T]]) {
         val c = initialCubes
           .collectFirst{ case c: Corner[T] if id == cubeId(c) => c }
           .get
-        val o = CubeOrientation(s1)
+        val o = CubeOrientation(s1, s2)
 
         id -> (c, o)
     }: _*
@@ -132,7 +132,7 @@ class Rubik[T: WithSideName](initialCubes: Set[Cube[T]]) {
         val c = initialCubes
           .collectFirst{ case m: Middle[T] if id == cubeId(m) => m }
           .get
-        val o = CubeOrientation(s1)
+        val o = CubeOrientation(s1, s2)
 
         id -> (c, o)
     }: _*
@@ -144,33 +144,33 @@ class Rubik[T: WithSideName](initialCubes: Set[Cube[T]]) {
         val c = initialCubes
           .collectFirst{ case c@Center(l) if l.side == side => c }
           .get
-        val o = CubeOrientation(side)
+        val o = CubeOrientation(side, side)
         
         Set(side) -> (c, o)
     }: _*)
 }
 
 
-case class CubeOrientation(o: SideName){
+case class CubeOrientation(o1: SideName, o2: SideName){
   import CubeOrientation._
   
   /** rotate Right Side clockwise 90 degrees */
-  def rotateRight = CubeOrientation(nextRotRight.getOrElse(o, o))
+  def rotateRight = CubeOrientation(nextRotRight.getOrElse(o1, o1), nextRotRight.getOrElse(o2, o2))
 
   /** rotate Left Side clockwise 90 degrees */
-  def rotateLeft = CubeOrientation(nextRotLeft.getOrElse(o, o))
+  def rotateLeft = CubeOrientation(nextRotLeft.getOrElse(o1, o1), nextRotLeft.getOrElse(o2, o2))
 
   /** rotate Front Side clockwise 90 degrees */
-  def rotateFront = CubeOrientation(nextRotFront.getOrElse(o, o))
+  def rotateFront = CubeOrientation(nextRotFront.getOrElse(o1, o1), nextRotFront.getOrElse(o2, o2))
 
   /** rotate Back Side clockwise 90 degrees */
-  def rotateBack = CubeOrientation(nextRotBack.getOrElse(o, o))
+  def rotateBack = CubeOrientation(nextRotBack.getOrElse(o1, o1), nextRotBack.getOrElse(o2, o2))
 
   /** rotate Up Side clockwise 90 degrees */
-  def rotateUp = CubeOrientation(nextRotUp.getOrElse(o, o))
+  def rotateUp = CubeOrientation(nextRotUp.getOrElse(o1, o1), nextRotUp.getOrElse(o2, o2))
 
   /** rotate Down Side clockwise 90 degrees */
-  def rotateDown = CubeOrientation(nextRotDown.getOrElse(o, o))
+  def rotateDown = CubeOrientation(nextRotDown.getOrElse(o1, o1), nextRotDown.getOrElse(o2, o2))
 }
 
 object CubeOrientation{

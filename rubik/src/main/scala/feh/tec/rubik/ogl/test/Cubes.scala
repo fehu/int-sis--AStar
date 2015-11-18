@@ -15,10 +15,6 @@ object CubesShader {
   val pathRoot = Path("/org/macrogl/examples/", '/')
 
   lazy val prog = new ShaderProg(
-    Cube.indices,
-    Cube.coloredVertices((0.1f, 0.1f, 0.1f), DefaultRubikColorScheme.asMap),
-    Cube.num_components,
-    Cube.components,
     pathRoot / "BasicLighting.vert",
     pathRoot / "BasicLighting.frag",
     ShaderProgramConf(
@@ -85,11 +81,20 @@ object Cubes extends ShadersSupport with FlyingCamera with App3DExit{
   //  protected val shaderProgs = ShaderProgContainer(CubesShader.prog, cRenderer.render) :: Nil
 
   //  val rr = new RubikRender(rubik)
-  protected val shaderProgs = ShaderProgContainer(CubesShader.prog, {
-    case DrawArg(pp, vertexBuf, b) =>
-      pp.uniform.worldTransform = cubePosition(0, 1)
-      b.render(Macrogl.TRIANGLES, vertexBuf)
-  }) :: Nil
+
+  protected val shaderProg = ShaderProgContainer(CubesShader.prog,
+    ShaderProgInstanceContainer(
+      new CubesShader.prog.Instance(
+        Cube.indices,
+        Cube.coloredVertices((0.1f, 0.1f, 0.1f), DefaultRubikColorScheme.asMap),
+        Cube.num_components,
+        Cube.components
+      ),
+    {
+      case DrawArg(pp, vertexBuf, b) =>
+        pp.uniform.worldTransform = cubePosition(0, 1)
+        b.render(Macrogl.TRIANGLES, vertexBuf)
+    }) :: Nil)
 
   run()
 

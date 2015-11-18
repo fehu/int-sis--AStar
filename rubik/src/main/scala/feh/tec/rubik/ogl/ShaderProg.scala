@@ -9,45 +9,21 @@ import org.macrogl._
 import org.macrogl.ex.IndexBuffer
 
 
-class ShaderProg(val indices: Array[Int],
-                 val vertices: Array[Float],
-                 val num_components: Int,
-                 val components: Array[(Int, Int)],
+class ShaderProg(
                  val vertShaderResource: Path,
                  val fragShaderResource: Path,
                  val shaderConf: ShaderProgramConf,
                  val buffUsage: Int = GL15.GL_STATIC_DRAW,
                  val name: String = UUID.randomUUID().toString)
 {
-  protected lazy val ibb = BufferUtils.createIntBuffer(indices.length)
-  protected lazy val cfb = BufferUtils.createFloatBuffer(vertices.length)
 
-  protected lazy val vertexBuffer = new AttributeBuffer(
-    buffUsage, vertices.length / num_components,
-    num_components, components
-  )
 
-  protected lazy val indexBuffer = new ex.IndexBuffer(buffUsage, indices.length)
-
-  protected lazy val pp = new Program(name)(
+  protected[ogl] lazy val pp = new Program(name)(
     Program.Shader.Vertex  (readResource(vertShaderResource)),
     Program.Shader.Fragment(readResource(fragShaderResource))
   )
   
-  
   def init(projectionTransform: Matrix): Unit ={
-    ibb.put(indices)
-    ibb.flip()
-
-    cfb.put(vertices)
-    cfb.flip()
-
-    vertexBuffer.acquire()
-    vertexBuffer.send(0, cfb)
-
-    indexBuffer.acquire()
-    indexBuffer.send(0, ibb)
-
     pp.acquire()
 
     for (_ <- using.program(pp)) {
@@ -67,26 +43,46 @@ class ShaderProg(val indices: Array[Int],
     GL11.glEnable(GL11.GL_DEPTH_TEST)
   }
 
-  def release() = {
+  def release(): Unit ={
     pp.release()
-    vertexBuffer.release()
-    indexBuffer.release()
   }
-  
-  def draw(transform: Matrix.Plain, doDraw: DrawArg => Unit)
-          (implicit gl: Macrogl): Unit =
-    for {
-      _ <- using.program(pp)
-      _ <- using.vertexbuffer(vertexBuffer)
-      b <- ex.using.indexbuffer(indexBuffer)
-    } {
-      gl.checkError()
-      gl.clearColor(0.0f, 0.0f, 0.0f, 1.0f)
-      raster.clear(Macrogl.COLOR_BUFFER_BIT | Macrogl.DEPTH_BUFFER_BIT)
 
-      pp.uniform.viewTransform = transform
-      doDraw(DrawArg(pp, vertexBuffer, b))
+  class Instance(val indices: Array[Int],
+                 val vertices: Array[Float],
+                 val num_components: Int,
+                 val components: Array[(Int, Int)])
+  {
+
+    protected[ogl] lazy val ibb = BufferUtils.createIntBuffer(indices.length)
+    protected[ogl] lazy val cfb = BufferUtils.createFloatBuffer(vertices.length)
+
+    protected[ogl] lazy val vertexBuffer = new AttributeBuffer(
+      buffUsage, vertices.length / num_components,
+      num_components, components
+    )
+
+    protected[ogl] lazy val indexBuffer = new ex.IndexBuffer(buffUsage, indices.length)
+
+    def init(): Unit ={
+      ibb.put(indices)
+      ibb.flip()
+
+      cfb.put(vertices)
+      cfb.flip()
+
+      vertexBuffer.acquire()
+      vertexBuffer.send(0, cfb)
+
+      indexBuffer.acquire()
+      indexBuffer.send(0, ibb)
+
     }
+
+    def release() = {
+      vertexBuffer.release()
+      indexBuffer.release()
+    }
+  }
 
 
   private def readResource(path: Path) = io.Source.fromURL(getClass.getResource(path.mkString("/"))).mkString
@@ -101,27 +97,50 @@ case class ShaderProgramConf(lightColor    : (Float, Float, Float),
 
 case class DrawArg(pp: Program, vertexBuffer: AttributeBuffer, b: IndexBuffer.Access)
 
-case class ShaderProgContainer(prog: ShaderProg, doDraw: DrawArg => Unit)
+case class ShaderProgInstanceContainer(instance: ShaderProg#Instance, doDraw: DrawArg => Unit)
+case class ShaderProgContainer(prog: ShaderProg, instances: Seq[ShaderProgInstanceContainer])
 
 /**  */
 trait ShadersSupport extends DefaultApp3DExec
 {
   
-  protected def shaderProgs: Seq[ShaderProgContainer]
+  protected def shaderProg: ShaderProgContainer
 
   override protected def initApp() = {
     super.initApp()
-    shaderProgs.foreach(_.prog.init(projectionTransform))
+    shaderProg.prog.init(projectionTransform)
+    shaderProg.instances.foreach(_.instance.init())
   }
 
   override protected def update() = {
     super.update()
-    shaderProgs.foreach(   c => c.prog.draw(camera.transform, c.doDraw) )
+    draw(shaderProg)
   }
 
   override protected def terminateApp() = {
-    shaderProgs.foreach(_.prog.release())
+    shaderProg.instances.foreach(_.instance.release())
+    shaderProg.prog.release()
     super.terminateApp()
+  }
+
+  def draw(c: ShaderProgContainer)(implicit gl: Macrogl): Unit ={
+    raster.clear(Macrogl.COLOR_BUFFER_BIT | Macrogl.DEPTH_BUFFER_BIT)
+    for {
+      _ <- using.program(c.prog.pp)
+      ShaderProgInstanceContainer(i, doDraw) <- c.instances
+    }
+    {
+      for {
+        _ <- using.vertexbuffer(i.vertexBuffer)
+        b <- ex.using.indexbuffer(i.indexBuffer)
+      } {
+        gl.checkError()
+        gl.clearColor(0.0f, 0.0f, 0.0f, 1.0f)
+
+        c.prog.pp.uniform.viewTransform = camera.transform
+        doDraw(DrawArg(c.prog.pp, i.vertexBuffer, b))
+      }
+    }
   }
 
 }
