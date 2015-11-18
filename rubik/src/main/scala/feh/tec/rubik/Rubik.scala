@@ -8,104 +8,104 @@ import scala.collection.mutable
 /** Mutable Rubik's Cube */
 class Rubik[T: WithSideName](initialCubes: Set[Cube[T]]) {
   import SideName._
-  
+
   def cubes: Map[(Int, Int, Int), (Cube[T], CubeOrientation)] = Map(
-    (0, 0, 2) -> corners(Set(Front, Left, Up)),
-    (1, 0, 2) -> middles(Set(Front, Up)),
-    (2, 0, 2) -> corners(Set(Front, Right, Up)),
+    (0, 2, 2) -> corners(Set(Front, Left, Up)),
+    (1, 2, 2) -> middles(Set(Front, Up)),
+    (2, 2, 2) -> corners(Set(Front, Right, Up)),
     (0, 1, 2) -> middles(Set(Front, Left)),
     (1, 1, 2) -> centers(Set(Front)),
     (2, 1, 2) -> middles(Set(Front, Right)),
-    (0, 2, 2) -> corners(Set(Front, Left, Down)),
-    (1, 2, 2) -> middles(Set(Front, Down)),
-    (2, 2, 2) -> corners(Set(Front, Right, Down)),
+    (0, 0, 2) -> corners(Set(Front, Left, Down)),
+    (1, 0, 2) -> middles(Set(Front, Down)),
+    (2, 0, 2) -> corners(Set(Front, Right, Down)),
 
-    (0, 0, 1) -> middles(Set(Up, Left)),
-    (1, 0, 1) -> centers(Set(Up)),
-    (2, 0, 1) -> middles(Set(Up, Right)),
+    (0, 2, 1) -> middles(Set(Up, Left)),
+    (1, 2, 1) -> centers(Set(Up)),
+    (2, 2, 1) -> middles(Set(Up, Right)),
     (0, 1, 1) -> centers(Set(Left)),
     (2, 1, 1) -> centers(Set(Right)),
-    (0, 2, 1) -> middles(Set(Down, Left)),
-    (1, 2, 1) -> centers(Set(Down)),
-    (2, 2, 1) -> middles(Set(Down, Right)),
+    (0, 0, 1) -> middles(Set(Down, Left)),
+    (1, 0, 1) -> centers(Set(Down)),
+    (2, 0, 1) -> middles(Set(Down, Right)),
 
-    (0, 0, 0) -> corners(Set(Back, Left, Up)),
-    (1, 0, 0) -> middles(Set(Back, Up)),
-    (2, 0, 0) -> corners(Set(Back, Right, Up)),
+    (0, 2, 0) -> corners(Set(Back, Left, Up)),
+    (1, 2, 0) -> middles(Set(Back, Up)),
+    (2, 2, 0) -> corners(Set(Back, Right, Up)),
     (0, 1, 0) -> middles(Set(Back, Left)),
     (1, 1, 0) -> centers(Set(Back)),
     (2, 1, 0) -> middles(Set(Back, Right)),
-    (0, 2, 0) -> corners(Set(Back, Left, Down)),
-    (1, 2, 0) -> middles(Set(Back, Down)),
-    (2, 2, 0) -> corners(Set(Back, Right, Down))
+    (0, 0, 0) -> corners(Set(Back, Left, Down)),
+    (1, 0, 0) -> middles(Set(Back, Down)),
+    (2, 0, 0) -> corners(Set(Back, Right, Down))
   )
   
   def sides: Map[SideName, Map[(Int, Int), (Cube[T], CubeOrientation)]] = Map(
     Front -> Map(
-      (0, 0) -> corners(Set(Front, Left, Up)),
-      (1, 0) -> middles(Set(Front, Up)),
-      (2, 0) -> corners(Set(Front, Right, Up)),
+      (0, 2) -> corners(Set(Front, Left, Up)),
+      (1, 2) -> middles(Set(Front, Up)),
+      (2, 2) -> corners(Set(Front, Right, Up)),
       (0, 1) -> middles(Set(Front, Left)),
       (1, 1) -> centers(Set(Front)),
       (2, 1) -> middles(Set(Front, Right)),
-      (0, 2) -> corners(Set(Front, Left, Down)),
-      (1, 2) -> middles(Set(Front, Down)),
-      (2, 2) -> corners(Set(Front, Right, Down))
+      (0, 0) -> corners(Set(Front, Left, Down)),
+      (1, 0) -> middles(Set(Front, Down)),
+      (2, 0) -> corners(Set(Front, Right, Down))
     ),
     Right -> Map(
-      (0, 0) -> corners(Set(Right, Front, Up)),
-      (1, 0) -> middles(Set(Right, Up)),
-      (2, 0) -> corners(Set(Right, Back, Up)),
+      (0, 2) -> corners(Set(Right, Front, Up)),
+      (1, 2) -> middles(Set(Right, Up)),
+      (2, 2) -> corners(Set(Right, Back, Up)),
       (0, 1) -> middles(Set(Right, Front)),
       (1, 1) -> centers(Set(Right)),
       (2, 1) -> middles(Set(Right, Back)),
-      (0, 2) -> corners(Set(Right, Front, Down)),
-      (1, 2) -> middles(Set(Right, Down)),
-      (2, 2) -> corners(Set(Right, Back, Down))
+      (0, 0) -> corners(Set(Right, Front, Down)),
+      (1, 0) -> middles(Set(Right, Down)),
+      (2, 0) -> corners(Set(Right, Back, Down))
     ),
     Left -> Map(
-      (0, 0) -> corners(Set(Left, Back, Up)),
-      (1, 0) -> middles(Set(Left, Up)),
-      (2, 0) -> corners(Set(Left, Front, Up)),
+      (0, 2) -> corners(Set(Left, Back, Up)),
+      (1, 2) -> middles(Set(Left, Up)),
+      (2, 2) -> corners(Set(Left, Front, Up)),
       (0, 1) -> middles(Set(Left, Back)),
       (1, 1) -> centers(Set(Left)),
       (2, 1) -> middles(Set(Left, Front)),
-      (0, 2) -> corners(Set(Left, Back, Down)),
-      (1, 2) -> middles(Set(Left, Down)),
-      (2, 2) -> corners(Set(Left, Front, Down))
+      (0, 0) -> corners(Set(Left, Back, Down)),
+      (1, 0) -> middles(Set(Left, Down)),
+      (2, 0) -> corners(Set(Left, Front, Down))
     ),
     Up -> Map(
-      (0, 0) -> corners(Set(Up, Left, Back)),
-      (1, 0) -> middles(Set(Up, Back)),
-      (2, 0) -> corners(Set(Up, Right, Back)),
+      (0, 2) -> corners(Set(Up, Left, Back)),
+      (1, 2) -> middles(Set(Up, Back)),
+      (2, 2) -> corners(Set(Up, Right, Back)),
       (0, 1) -> middles(Set(Up, Left)),
       (1, 1) -> centers(Set(Up)),
       (2, 1) -> middles(Set(Up, Right)),
-      (0, 2) -> corners(Set(Up, Left, Front)),
-      (1, 2) -> middles(Set(Up, Front)),
-      (2, 2) -> corners(Set(Up, Right, Front))
+      (0, 0) -> corners(Set(Up, Left, Front)),
+      (1, 0) -> middles(Set(Up, Front)),
+      (2, 0) -> corners(Set(Up, Right, Front))
     ),
     Down -> Map(
-      (0, 0) -> corners(Set(Down, Left, Front)),
-      (1, 0) -> middles(Set(Down, Front)),
-      (2, 0) -> corners(Set(Down, Right, Front)),
+      (0, 2) -> corners(Set(Down, Left, Front)),
+      (1, 2) -> middles(Set(Down, Front)),
+      (2, 2) -> corners(Set(Down, Right, Front)),
       (0, 1) -> middles(Set(Down, Left)),
       (1, 1) -> centers(Set(Down)),
       (2, 1) -> middles(Set(Down, Right)),
-      (0, 2) -> corners(Set(Down, Left, Back)),
-      (1, 2) -> middles(Set(Down, Back)),
-      (2, 2) -> corners(Set(Down, Right, Back))
+      (0, 0) -> corners(Set(Down, Left, Back)),
+      (1, 0) -> middles(Set(Down, Back)),
+      (2, 0) -> corners(Set(Down, Right, Back))
     ),
     Back -> Map(
-      (0, 0) -> corners(Set(Back, Right, Up)),
-      (1, 0) -> middles(Set(Back, Up)),
-      (2, 0) -> corners(Set(Back, Left, Up)),
+      (0, 2) -> corners(Set(Back, Right, Up)),
+      (1, 2) -> middles(Set(Back, Up)),
+      (2, 2) -> corners(Set(Back, Left, Up)),
       (0, 1) -> middles(Set(Back, Right)),
       (1, 1) -> centers(Set(Back)),
       (2, 1) -> middles(Set(Back, Left)),
-      (0, 2) -> corners(Set(Back, Right, Down)),
-      (1, 2) -> middles(Set(Back, Down)),
-      (2, 2) -> corners(Set(Back, Left, Down))
+      (0, 0) -> corners(Set(Back, Right, Down)),
+      (1, 0) -> middles(Set(Back, Down)),
+      (2, 0) -> corners(Set(Back, Left, Down))
     )
   )
 

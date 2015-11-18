@@ -41,7 +41,7 @@ case class RubikCube[T](front: RubikCube.Side[T],
 
 
   protected type RotateSetup = List[(Side[T], EdgeName)]
-  
+
   protected def rotateSide90(side: Side[T], affected: RotateSetup) = {
     val newSide = side.rotate90
 
@@ -85,7 +85,7 @@ object RubikCube{
     def labels: Seq[T]
   }
 
-  case class Center[T: WithSideName](label: T) extends Cube[T] { def labels = Nil }
+  case class Center[T: WithSideName](label: T) extends Cube[T] { def labels = label :: Nil }
   case class Middle[T: WithSideName](label1: T, label2: T) extends Cube[T]{ def labels = label1 :: label2 :: Nil }
   case class Corner[T: WithSideName](label1: T, label2: T, label3: T) extends Cube[T]{ def labels = label1 :: label2 :: label3 :: Nil }
 
@@ -184,7 +184,7 @@ object RubikCube{
 
 object RubikSubCubes{
   import EdgeName._
-  
+
   def cornersOf(sideName: SideName, p: (EdgeName, EdgeName)) =
     corners.find{ _.productIterator.contains(sideName -> p) }
       .orElse( corners.find{ _.productIterator.contains(sideName -> p.swap) } )
@@ -192,8 +192,8 @@ object RubikSubCubes{
 
   def middleOf(sideName: SideName, p: EdgeName) =
     middles.find{ _.productIterator.contains(sideName -> p) }.get
-  
-  
+
+
   private def Side = SideName
 
   lazy val corners = List(
@@ -221,7 +221,7 @@ object RubikSubCubes{
     (Side.Back,  Bottom) -> (Side.Down,  Bottom),
     (Side.Left,  Bottom) -> (Side.Down,  Left)
   )
-  
+
   /*lazy val corners = Map(
     Side.Front -> Map(
       (Top, Left)     -> ((Side.Up,    (Bottom, Left)),    (Side.Left,  (Top, Right))),
@@ -260,13 +260,13 @@ object RubikSubCubes{
       (Bottom, Right) -> ((Side.Down,  (Bottom, Left)),    (Side.Left,  (Bottom, Left)))
     )
   )*/
-  
+
 //  lazy val middles = Map(
 //    Side.Front -> Map(
 //      Top -> ()
 //    )
 //  )
-  
+
 }
 
 
