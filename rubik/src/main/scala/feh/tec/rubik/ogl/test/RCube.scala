@@ -15,6 +15,7 @@ object RCube extends ShadersSupport with FlyingCamera with App3DExit{
   val displayX = 800
   val displayY = 600
 
+  val fps = 30
 
   val contextAttributes = new ContextAttribs(3, 2).withForwardCompatible(true).withProfileCore(true)
   val displayMode =  new DisplayMode(displayX, displayY)
@@ -27,16 +28,30 @@ object RCube extends ShadersSupport with FlyingCamera with App3DExit{
   val cameraSpeed = 5.0
 
 
-  def exitKey: Int = Keyboard.KEY_ESCAPE
+  def exitKey = Keyboard.KEY_ESCAPE
 
   def mouseSensibility = 0.05
 
-  protected lazy val rotateFontRequested = new MutableState(false)
+  protected lazy val disableRequested = new MutableState(false)
+
+  protected lazy val rotateFontRequested  = new MutableState(false)
+  protected lazy val rotateBackRequested  = new MutableState(false)
+  protected lazy val rotateRightRequested = new MutableState(false)
+  protected lazy val rotateLeftRequested  = new MutableState(false)
+  protected lazy val rotateUpRequested    = new MutableState(false)
+  protected lazy val rotateDownRequested  = new MutableState(false)
 
   protected val onKeyPressed: PartialFunction[KeyEvent, Unit] = {
     case KeyEvent(Keyboard.KEY_ESCAPE) => exitRequested.set(true)
     case KeyEvent(Keyboard.KEY_F5)     => resetRequested.set(true)
-    case KeyEvent(Keyboard.KEY_NUMPAD5) => rotateFontRequested set true
+    case KeyEvent(Keyboard.KEY_F10)    => disableRequested.set(!disableRequested.get)
+
+    case KeyEvent(Keyboard.KEY_NUMPAD5 | Keyboard.KEY_5) => rotateFontRequested  set true
+    case KeyEvent(Keyboard.KEY_NUMPAD0 | Keyboard.KEY_0) => rotateBackRequested  set true
+    case KeyEvent(Keyboard.KEY_NUMPAD6 | Keyboard.KEY_6) => rotateRightRequested set true
+    case KeyEvent(Keyboard.KEY_NUMPAD4 | Keyboard.KEY_4) => rotateLeftRequested  set true
+    case KeyEvent(Keyboard.KEY_NUMPAD8 | Keyboard.KEY_8) => rotateUpRequested    set true
+    case KeyEvent(Keyboard.KEY_NUMPAD2 | Keyboard.KEY_2) => rotateDownRequested  set true
   }
 
   def resetCamera() = {
@@ -54,7 +69,7 @@ object RCube extends ShadersSupport with FlyingCamera with App3DExit{
   implicit def colors = DefaultRubikColorScheme
   val rubik = {
     val r = new Rubik[SideName](RubikSubCubesDefault.cubes)
-    r.rotate(SideName.Front)
+//    r.rotate(SideName.Front)
     r
   }
 
@@ -71,7 +86,7 @@ object RCube extends ShadersSupport with FlyingCamera with App3DExit{
     )
   )
 
-  val rr = new RubikRender(rubik, shader)
+  val rr = new RubikRender(rubik, shader, projectionTransform, disableRequested.get)
 
   protected val shaderProg = rr.shaderContainer
 
@@ -80,9 +95,19 @@ object RCube extends ShadersSupport with FlyingCamera with App3DExit{
   override protected def initApp() = {
     super.initApp()
 
+    def rotationHook(state: MutableState[Boolean], side: SideName) =
+      MutableStateHook(state, ifTrue{ rubik.rotate(side); state set false })
+
     controlHooks ++= Seq(
       MutableStateHook(resetRequested, ifTrue( resetCamera() )),
-      MutableStateHook(rotateFontRequested, ifTrue( rubik.rotate(SideName.Front) ))
+
+      rotationHook(rotateFontRequested,  SideName.Front),
+      rotationHook(rotateBackRequested,  SideName.Back),
+      rotationHook(rotateRightRequested, SideName.Right),
+      rotationHook(rotateLeftRequested,  SideName.Left),
+      rotationHook(rotateUpRequested,    SideName.Up),
+      rotationHook(rotateDownRequested,  SideName.Down)
+//      MutableStateHook(rotateFontRequested, ifTrue{ rubik.rotate(SideName.Front); rotateFontRequested set false })
     )
     Mouse.setCursorPosition(displayX / 2, displayY / 2)
   }

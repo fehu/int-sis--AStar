@@ -34,6 +34,8 @@ object Cubes extends ShadersSupport with FlyingCamera with App3DExit{
   val displayY = 600
 
 
+  val fps = 30
+
   val contextAttributes = new ContextAttribs(3, 2).withForwardCompatible(true).withProfileCore(true)
   val displayMode =  new DisplayMode(displayX, displayY)
 

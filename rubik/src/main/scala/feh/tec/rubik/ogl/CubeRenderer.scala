@@ -18,7 +18,11 @@ object CubeColorScheme{
 
 
 /** Renders given Rubik's Cube */
-class RubikRender[T: CubeColorScheme: WithSideName](val rubik: Rubik[T], val shader: ShaderProg){
+class RubikRender[T: CubeColorScheme: WithSideName](val rubik: Rubik[T],
+                                                    val shader: ShaderProg,
+                                                    projectionTransform: Matrix,
+                                                    disable: => Boolean )
+{
   def defaultColor = (0.5f, 0.5f, 0.5f)
 
   lazy val shaderContainer = ShaderProgContainer.create(shader, getShaders)
@@ -26,14 +30,20 @@ class RubikRender[T: CubeColorScheme: WithSideName](val rubik: Rubik[T], val sha
   protected def getShaders ={
     val h = rHash
 
-    if(currentCubeHash != h) {
+    if(currentCubeHash != h && !disable) {
       currentCubeHash = h
-
-      currentShaders.foreach(_._2.instance.release())
-      currentShaders = shadersMap
-      currentShaders.foreach(_._2.instance.init())
+      recreateShader()
     }
+    else if(!disable && currentShaders.isEmpty) recreateShader()
+    else if(disable && currentShaders.nonEmpty) currentShaders = Map()
+
     currentShaders.values.toSeq
+  }
+
+  protected def recreateShader() = {
+    currentShaders.foreach(_._2.instance.release())
+    currentShaders = shadersMap
+    currentShaders.foreach(_._2.instance.init())
   }
 
   protected var currentShaders = shadersMap

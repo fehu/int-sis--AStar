@@ -36,6 +36,8 @@ trait App3D extends DisplayApp{
 
 trait DefaultApp3DExec extends App3D{
 
+  def fps: Int
+
   def stopCondition: Boolean = Display.isCloseRequested
 
   protected def update(): Unit = {}
@@ -51,6 +53,7 @@ trait DefaultApp3DExec extends App3D{
 
       update()
       Display.update()
+      Display.sync(fps)
     }
 
 }
