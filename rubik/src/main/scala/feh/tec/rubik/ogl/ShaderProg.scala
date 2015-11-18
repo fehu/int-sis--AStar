@@ -2,7 +2,7 @@ package feh.tec.rubik.ogl
 
 import java.util.UUID
 
-import feh.util.Path
+import feh.util._
 import org.lwjgl.BufferUtils
 import org.lwjgl.opengl.{GL11, GL15}
 import org.macrogl._
@@ -116,7 +116,7 @@ trait ShadersSupport extends DefaultApp3DExec
 
   override protected def update() = {
     super.update()
-    shaderProgs.foreach( c => c.prog.draw(camera.transform, c.doDraw) )
+    shaderProgs.foreach(   c => c.prog.draw(camera.transform, c.doDraw) )
   }
 
   override protected def terminateApp() = {

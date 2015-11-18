@@ -53,7 +53,7 @@ object RCube extends ShadersSupport with FlyingCamera with App3DExit{
 
   val rr = new RubikRender(rubik)
 
-  protected val shaderProgs = rr.shaders.head :: Nil
+  protected val shaderProgs = rr.shaders
 
   run()
 
