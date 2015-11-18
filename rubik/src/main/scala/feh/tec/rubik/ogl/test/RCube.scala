@@ -2,7 +2,7 @@ package feh.tec.rubik.ogl.test
 
 import feh.tec.rubik.RubikSubCubesDefault.WithSideNameIdentity
 import feh.tec.rubik.RubikCube._
-import feh.tec.rubik.ogl.App3DControls.{MutableStateHook, KeyEvent}
+import feh.tec.rubik.ogl.App3DControls.{MutableState, MutableStateHook, KeyEvent}
 import feh.tec.rubik.ogl._
 import feh.tec.rubik.{Rubik, RubikSubCubesDefault}
 import feh.util.Path
@@ -31,9 +31,12 @@ object RCube extends ShadersSupport with FlyingCamera with App3DExit{
 
   def mouseSensibility = 0.05
 
+  protected lazy val rotateFontRequested = new MutableState(false)
+
   protected val onKeyPressed: PartialFunction[KeyEvent, Unit] = {
     case KeyEvent(Keyboard.KEY_ESCAPE) => exitRequested.set(true)
     case KeyEvent(Keyboard.KEY_F5)     => resetRequested.set(true)
+    case KeyEvent(Keyboard.KEY_NUMPAD5) => rotateFontRequested set true
   }
 
   def resetCamera() = {
@@ -49,7 +52,11 @@ object RCube extends ShadersSupport with FlyingCamera with App3DExit{
 
 
   implicit def colors = DefaultRubikColorScheme
-  val rubik = new Rubik[SideName](RubikSubCubesDefault.cubes)
+  val rubik = {
+    val r = new Rubik[SideName](RubikSubCubesDefault.cubes)
+    r.rotate(SideName.Front)
+    r
+  }
 
 
   private lazy val pathRoot = Path("/org/macrogl/examples/", '/')
@@ -73,7 +80,10 @@ object RCube extends ShadersSupport with FlyingCamera with App3DExit{
   override protected def initApp() = {
     super.initApp()
 
-    controlHooks += MutableStateHook(resetRequested, ifTrue( resetCamera() ))
+    controlHooks ++= Seq(
+      MutableStateHook(resetRequested, ifTrue( resetCamera() )),
+      MutableStateHook(rotateFontRequested, ifTrue( rubik.rotate(SideName.Front) ))
+    )
     Mouse.setCursorPosition(displayX / 2, displayY / 2)
   }
 }

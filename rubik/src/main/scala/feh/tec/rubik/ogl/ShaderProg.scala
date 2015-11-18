@@ -98,7 +98,11 @@ case class ShaderProgramConf(lightColor    : (Float, Float, Float),
 case class DrawArg(pp: Program, vertexBuffer: AttributeBuffer, b: IndexBuffer.Access)
 
 case class ShaderProgInstanceContainer(instance: ShaderProg#Instance, doDraw: DrawArg => Unit)
-case class ShaderProgContainer(prog: ShaderProg, instances: Seq[ShaderProgInstanceContainer])
+case class ShaderProgContainer(prog: ShaderProg, instances: () => Seq[ShaderProgInstanceContainer])
+object ShaderProgContainer{
+  def create(prog: ShaderProg, instances: => Seq[ShaderProgInstanceContainer]): ShaderProgContainer =
+    ShaderProgContainer(prog, () => instances)
+}
 
 /**  */
 trait ShadersSupport extends DefaultApp3DExec
@@ -109,7 +113,7 @@ trait ShadersSupport extends DefaultApp3DExec
   override protected def initApp() = {
     super.initApp()
     shaderProg.prog.init(projectionTransform)
-    shaderProg.instances.foreach(_.instance.init())
+    shaderProg.instances().foreach(_.instance.init())
   }
 
   override protected def update() = {
@@ -118,7 +122,7 @@ trait ShadersSupport extends DefaultApp3DExec
   }
 
   override protected def terminateApp() = {
-    shaderProg.instances.foreach(_.instance.release())
+    shaderProg.instances().foreach(_.instance.release())
     shaderProg.prog.release()
     super.terminateApp()
   }
@@ -127,7 +131,7 @@ trait ShadersSupport extends DefaultApp3DExec
     raster.clear(Macrogl.COLOR_BUFFER_BIT | Macrogl.DEPTH_BUFFER_BIT)
     for {
       _ <- using.program(c.prog.pp)
-      ShaderProgInstanceContainer(i, doDraw) <- c.instances
+      ShaderProgInstanceContainer(i, doDraw) <- c.instances()
     }
     {
       for {

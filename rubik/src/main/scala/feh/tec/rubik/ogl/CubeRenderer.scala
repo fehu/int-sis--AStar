@@ -21,15 +21,32 @@ object CubeColorScheme{
 class RubikRender[T: CubeColorScheme: WithSideName](val rubik: Rubik[T], val shader: ShaderProg){
   def defaultColor = (0.5f, 0.5f, 0.5f)
 
-  lazy val shaderContainer = ShaderProgContainer(shader, shadersMap.values.toSeq)
+  lazy val shaderContainer = ShaderProgContainer.create(shader, getShaders)
 
-  protected lazy val shadersMap = rubik.cubes.map{
-    case ((x, y, z), (c, o)) =>
+  protected def getShaders ={
+    val h = rHash
+
+    if(currentCubeHash != h) {
+      currentCubeHash = h
+
+      currentShaders.foreach(_._2.instance.release())
+      currentShaders = shadersMap
+      currentShaders.foreach(_._2.instance.init())
+    }
+    currentShaders.values.toSeq
+  }
+
+  protected var currentShaders = shadersMap
+  protected var currentCubeHash = rHash
+
+  protected def shadersMap = rubik.cubes.map{
+    case (pos, (c, o)) =>
       val vertices = Cube.coloredVertices(defaultColor, mkMp(c.labels))
-      val transform = cubePosition(x, y, z) // todo: use Orientation
+      val transform = cubePose(pos, o) // todo: use Orientation
       c -> mkShaderInst(vertices, transform)
   }
 
+  private def rHash = rubik.cubes.hashCode()
   private def colors = implicitly[CubeColorScheme[T]]
   private def mkMp(s: Seq[T]) = s.map(t => t.side -> colors(t)).toMap
 
@@ -42,6 +59,34 @@ class RubikRender[T: CubeColorScheme: WithSideName](val rubik: Rubik[T], val sha
     }
   )
 
+  def interCubeDist = 2.05
+
+  def cubePose(pos: (Int, Int, Int), o: CubeOrientation) = {
+
+    val rX = Utils.rotateXMatrix(o.ax.sin, o.ax.cos)
+    val rY = Utils.rotateYMatrix(o.ay.sin, o.ay.cos)
+    val rZ = Utils.rotateZMatrix(o.az.sin, o.az.cos)
+
+    val (x, y, z) = pos
+    def c = interCubeDist
+
+
+    import Matrix._
+
+    val res = identity
+
+    multiply(rX, rY, res)
+    multiply(res, rZ, res)
+
+    val offset = 4*3
+    res.array(offset)   = c*x
+    res.array(offset+1) = c*y
+    res.array(offset+2) = -5 + c*z
+
+    res
+  }
+
+  @deprecated("not used anymore")
   def cubePosition(x: Int, y: Int, z: Int, c: Double = 2.05) = new Matrix.Plain(
     Array[Double](
         1, 0, 0, 0,

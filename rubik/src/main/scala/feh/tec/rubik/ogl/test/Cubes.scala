@@ -83,19 +83,21 @@ object Cubes extends ShadersSupport with FlyingCamera with App3DExit{
 
   //  val rr = new RubikRender(rubik)
 
-  protected val shaderProg = ShaderProgContainer(CubesShader.prog,
-    ShaderProgInstanceContainer(
-      new CubesShader.prog.Instance(
-        Cube.indices,
-        Cube.coloredVertices((0.1f, 0.1f, 0.1f), DefaultRubikColorScheme.asMap),
-        Cube.num_components,
-        Cube.components
-      ),
+  val shaderC = ShaderProgInstanceContainer(
+    new CubesShader.prog.Instance(
+      Cube.indices,
+      Cube.coloredVertices((0.1f, 0.1f, 0.1f), DefaultRubikColorScheme.asMap),
+      Cube.num_components,
+      Cube.components
+    ),
     {
       case DrawArg(pp, vertexBuf, b) =>
         pp.uniform.worldTransform = cubePosition(0, 1)
         b.render(Macrogl.TRIANGLES, vertexBuf)
-    }) :: Nil)
+    }
+  ) :: Nil
+
+  protected val shaderProg = ShaderProgContainer(CubesShader.prog, () => shaderC)
 
   run()
 
