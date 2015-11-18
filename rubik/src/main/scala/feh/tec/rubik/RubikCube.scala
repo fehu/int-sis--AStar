@@ -4,6 +4,7 @@ import feh.tec.rubik.RubikCube._
 import feh.util._
 
 /** Rubik's Cube instance. */
+@deprecated("use mutable `feh.tec.rubik.Rubik`")
 case class RubikCube[T](front: RubikCube.Side[T],
                         right: RubikCube.Side[T],
                         left : RubikCube.Side[T],

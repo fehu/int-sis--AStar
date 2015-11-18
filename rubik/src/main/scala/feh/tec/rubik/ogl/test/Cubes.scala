@@ -10,6 +10,7 @@ import org.lwjgl.input.{Keyboard, Mouse}
 import org.lwjgl.opengl.{ContextAttribs, DisplayMode}
 import org.macrogl._
 
+@deprecated("old example, see `feh.tec.rubik.ogl.test.RCube`")
 object CubesShader {
 
   val pathRoot = Path("/org/macrogl/examples/", '/')
@@ -26,7 +27,7 @@ object CubesShader {
   )
 }
 
-
+@deprecated("old example, see `feh.tec.rubik.ogl.test.RCube`")
 object Cubes extends ShadersSupport with FlyingCamera with App3DExit{
 
   val displayX = 800

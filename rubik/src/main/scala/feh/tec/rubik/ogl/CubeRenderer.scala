@@ -54,7 +54,7 @@ class RubikRender[T: CubeColorScheme: WithSideName](val rubik: Rubik[T], val sha
 
 
 
-
+@deprecated("use `feh.tec.rubik.ogl.RubikRender`")
 class CubeRenderer[T: CubeColorScheme](rubik: Rubik[T]){
 
   def render(arg: DrawArg)  = {
