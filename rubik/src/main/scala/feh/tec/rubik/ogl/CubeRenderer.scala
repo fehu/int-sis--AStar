@@ -49,6 +49,18 @@ class RubikRender[T: CubeColorScheme: WithSideName](val rubik: Rubik[T], val sha
   private def rHash = rubik.cubes.hashCode()
   private def colors = implicitly[CubeColorScheme[T]]
   private def mkMp(s: Seq[T]) = s.map(t => t.side -> colors(t)).toMap
+//  {
+//    def front = SideName.Front -> colors(s.head)
+//    def up    = SideName.Up    -> colors(s(1))
+//    def right = SideName.Right -> colors(s(2))
+//
+//    s.size match {
+//      case 1 => Map(front)
+//      case 2 => Map(front, up)
+//      case 3 => Map(front, up, right)
+//    }
+//  }
+
 
   protected def mkShaderInst(vertices: Array[Float], transform: Matrix.Plain) = ShaderProgInstanceContainer(
     new shader.Instance(Cube.indices, vertices, Cube.num_components, Cube.components),
@@ -75,8 +87,8 @@ class RubikRender[T: CubeColorScheme: WithSideName](val rubik: Rubik[T], val sha
 
     val res = identity
 
-    multiply(rX, rY, res)
-    multiply(res, rZ, res)
+//    multiply(rX, rY, res)
+//    multiply(res, rZ, res)
 
     val offset = 4*3
     res.array(offset)   = c*x

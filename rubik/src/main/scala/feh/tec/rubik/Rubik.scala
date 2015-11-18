@@ -12,15 +12,15 @@ class Rubik[T: WithSideName](initialCubes: Set[Cube[T]]) {
   import SideName._
 
   def cubes: Map[(Int, Int, Int), (Cube[T], CubeOrientation)] = Map(
-    (0, 2, 2) -> corners(Set(Front, Left, Up)),
-    (1, 2, 2) -> middles(Set(Front, Up)),
-    (2, 2, 2) -> corners(Set(Front, Right, Up)),
-    (0, 1, 2) -> middles(Set(Front, Left)),
+    (0, 0, 2) -> corners(Set(Front, Left, Up)),
+    (0, 1, 2) -> middles(Set(Front, Up)),
+    (0, 2, 2) -> corners(Set(Front, Right, Up)),
+    (1, 0, 2) -> middles(Set(Front, Left)),
     (1, 1, 2) -> centers(Set(Front)),
-    (2, 1, 2) -> middles(Set(Front, Right)),
-    (0, 0, 2) -> corners(Set(Front, Left, Down)),
-    (1, 0, 2) -> middles(Set(Front, Down)),
-    (2, 0, 2) -> corners(Set(Front, Right, Down)),
+    (1, 2, 2) -> middles(Set(Front, Right)),
+    (2, 0, 2) -> corners(Set(Front, Left, Down)),
+    (2, 1, 2) -> middles(Set(Front, Down)),
+    (2, 2, 2) -> corners(Set(Front, Right, Down)),
 
     (0, 2, 1) -> middles(Set(Up, Left)),
     (1, 2, 1) -> centers(Set(Up)),
@@ -79,8 +79,9 @@ class Rubik[T: WithSideName](initialCubes: Set[Cube[T]]) {
         val c = initialCubes
           .collectFirst{ case c: Corner[T] if id == cubeId(c) => c }
           .get
+        val o = defaultOrientation
 
-        id -> (c, defaultOrientation)
+        id -> (c, o)
     }: _*
   )
 
@@ -108,6 +109,14 @@ class Rubik[T: WithSideName](initialCubes: Set[Cube[T]]) {
 }
 
 object Rubik{
+
+//  def sideAngle(side: SideName) = side match {
+//    case
+//  }
+
+  def orientationByPos(pos: Set[SideName]) = pos.size match {
+    case 3 =>
+  }
   
   def rotationPosChange(side: SideName, pos: (Int, Int)): Set[SideName] =
     sideCubes(side)(rotationIntPosChange(pos))
@@ -205,10 +214,10 @@ object Rubik{
 case class CubeOrientation(ax: HalfPiMultAngle, ay: HalfPiMultAngle, az: HalfPiMultAngle){
 
   /** rotate Right Side clockwise 90 degrees */
-  def rotateRight = CubeOrientation(ax, ay.plus, az.plus)
+  def rotateRight = CubeOrientation(ax, ay.plus, az)
 
   /** rotate Left Side clockwise 90 degrees */
-  def rotateLeft = CubeOrientation(ax, ay.minus, az.minus)
+  def rotateLeft = CubeOrientation(ax, ay.minus, az)
 
   /** rotate Front Side clockwise 90 degrees */
   def rotateFront = CubeOrientation(ax.plus, ay.plus, az)
@@ -217,10 +226,10 @@ case class CubeOrientation(ax: HalfPiMultAngle, ay: HalfPiMultAngle, az: HalfPiM
   def rotateBack = CubeOrientation(ax.minus, ay.minus, az)
 
   /** rotate Up Side clockwise 90 degrees */
-  def rotateUp = CubeOrientation(ax.plus, ay, ax.plus)
+  def rotateUp = CubeOrientation(ax.plus, ay, az)
 
   /** rotate Down Side clockwise 90 degrees */
-  def rotateDown = CubeOrientation(ax.minus, ay, ax.minus)
+  def rotateDown = CubeOrientation(ax.minus, ay, az)
 
   def rotate(r: SideName) = r match {
     case SideName.Front => rotateFront
