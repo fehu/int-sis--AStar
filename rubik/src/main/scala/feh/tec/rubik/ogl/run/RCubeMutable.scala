@@ -80,7 +80,7 @@ object RCubeMutable extends ShadersSupport with FlyingCamera with App3DExit{
 
 
 
-  def shader = Shaders.VXY
+  val shader = Shaders.forGLSL("1.2")
   val rr = new RubikRender(rubik, shader, projectionTransform, disableRequested.get)
 
   protected val shaderProg = rr.shaderContainer
@@ -112,9 +112,9 @@ object RCubeMutable extends ShadersSupport with FlyingCamera with App3DExit{
   object Shaders{
     private lazy val pathRoot = Path("/org/macrogl/examples/", '/')
 
-    lazy val V33 = new ShaderProg(
-      pathRoot / "3.3" / "BasicLighting.vert",
-      pathRoot / "3.3" / "BasicLighting.frag",
+    def forGLSL(v: String) = new ShaderProg(
+      pathRoot / v / "BasicLighting.vert",
+      pathRoot / v / "BasicLighting.frag",
       ShaderProgramConf(
         "projection"      -> projectionTransform,
         "lightColor"      -> (1.0f, 1.0f, 1.0f),
@@ -123,18 +123,5 @@ object RCubeMutable extends ShadersSupport with FlyingCamera with App3DExit{
         "diffuse"         -> 0.95f
       )
     )
-
-    lazy val VXY = new ShaderProg(
-      pathRoot / "1.2" / "BasicLighting.vert",
-      pathRoot / "1.2" / "BasicLighting.frag",
-      ShaderProgramConf(
-        "projection"      -> projectionTransform,
-        "lightColor"      -> (1.0f, 1.0f, 1.0f),
-        "lightDirection"  -> (0.0f, -1.0f, -1.0f),
-        "ambient"         -> 0.25f,
-        "diffuse"         -> 0.95f
-      )
-    )
-
   }
 }

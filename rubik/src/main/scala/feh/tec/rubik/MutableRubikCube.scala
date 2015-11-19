@@ -40,8 +40,6 @@ class MutableRubikCube[T: WithSideName](initialCubes: Set[Cube[T]]) extends Rubi
   def cubesHeap = corners ++ middles ++ centers
   
   
-  protected def defaultOrientation = CubeOrientation(Angle0, Angle0, Angle0)
-  
   protected lazy val corners = mutable.HashMap(
     RubikSubCubes.corners.map{
       case ((s1, _), (s2, _), (s3, _)) =>
@@ -49,9 +47,8 @@ class MutableRubikCube[T: WithSideName](initialCubes: Set[Cube[T]]) extends Rubi
         val c = initialCubes
           .collectFirst{ case c: Corner[T] if id == cubeId(c) => c }
           .get
-        val o = defaultOrientation
 
-        id -> (c, o)
+        id -> (c, CubeOrientation(c.label1.side, c.label2.side, c.label3.side))
     }: _*
   )
 
@@ -63,7 +60,7 @@ class MutableRubikCube[T: WithSideName](initialCubes: Set[Cube[T]]) extends Rubi
           .collectFirst{ case m: Middle[T] if id == cubeId(m) => m }
           .get
 
-        id -> (c, defaultOrientation)
+        id -> (c, CubeOrientation(c.label1.side, c.label2.side, null))
     }: _*
   )
 
@@ -74,7 +71,7 @@ class MutableRubikCube[T: WithSideName](initialCubes: Set[Cube[T]]) extends Rubi
           .collectFirst{ case c@Center(l) if l.side == side => c }
           .get
         
-        Set(side) -> (c, defaultOrientation)
+        Set(side) -> (c, CubeOrientation(side, null, null))
     }: _*)
 
   def snapshot = RubikCubeInstance[T](cubes.mapKeys(RubikCube.cubeAt))

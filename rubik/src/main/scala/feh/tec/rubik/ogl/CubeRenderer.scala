@@ -1,13 +1,14 @@
 package feh.tec.rubik.ogl
 
-import feh.tec.rubik.RubikCube.{CubeOrientation, SideName, WithSideName, WithSideNameWrapper}
-import feh.tec.rubik.{MutableRubikCube, RubikCube, RubikCubeInstance}
+import feh.tec.rubik.RubikCube
+import feh.tec.rubik.RubikCube._
 import feh.tec.rubik.ogl.CubeColorScheme.GLFColor
 import org.macrogl.{Macrogl, Matrix}
 
 
 trait CubeColorScheme[T] extends (T => GLFColor){
   def asMap: Map[T, GLFColor]
+  def bySide: SideName => GLFColor
 }
 
 object CubeColorScheme{
@@ -21,7 +22,7 @@ class RubikRender[T: CubeColorScheme: WithSideName](val rubik: RubikCube[T],
                                                     projectionTransform: Matrix,
                                                     disable: => Boolean )
 {
-  def defaultColor = (0.5f, 0.5f, 0.5f)
+  def defaultColor = (0.1f, 0.1f, 0.1f)
 
   lazy val shaderContainer = ShaderProgContainer.create(shader, getShaders)
 
@@ -49,26 +50,18 @@ class RubikRender[T: CubeColorScheme: WithSideName](val rubik: RubikCube[T],
 
   protected def shadersMap = rubik.cubes.map{
     case (pos, (c, o)) =>
-      val vertices = Cube.coloredVertices(defaultColor, mkMp(c.labels))
+      val vertices = Cube.coloredVertices(defaultColor, mkMp(c.labels, o))
       val transform = cubePose(pos, o) // todo: use Orientation
       c -> mkShaderInst(vertices, transform)
   }
 
   private def rHash = rubik.cubes.hashCode()
   private def colors = implicitly[CubeColorScheme[T]]
-  private def mkMp(s: Seq[T]) = s.map(t => t.side -> colors(t)).toMap
-//  {
-//    def front = SideName.Front -> colors(s.head)
-//    def up    = SideName.Up    -> colors(s(1))
-//    def right = SideName.Right -> colors(s(2))
-//
-//    s.size match {
-//      case 1 => Map(front)
-//      case 2 => Map(front, up)
-//      case 3 => Map(front, up, right)
-//    }
-//  }
-
+  private def mkMp(s: Seq[T], o: CubeOrientation) = {
+    s .zip(o.toSeq)
+      .map{ case (t, orient) => orient -> colors(t) }
+      .toMap
+  }
 
   protected def mkShaderInst(vertices: Array[Float], transform: Matrix.Plain) = ShaderProgInstanceContainer(
     new shader.Instance(Cube.indices, vertices, Cube.num_components, Cube.components),
@@ -86,14 +79,12 @@ class RubikRender[T: CubeColorScheme: WithSideName](val rubik: RubikCube[T],
     val (x, y, z) = pos
     def c = interCubeDist
 
-    val res = Utils.rotateMatrix(o.ax, o.ay, o.az)
-
+    val res = Matrix.identity
     val offset = 4*3
     res.array(offset)   = c*x
     res.array(offset+1) = c*y
     res.array(offset+2) = -5 + c*z
-
-  res
+    res
   }
 
 }
@@ -109,8 +100,10 @@ object DefaultRubikColorScheme extends CubeColorScheme[SideName]{
     Left   -> (0f, 0f, 1f),
     Up     -> (1f, 1f, 0f),
     Down   -> (1f, 1f, 1f),
-    Back   -> (1f, 0.65f, 0f)
+    Back   -> (1f, 0.27f, 0f)
   )
+
+  def bySide = asMap
 
   def apply(v1: SideName) = asMap(v1)
 }

@@ -3,6 +3,8 @@ package feh.tec.rubik
 import feh.tec.rubik.RubikCube._
 import feh.tec.rubik.ogl.Utils.HalfPiMultAngle
 
+import scala.collection.mutable
+
 trait RubikCube[T]{
   def cubes: Map[(Int, Int, Int), CubeWithOrientation[T]]
 }
@@ -90,34 +92,14 @@ object RubikCube{
   case class Corner[T: WithSideName](label1: T, label2: T, label3: T) extends Cube[T]{ def labels = label1 :: label2 :: label3 :: Nil }
 
 
-  case class CubeOrientation(ax: HalfPiMultAngle, ay: HalfPiMultAngle, az: HalfPiMultAngle){
+  case class CubeOrientation(o1: SideName, o2: SideName, o3: SideName){
 
-    /** rotate Right Side clockwise 90 degrees */
-    def rotateRight = CubeOrientation(ax.plus, ay, az)
-
-    /** rotate Left Side clockwise 90 degrees */
-    def rotateLeft = CubeOrientation(ax.minus, ay, az)
-
-    /** rotate Front Side clockwise 90 degrees */
-    def rotateFront = CubeOrientation(ax, ay, az.plus)
-
-    /** rotate Back Side clockwise 90 degrees */
-    def rotateBack = CubeOrientation(ax, ay, az.minus)
-
-    /** rotate Up Side clockwise 90 degrees */
-    def rotateUp = CubeOrientation(ax, ay.plus, az)
-
-    /** rotate Down Side clockwise 90 degrees */
-    def rotateDown = CubeOrientation(ax, ay.minus, az)
-
-    def rotate(r: SideName) = r match {
-      case SideName.Front => rotateFront
-      case SideName.Back  => rotateBack
-      case SideName.Left  => rotateLeft
-      case SideName.Right => rotateRight
-      case SideName.Up    => rotateUp
-      case SideName.Down  => rotateDown
+    def rotate(r: SideName) = {
+      val rot = NextRotation.byName(r)
+      CubeOrientation(rot(o1), rot(o2), rot(o3))
     }
+
+    def toSeq = Seq(o1, o2, o3)
   }
 
 
@@ -257,6 +239,52 @@ object RubikCube{
       )
     )
   }
+
+    object NextRotation{
+      import SideName._
+
+      val rotationMapCache = mutable.HashMap.empty[(Int, Boolean), Map[SideName, SideName]]
+
+      def byName(sideName: SideName) = sideName match {
+        case Front => front
+        case Back  => back
+        case Right => right
+        case Left  => left
+        case Up    => up
+        case Down  => down
+      }
+
+      lazy val front = next(Z, reverse = false)
+      lazy val back  = next(Z, reverse = true)
+      lazy val right = next(X, reverse = false)
+      lazy val left  = next(X, reverse = true)
+      lazy val up    = next(Y, reverse = false)
+      lazy val down  = next(Y, reverse = true)
+
+      lazy val X = Map(
+        Front -> Up,
+        Up    -> Back,
+        Back  -> Down,
+        Down  -> Front
+      )
+      lazy val Y = Map(
+        Front -> Left,
+        Left  -> Back,
+        Back  -> Right,
+        Right -> Front
+      )
+      lazy val Z = Map(
+        Right -> Down,
+        Down  -> Left,
+        Left  -> Up,
+        Up    -> Right
+      )
+
+      private def next(m: Map[SideName, SideName], reverse: Boolean) = {
+        val mm = if (reverse) m.map(_.swap) else m
+        mm.withDefault(identity)
+      }
+    }
 }
 
 
