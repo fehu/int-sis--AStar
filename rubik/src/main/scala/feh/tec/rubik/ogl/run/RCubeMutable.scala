@@ -1,16 +1,16 @@
-package feh.tec.rubik.ogl.test
+package feh.tec.rubik.ogl.run
 
 import feh.tec.rubik.RubikSubCubesDefault.WithSideNameIdentity
 import feh.tec.rubik.RubikCube._
 import feh.tec.rubik.ogl.App3DControls.{MutableState, MutableStateHook, KeyEvent}
 import feh.tec.rubik.ogl._
-import feh.tec.rubik.{Rubik, RubikSubCubesDefault}
+import feh.tec.rubik.{MutableRubikCube, RubikSubCubesDefault}
 import feh.util.Path
 import org.lwjgl.input.{Keyboard, Mouse}
 import org.lwjgl.opengl.{ContextAttribs, DisplayMode}
 import org.macrogl._
 
-object RCube extends ShadersSupport with FlyingCamera with App3DExit{
+object RCubeMutable extends ShadersSupport with FlyingCamera with App3DExit{
 
   val displayX = 800
   val displayY = 600
@@ -67,11 +67,7 @@ object RCube extends ShadersSupport with FlyingCamera with App3DExit{
 
 
   implicit def colors = DefaultRubikColorScheme
-  val rubik = {
-    val r = new Rubik[SideName](RubikSubCubesDefault.cubes)
-//    r.rotate(SideName.Front)
-    r
-  }
+  val rubik = new MutableRubikCube[SideName](RubikSubCubesDefault.cubes)
 
 
   private lazy val pathRoot = Path("/org/macrogl/examples/", '/')

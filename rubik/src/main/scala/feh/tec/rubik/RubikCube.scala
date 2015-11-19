@@ -1,8 +1,13 @@
 package feh.tec.rubik
 
 import feh.tec.rubik.RubikCube._
-import feh.util._
+import feh.tec.rubik.ogl.Utils.HalfPiMultAngle
 
+trait RubikCube[T]{
+  def cubes: Map[(Int, Int, Int), CubeWithOrientation[T]]
+}
+
+/*
 /** Rubik's Cube instance. */
 case class RubikCube[T](front: RubikCube.Side[T],
                         right: RubikCube.Side[T],
@@ -61,18 +66,13 @@ case class RubikCube[T](front: RubikCube.Side[T],
   }
 
 }
+*/
 
 object RubikCube{
 
-  def apply[T](sides: Map[SideName, Side[T]]): RubikCube[T] = RubikCube(
-    sides(SideName.Front),
-    sides(SideName.Right),
-    sides(SideName.Left),
-    sides(SideName.Up),
-    sides(SideName.Down),
-    sides(SideName.Back)
-  )
+  type CubeId = Set[SideName]
 
+  type CubeWithOrientation[T] = (Cube[T], CubeOrientation)
 
   trait WithSideName[T] { def side: T => SideName }
 
@@ -89,70 +89,35 @@ object RubikCube{
   case class Middle[T: WithSideName](label1: T, label2: T) extends Cube[T]{ def labels = label1 :: label2 :: Nil }
   case class Corner[T: WithSideName](label1: T, label2: T, label3: T) extends Cube[T]{ def labels = label1 :: label2 :: label3 :: Nil }
 
-//  object Orientation extends Enumeration{
-//    val X, Y, Z = Value
-//  }
-//  type Orientation = Orientation.Value
 
-  case class CubeSide[T](cube: Cube[T], label: T)
+  case class CubeOrientation(ax: HalfPiMultAngle, ay: HalfPiMultAngle, az: HalfPiMultAngle){
 
+    /** rotate Right Side clockwise 90 degrees */
+    def rotateRight = CubeOrientation(ax, ay.plus, az)
 
+    /** rotate Left Side clockwise 90 degrees */
+    def rotateLeft = CubeOrientation(ax, ay.minus, az)
 
-  lazy val side = 3
+    /** rotate Front Side clockwise 90 degrees */
+    def rotateFront = CubeOrientation(ax.plus, ay.plus, az)
 
-  /** Rubik's Cube side.
-    *
-    * @param cubes list of cube's rows
-    * @tparam T label
-    */
-  case class Side[T](cubes: List[List[CubeSide[T]]]){
-    side =>
+    /** rotate Back Side clockwise 90 degrees */
+    def rotateBack = CubeOrientation(ax.minus, ay.minus, az)
 
-    def center = cubes(1)(1).cube.asInstanceOf[Center[T]]
-    object edge{
-      def top    = mkEdge(cubes.head)
-      def bottom = mkEdge(cubes(2))
-      def right  = mkEdge(mkRight)
-      def left   = mkEdge(mkLeft)
+    /** rotate Up Side clockwise 90 degrees */
+    def rotateUp = CubeOrientation(ax.plus, ay, az)
 
-      def byName(name: EdgeName) = name match {
-        case EdgeName.Right  => right
-        case EdgeName.Left   => left
-        case EdgeName.Top    => top
-        case EdgeName.Bottom => bottom
-      }
+    /** rotate Down Side clockwise 90 degrees */
+    def rotateDown = CubeOrientation(ax.minus, ay, az)
+
+    def rotate(r: SideName) = r match {
+      case SideName.Front => rotateFront
+      case SideName.Back  => rotateBack
+      case SideName.Left  => rotateLeft
+      case SideName.Right => rotateRight
+      case SideName.Up    => rotateUp
+      case SideName.Down  => rotateDown
     }
-
-    object setEdge{
-      def top(l: SideEdge[T]) = copy(l.ensuring(_.side == side).edge :: cubes.tail)
-      def bottom(l: SideEdge[T]) = copy(cubes.init :+ l.ensuring(_.side == side).edge)
-
-      def byName(name: EdgeName) = name match {
-        case EdgeName.Right  => ???
-        case EdgeName.Left   => ???
-        case EdgeName.Top    => top _
-        case EdgeName.Bottom => bottom _
-      }
-    }
-
-    /** Rotate the side 90 degrees clockwise */
-    def rotate90 = Side(mkLeft :: mkMiddle :: mkRight :: Nil)
-
-    /** Rotate the side 90 degrees counter-clockwise */
-    def rotate_90 = Side(mkRight :: mkMiddle :: mkLeft :: Nil)
-
-    def rotate180 = Side(cubes.reverse map (_.reverse))
-
-    private def mkRight  = cubes.map(_(2))
-    private def mkLeft   = cubes.map(_.head)
-    private def mkMiddle = cubes.map(_(1))
-
-    private def mkEdge = SideEdge(this, _: List[CubeSide[T]])
-  }
-  case class SideEdge[T](side: Side[T], edge: List[CubeSide[T]]){
-    def left  = edge.head
-    def right = edge(2)
-    def middle = edge(1)
   }
 
 
@@ -166,9 +131,133 @@ object RubikCube{
   }
   type EdgeName = EdgeName.Value
 
+
+  lazy val cubePosition = cubeAt.map(_.swap)
+  lazy val cubeAt: Map[(Int, Int, Int), CubeId] = {
+    import SideName._
+    Map(
+      (0, 2, 2) -> Set(Front, Left, Up),
+      (1, 2, 2) -> Set(Front, Up),
+      (2, 2, 2) -> Set(Front, Right, Up),
+      (0, 1, 2) -> Set(Front, Left),
+      (1, 1, 2) -> Set(Front),
+      (2, 1, 2) -> Set(Front, Right),
+      (0, 0, 2) -> Set(Front, Left, Down),
+      (1, 0, 2) -> Set(Front, Down),
+      (2, 0, 2) -> Set(Front, Right, Down),
+
+      (0, 2, 1) -> Set(Up, Left),
+      (1, 2, 1) -> Set(Up),
+      (2, 2, 1) -> Set(Up, Right),
+      (0, 1, 1) -> Set(Left),
+      (2, 1, 1) -> Set(Right),
+      (0, 0, 1) -> Set(Down, Left),
+      (1, 0, 1) -> Set(Down),
+      (2, 0, 1) -> Set(Down, Right),
+
+      (0, 2, 0) -> Set(Back, Left, Up),
+      (1, 2, 0) -> Set(Back, Up),
+      (2, 2, 0) -> Set(Back, Right, Up),
+      (0, 1, 0) -> Set(Back, Left),
+      (1, 1, 0) -> Set(Back),
+      (2, 1, 0) -> Set(Back, Right),
+      (0, 0, 0) -> Set(Back, Left, Down),
+      (1, 0, 0) -> Set(Back, Down),
+      (2, 0, 0) -> Set(Back, Right, Down)
+    )
+  }
+
+  lazy val sidePositions = sideCubes.mapValues(_.map(_.swap))
+
+  lazy val sideCubes: Map[SideName, Map[(Int, Int), CubeId]] = {
+    import SideName._
+    Map(
+      Front -> Map(
+        (0, 2) -> Set(Front, Left, Up),
+        (1, 2) -> Set(Front, Up),
+        (2, 2) -> Set(Front, Right, Up),
+        (0, 1) -> Set(Front, Left),
+        (1, 1) -> Set(Front),
+        (2, 1) -> Set(Front, Right),
+        (0, 0) -> Set(Front, Left, Down),
+        (1, 0) -> Set(Front, Down),
+        (2, 0) -> Set(Front, Right, Down)),
+
+      //      Right -> Map(
+      //        (0, 2) -> Set(Right, Back, Up),
+      //        (1, 2) -> Set(Right, Up),
+      //        (2, 2) -> Set(Right, Front, Up),
+      //        (0, 1) -> Set(Right, Back),
+      //        (1, 1) -> Set(Right),
+      //        (2, 1) -> Set(Right, Front),
+      //        (0, 0) -> Set(Right, Back, Down),
+      //        (1, 0) -> Set(Right, Down),
+      //        (2, 0) -> Set(Right, Front, Down)),
+      //      Left -> Map(
+      //        (0, 2) -> Set(Left, Front, Up),
+      //        (1, 2) -> Set(Left, Up),
+      //        (2, 2) -> Set(Left, Back, Up),
+      //        (0, 1) -> Set(Left, Front),
+      //        (1, 1) -> Set(Left),
+      //        (2, 1) -> Set(Left, Back),
+      //        (0, 0) -> Set(Left, Front, Down),
+      //        (1, 0) -> Set(Left, Down),
+      //        (2, 0) -> Set(Left, Back, Down)),
+
+      Right -> Map(
+        (0, 2) -> Set(Right, Front, Up),
+        (1, 2) -> Set(Right, Up),
+        (2, 2) -> Set(Right, Back, Up),
+        (0, 1) -> Set(Right, Front),
+        (1, 1) -> Set(Right),
+        (2, 1) -> Set(Right, Back),
+        (0, 0) -> Set(Right, Front, Down),
+        (1, 0) -> Set(Right, Down),
+        (2, 0) -> Set(Right, Back, Down)),
+      Left -> Map(
+        (0, 2) -> Set(Left, Back, Up),
+        (1, 2) -> Set(Left, Up),
+        (2, 2) -> Set(Left, Front, Up),
+        (0, 1) -> Set(Left, Back),
+        (1, 1) -> Set(Left),
+        (2, 1) -> Set(Left, Front),
+        (0, 0) -> Set(Left, Back, Down),
+        (1, 0) -> Set(Left, Down),
+        (2, 0) -> Set(Left, Front, Down)),
+      Up -> Map(
+        (0, 2) -> Set(Up, Left, Back),
+        (1, 2) -> Set(Up, Back),
+        (2, 2) -> Set(Up, Right, Back),
+        (0, 1) -> Set(Up, Left),
+        (1, 1) -> Set(Up),
+        (2, 1) -> Set(Up, Right),
+        (0, 0) -> Set(Up, Left, Front),
+        (1, 0) -> Set(Up, Front),
+        (2, 0) -> Set(Up, Right, Front)),
+      Down -> Map(
+        (0, 2) -> Set(Down, Left, Front),
+        (1, 2) -> Set(Down, Front),
+        (2, 2) -> Set(Down, Right, Front),
+        (0, 1) -> Set(Down, Left),
+        (1, 1) -> Set(Down),
+        (2, 1) -> Set(Down, Right),
+        (0, 0) -> Set(Down, Left, Back),
+        (1, 0) -> Set(Down, Back),
+        (2, 0) -> Set(Down, Right, Back)),
+      Back -> Map(
+        (0, 2) -> Set(Back, Right, Up),
+        (1, 2) -> Set(Back, Up),
+        (2, 2) -> Set(Back, Left, Up),
+        (0, 1) -> Set(Back, Right),
+        (1, 1) -> Set(Back),
+        (2, 1) -> Set(Back, Left),
+        (0, 0) -> Set(Back, Right, Down),
+        (1, 0) -> Set(Back, Down),
+        (2, 0) -> Set(Back, Left, Down)
+      )
+    )
+  }
 }
-
-
 
 
 object RubikSubCubes{
@@ -214,7 +303,6 @@ object RubikSubCubes{
 }
 
 
-
 object RubikSubCubesDefault {
 
   def cubes = ( RubikSubCubesDefault.centers ++ RubikSubCubesDefault.middles ++ RubikSubCubesDefault.corners
@@ -245,6 +333,7 @@ object RubikSubCubesDefault {
   private def yz = y ++ z
 
 
+/*
   def randomCube() = {
     val rCorners = corners.toSeq.randomOrder
     val rMiddles = middles.toSeq.randomOrder
@@ -353,10 +442,12 @@ object RubikSubCubesDefault {
           newMids -> newNeigh
       }
 
-    RubikCube(sides)
+//    RubikCube(sides)
+    ???
   }
+*/
 
-  protected def atPos(s: Side[SideName], p: EdgeName): CubeSide[SideName] =  s.edge.byName(p).middle
+/*  protected def atPos(s: Side[SideName], p: EdgeName): CubeSide[SideName] =  s.edge.byName(p).middle
 
   protected def atPos(s: Side[SideName], p: (EdgeName, EdgeName)): CubeSide[SideName] = {
     val row = p._1 match {
@@ -367,5 +458,5 @@ object RubikSubCubesDefault {
       case EdgeName.Left => row.left
       case EdgeName.Right => row.right
     }
-  }
+  }*/
 }

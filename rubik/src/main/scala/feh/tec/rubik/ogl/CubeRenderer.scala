@@ -1,11 +1,9 @@
 package feh.tec.rubik.ogl
 
-import feh.tec.rubik.{CubeOrientation, Rubik, RubikCube}
-import feh.tec.rubik.RubikCube.{WithSideName, WithSideNameWrapper, Corner, SideName}
+import feh.tec.rubik.RubikCube.{CubeOrientation, SideName, WithSideName, WithSideNameWrapper}
+import feh.tec.rubik.{MutableRubikCube, RubikCube, RubikCubeInstance}
 import feh.tec.rubik.ogl.CubeColorScheme.GLFColor
-import feh.util._
-import org.macrogl.ex.IndexBuffer
-import org.macrogl.{AttributeBuffer, Macrogl, Matrix, Program}
+import org.macrogl.{Macrogl, Matrix}
 
 
 trait CubeColorScheme[T] extends (T => GLFColor){
@@ -18,7 +16,7 @@ object CubeColorScheme{
 
 
 /** Renders given Rubik's Cube */
-class RubikRender[T: CubeColorScheme: WithSideName](val rubik: Rubik[T],
+class RubikRender[T: CubeColorScheme: WithSideName](val rubik: RubikCube[T],
                                                     val shader: ShaderProg,
                                                     projectionTransform: Matrix,
                                                     disable: => Boolean )
@@ -107,42 +105,6 @@ class RubikRender[T: CubeColorScheme: WithSideName](val rubik: Rubik[T],
 
     res
   }
-
-  @deprecated("not used anymore")
-  def cubePosition(x: Int, y: Int, z: Int, c: Double = 2.05) = new Matrix.Plain(
-    Array[Double](
-        1, 0, 0, 0,
-        0, 1, 0, 0,
-        0, 0, 1, 0,
-        c*x, c*y, -5 + c*z, 1)
-  )
-
-}
-
-
-
-@deprecated("use `feh.tec.rubik.ogl.RubikRender`")
-class CubeRenderer[T: CubeColorScheme](rubik: Rubik[T]){
-
-  def render(arg: DrawArg)  = {
-    val cubes = rubik.cubes
-    import arg._
-
-    for { ((x, y, z), (c, _/* TODO */)) <- cubes }{
-
-      pp.uniform.worldTransform = cubePosition(x, y, z)
-      b.render(Macrogl.TRIANGLES, vertexBuffer)
-    }
-
-  }
-
-  def cubePosition(x: Int, y: Int, z: Int, c: Double = 2.05) = new Matrix.Plain(
-    Array[Double](
-        1, 0, 0, 0,
-        0, 1, 0, 0,
-        0, 0, 1, 0,
-        c*x, c*y, -5 + c*z, 1)
-  )
 
 }
 
