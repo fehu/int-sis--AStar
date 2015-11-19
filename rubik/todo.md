@@ -7,5 +7,5 @@ TODO
 - [ ] Heuristics for immutable cube instances.
 
 #### Rubik's cube visualization
-- [ ] Sub-cubes orientation. 
+- [x] Sub-cubes orientation. 
 - [ ] Rotation animation.

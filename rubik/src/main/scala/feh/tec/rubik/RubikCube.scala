@@ -93,22 +93,22 @@ object RubikCube{
   case class CubeOrientation(ax: HalfPiMultAngle, ay: HalfPiMultAngle, az: HalfPiMultAngle){
 
     /** rotate Right Side clockwise 90 degrees */
-    def rotateRight = CubeOrientation(ax, ay.plus, az)
+    def rotateRight = CubeOrientation(ax.plus, ay, az)
 
     /** rotate Left Side clockwise 90 degrees */
-    def rotateLeft = CubeOrientation(ax, ay.minus, az)
+    def rotateLeft = CubeOrientation(ax.minus, ay, az)
 
     /** rotate Front Side clockwise 90 degrees */
-    def rotateFront = CubeOrientation(ax.plus, ay.plus, az)
+    def rotateFront = CubeOrientation(ax, ay, az.plus)
 
     /** rotate Back Side clockwise 90 degrees */
-    def rotateBack = CubeOrientation(ax.minus, ay.minus, az)
+    def rotateBack = CubeOrientation(ax, ay, az.minus)
 
     /** rotate Up Side clockwise 90 degrees */
-    def rotateUp = CubeOrientation(ax.plus, ay, az)
+    def rotateUp = CubeOrientation(ax, ay.plus, az)
 
     /** rotate Down Side clockwise 90 degrees */
-    def rotateDown = CubeOrientation(ax.minus, ay, az)
+    def rotateDown = CubeOrientation(ax, ay.minus, az)
 
     def rotate(r: SideName) = r match {
       case SideName.Front => rotateFront

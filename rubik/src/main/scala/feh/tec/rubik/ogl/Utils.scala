@@ -22,30 +22,14 @@ object Utils {
 
   }
 
-  def rotateXMatrix(s: Double, c: Double) = new Matrix.Plain(
+  def rotateMatrix(x: HalfPiMultAngle, y: HalfPiMultAngle, z: HalfPiMultAngle) =  new Matrix.Plain(
     Array[Double](
-      1, 0, 0, 0,
-      0, c, -s, 0,
-      0, s, c, 0,
-      0, 0, 0, 1)
+      -x.sin*y.sin*z.sin + y.cos*z.cos,  -x.cos*z.sin,  y.cos*x.sin*z.sin + z.cos*y.sin, 0,
+      z.cos*x.sin*y.sin + y.cos*z.sin,    x.cos*z.cos, -y.cos*z.cos*x.sin + y.sin*z.sin, 0,
+      -x.cos*y.sin,                       x.sin,        x.cos*y.cos,                     0,
+      0,                                  0,            0,                               1
+    )
   )
-
-  def rotateYMatrix(s: Double, c: Double) = new Matrix.Plain(
-    Array[Double](
-        c, 0, s, 0,
-        0, 1, 0, 0,
-        -s, 0, c, 0,
-        0, 0, 0, 1)
-  )
-
-  def rotateZMatrix(s: Double, c: Double) = new Matrix.Plain(
-    Array[Double](
-        c, -s, 0, 0,
-        s, c, 0, 0,
-        0, 0, 1, 0,
-        0, 0, 0, 1)
-  )
-
 
 
 

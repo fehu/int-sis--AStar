@@ -83,27 +83,17 @@ class RubikRender[T: CubeColorScheme: WithSideName](val rubik: RubikCube[T],
 
   def cubePose(pos: (Int, Int, Int), o: CubeOrientation) = {
 
-    val rX = Utils.rotateXMatrix(o.ax.sin, o.ax.cos)
-    val rY = Utils.rotateYMatrix(o.ay.sin, o.ay.cos)
-    val rZ = Utils.rotateZMatrix(o.az.sin, o.az.cos)
-
     val (x, y, z) = pos
     def c = interCubeDist
 
-
-    import Matrix._
-
-    val res = identity
-
-//    multiply(rX, rY, res)
-//    multiply(res, rZ, res)
+    val res = Utils.rotateMatrix(o.ax, o.ay, o.az)
 
     val offset = 4*3
     res.array(offset)   = c*x
     res.array(offset+1) = c*y
     res.array(offset+2) = -5 + c*z
 
-    res
+  res
   }
 
 }
