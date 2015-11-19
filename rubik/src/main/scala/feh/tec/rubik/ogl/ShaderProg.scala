@@ -85,7 +85,10 @@ class ShaderProg(
 }
 
 
-case class ShaderProgramConf(byName: (String, Any)*)
+case class ShaderProgramConf(byName: Map[String, Any])
+object ShaderProgramConf{
+  def apply(byName: (String, Any)*): ShaderProgramConf = ShaderProgramConf(byName.toMap)
+}
 
 
 case class DrawArg(pp: Program, vertexBuffer: AttributeBuffer, b: IndexBuffer.Access)

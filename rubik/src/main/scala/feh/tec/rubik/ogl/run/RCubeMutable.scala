@@ -112,15 +112,16 @@ object RCubeMutable extends ShadersSupport with FlyingCamera with App3DExit{
   object Shaders{
     private lazy val pathRoot = Path("/org/macrogl/examples/", '/')
 
-    def forGLSL(v: String) = new ShaderProg(
+    def forGLSL(v: String, extra: Map[String, Any] = Map()) = new ShaderProg(
       pathRoot / v / "BasicLighting.vert",
       pathRoot / v / "BasicLighting.frag",
-      ShaderProgramConf(
+      ShaderProgramConf(Map(
         "projection"      -> projectionTransform,
         "lightColor"      -> (1.0f, 1.0f, 1.0f),
-        "lightDirection"  -> (0.0f, -1.0f, -1.0f),
-        "ambient"         -> 0.25f,
-        "diffuse"         -> 0.95f
+//        "lightDirection"  -> (0.0f, -1.0f, -1.0f),
+        "ambient"         -> 0.1f,
+        "diffuse"         -> 0.5f
+      ) ++ extra
       )
     )
   }
