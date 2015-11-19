@@ -68,7 +68,7 @@ class MutableRubikCube[T: WithSideName](initialCubes: Set[Cube[T]]) extends Rubi
         Set(side) -> (c, CubeOrientation(side, null, null))
     }: _*)
 
-  def snapshot = RubikCubeInstance[T](cubes.mapKeys(RubikCube.cubeAt))
+  def snapshot = RubikCubeInstance[T](cubes.mapKeys(RubikCube.cubeAt), None, "")
 }
 
 object MutableRubikCube{

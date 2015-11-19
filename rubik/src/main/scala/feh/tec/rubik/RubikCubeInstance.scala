@@ -4,7 +4,10 @@ import feh.tec.rubik.RubikCube._
 import feh.util._
 
 /** Immutable Rubik's Cube */
-case class RubikCubeInstance[T] (cubeById: Map[CubeId, CubeWithOrientation[T]]) extends RubikCube[T]
+case class RubikCubeInstance[T] (cubeById: Map[CubeId, CubeWithOrientation[T]],
+                                 parent: Option[RubikCubeInstance[T]],
+                                 description: String )
+  extends RubikCube[T]
 {
   type ThisType = RubikCubeInstance[T]
 
@@ -14,7 +17,7 @@ case class RubikCubeInstance[T] (cubeById: Map[CubeId, CubeWithOrientation[T]]) 
 
   def rotate(side: SideName): RubikCubeInstance[T] = {
     val upd = rotateUpdate(side).map{ case Update(c, o, pos) => pos -> (c, o) }
-    RubikCubeInstance(cubeById ++ upd)
+    RubikCubeInstance(cubeById ++ upd, Some(this), "rotate " + side.toString + " 90° clockwise")
   }
 
   def snapshot = this

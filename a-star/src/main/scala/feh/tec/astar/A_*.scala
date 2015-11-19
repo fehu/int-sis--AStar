@@ -48,7 +48,7 @@ trait A_*[T] {
   /** Is the given state a solution? */
   def isSolution: T => Boolean
 
-  /** A human readabke description for a state. */
+  /** A human readable description for a state. */
   def description: T => String
 
 
