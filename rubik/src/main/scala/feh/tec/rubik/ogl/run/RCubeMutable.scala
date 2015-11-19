@@ -23,7 +23,10 @@ object RCubeMutable extends ShadersSupport with FlyingCamera with App3DExit{
 
   val fps = 30
 
-  val contextAttributes = new ContextAttribs(3, 2).withForwardCompatible(true).withProfileCore(true)
+  val contextAttributes = new ContextAttribs(2, 1)
+//    .withForwardCompatible(true)
+//    .withProfileCore(true)
+//    .withProfileES(true)
   val displayMode =  new DisplayMode(displayX, displayY)
 
 
@@ -76,18 +79,8 @@ object RCubeMutable extends ShadersSupport with FlyingCamera with App3DExit{
   val rubik = new MutableRubikCube[SideName](RubikSubCubesDefault.cubes)
 
 
-  private lazy val pathRoot = Path("/org/macrogl/examples/", '/')
-  def shader = new ShaderProg(
-    pathRoot / "BasicLighting.vert",
-    pathRoot / "BasicLighting.frag",
-    ShaderProgramConf(
-      lightColor = (1.0f, 1.0f, 1.0f),
-      lightDirection = (0.0f, -1.0f, -1.0f),
-      ambient = 0.25f,
-      diffuse = 0.95f
-    )
-  )
 
+  def shader = Shaders.VXY
   val rr = new RubikRender(rubik, shader, projectionTransform, disableRequested.get)
 
   protected val shaderProg = rr.shaderContainer
@@ -112,5 +105,36 @@ object RCubeMutable extends ShadersSupport with FlyingCamera with App3DExit{
 //      MutableStateHook(rotateFontRequested, ifTrue{ rubik.rotate(SideName.Front); rotateFontRequested set false })
     )
     Mouse.setCursorPosition(displayX / 2, displayY / 2)
+  }
+
+
+
+  object Shaders{
+    private lazy val pathRoot = Path("/org/macrogl/examples/", '/')
+
+    lazy val V33 = new ShaderProg(
+      pathRoot / "3.3" / "BasicLighting.vert",
+      pathRoot / "3.3" / "BasicLighting.frag",
+      ShaderProgramConf(
+        "projection"      -> projectionTransform,
+        "lightColor"      -> (1.0f, 1.0f, 1.0f),
+        "lightDirection"  -> (0.0f, -1.0f, -1.0f),
+        "ambient"         -> 0.25f,
+        "diffuse"         -> 0.95f
+      )
+    )
+
+    lazy val VXY = new ShaderProg(
+      pathRoot / "1.2" / "BasicLighting.vert",
+      pathRoot / "1.2" / "BasicLighting.frag",
+      ShaderProgramConf(
+        "projection"      -> projectionTransform,
+        "lightColor"      -> (1.0f, 1.0f, 1.0f),
+        "lightDirection"  -> (0.0f, -1.0f, -1.0f),
+        "ambient"         -> 0.25f,
+        "diffuse"         -> 0.95f
+      )
+    )
+
   }
 }

@@ -23,7 +23,7 @@ class ShaderProg(
     Program.Shader.Fragment(readResource(fragShaderResource))
   )
   
-  def init(projectionTransform: Matrix): Unit ={
+  def init(): Unit ={
     pp.acquire()
 
     for (_ <- using.program(pp)) {
@@ -32,11 +32,7 @@ class ShaderProg(
         (x / len, y / len, z / len)
       }
 
-      pp.uniform.projection = projectionTransform
-      pp.uniform.lightColor = shaderConf.lightColor
-      pp.uniform.lightDirection = (normalize _).tupled(shaderConf.lightDirection)
-      pp.uniform.ambient = shaderConf.ambient
-      pp.uniform.diffuse = shaderConf.diffuse
+      shaderConf.byName.foreach{ case (nme, x) => pp.uniform.updateDynamic(nme)(x) }
     }
 
     GL11.glEnable(GL11.GL_CULL_FACE)
@@ -89,10 +85,7 @@ class ShaderProg(
 }
 
 
-case class ShaderProgramConf(lightColor    : (Float, Float, Float),
-                             lightDirection: (Float, Float, Float),
-                             ambient       : Float,
-                             diffuse       : Float )
+case class ShaderProgramConf(byName: (String, Any)*)
 
 
 case class DrawArg(pp: Program, vertexBuffer: AttributeBuffer, b: IndexBuffer.Access)
@@ -112,7 +105,7 @@ trait ShadersSupport extends DefaultApp3DExec
 
   override protected def initApp() = {
     super.initApp()
-    shaderProg.prog.init(projectionTransform)
+    shaderProg.prog.init()
     shaderProg.instances().foreach(_.instance.init())
   }
 
