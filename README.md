@@ -11,7 +11,11 @@ _A project for master studies at [ITESM](http://www.itesm.mx/wps/wcm/connect/ITE
 
 [Diagrams](Diagrams.md)
 
-[TO DO](todo.md)
+Includes two applications that make use of A*: [sliding puzzle](sliding-puzzle/) and [Rubik's cube](rubik/).
+
+[TODO: sliding puzzle](sliding-puzzle/todo.md)
+
+[TODO: Rubik's cube](rubik/todo.md)
 
 ---
 

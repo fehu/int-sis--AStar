@@ -25,8 +25,8 @@ object Utils {
   def rotateXMatrix(s: Double, c: Double) = new Matrix.Plain(
     Array[Double](
       1, 0, 0, 0,
-      0, c, s, 0,
-      0, -s, c, 0,
+      0, c, -s, 0,
+      0, s, c, 0,
       0, 0, 0, 1)
   )
 
