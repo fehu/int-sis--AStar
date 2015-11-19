@@ -10,19 +10,13 @@ import scala.collection.mutable
 /** Mutable Rubik's Cube */
 class MutableRubikCube[T: WithSideName](initialCubes: Set[Cube[T]]) extends RubikCube[T]
 {
-  def cubes: Map[(Int, Int, Int), CubeWithOrientation[T]] = RubikCube.cubeAt.mapValues(cubesHeap)
 
-  def sides(sideName: SideName): Map[(Int, Int), CubeWithOrientation[T]] =
-    RubikCube.sideCubes(sideName).mapValues(cubesHeap)
-  
+  type ThisType = MutableRubikCube[T]
+
+  def cubeById = cubesHeap.toMap
 
   /** rotate a side 90 degrees clockwise */
-  def rotate(sideName: SideName): Unit = bulkUpdate{
-    for ( (pos, (c, o)) <- sides(sideName) )
-      yield Update(c, o.rotate(sideName), MutableRubikCube.rotationPosChange(sideName, pos))
-  }
-  
-  case class Update(put: Cube[T], o: CubeOrientation, at: CubeId)
+  def rotate(sideName: SideName) = { bulkUpdate(rotateUpdate(sideName)); this }
   
   def bulkUpdate(upds: Iterable[Update]): Unit = {
     upds.foreach{ case Update(c, o, at) => putInCube(at, c, o) }

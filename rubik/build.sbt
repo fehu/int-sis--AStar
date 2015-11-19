@@ -1,6 +1,6 @@
 name := "A*-rubik"
 
-version := "0.2"
+version := "0.3-SNAPSHOT"
 
 CommonSettings()
 
@@ -19,7 +19,7 @@ libraryDependencies ++= Seq(
 
 LWJGLPlugin.lwjglSettings
 
-mainClass in assembly := Some("feh.tec.rubik.ogl.run.RCubeMutableRunner")
+mainClass in assembly := Some("feh.tec.rubik.ogl.run.RubikCubeTestGLAppRunner")
 
 test in assembly := {}
 

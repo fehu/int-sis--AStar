@@ -6,24 +6,18 @@ import feh.util._
 /** Immutable Rubik's Cube */
 case class RubikCubeInstance[T] (cubeById: Map[CubeId, CubeWithOrientation[T]]) extends RubikCube[T]
 {
-
-  def cubes = cubeById.mapKeys(RubikCube.cubePosition)
+  type ThisType = RubikCubeInstance[T]
 
   def rawSides: Map[SideName, Map[(Int, Int), CubeWithOrientation[T]]] =
     SideName.values.toSeq.zipMap{ sideName => RubikCube.sideCubes(sideName).mapValues(cubeById) }.toMap
 
 
+  def rotate(side: SideName): RubikCubeInstance[T] = {
+    val upd = rotateUpdate(side).map{ case Update(c, o, pos) => pos -> (c, o) }
+    RubikCubeInstance(cubeById ++ upd)
+  }
 
-
-//  lazy val sides: Map[SideName, Side[T]] = rawSides.mapValues{
-//    sideCubes =>
-//      Side(
-//        sideCubes
-//          .groupBy(_._1._2).toSeq.sortBy(_._1)
-//            .map(_._2.toSeq.sortBy(- _._1._2).map(_._))
-//      )
-//  }
-
+  def snapshot = this
 }
 
 
@@ -31,71 +25,20 @@ object RubikCubeInstance{
 
   class MutableContainer[T](protected var instance: RubikCubeInstance[T]) extends RubikCube[T]
   {
+    type ThisType = MutableContainer[T]
+
     def set(i: RubikCubeInstance[T]) = instance = i
     def get = instance
 
-    def cubes = get.cubes
-  }
-
-//  case class CubeSide[T](cube: Cube[T], label: T)
-
-
-//  lazy val side = 3
-
-/*
-  /** Rubik's Cube side.
-    *
-    * @param cubes list of cube's rows
-    * @tparam T label
-    */
-  case class Side[T](cubes: List[List[CubeSide[T]]]){
-    side =>
-
-    def center = cubes(1)(1).cube.asInstanceOf[Center[T]]
-    object edge{
-      def top    = mkEdge(cubes.head)
-      def bottom = mkEdge(cubes(2))
-      def right  = mkEdge(mkRight)
-      def left   = mkEdge(mkLeft)
-
-      def byName(name: EdgeName) = name match {
-        case EdgeName.Right  => right
-        case EdgeName.Left   => left
-        case EdgeName.Top    => top
-        case EdgeName.Bottom => bottom
-      }
+    /** rotate a side 90 degrees clockwise */
+    def rotate(sideName: SideName) = {
+      instance = instance.rotate(sideName)
+      this
     }
 
-    object setEdge{
-      def top(l: SideEdge[T]) = copy(l.ensuring(_.side == side).edge :: cubes.tail)
-      def bottom(l: SideEdge[T]) = copy(cubes.init :+ l.ensuring(_.side == side).edge)
+    def cubeById = instance.cubeById
 
-      def byName(name: EdgeName) = name match {
-        case EdgeName.Right  => ???
-        case EdgeName.Left   => ???
-        case EdgeName.Top    => top _
-        case EdgeName.Bottom => bottom _
-      }
-    }
-
-    /** Rotate the side 90 degrees clockwise */
-    def rotate90 = Side(mkLeft :: mkMiddle :: mkRight :: Nil)
-
-    /** Rotate the side 90 degrees counter-clockwise */
-    def rotate_90 = Side(mkRight :: mkMiddle :: mkLeft :: Nil)
-
-    def rotate180 = Side(cubes.reverse map (_.reverse))
-
-    private def mkRight  = cubes.map(_(2))
-    private def mkLeft   = cubes.map(_.head)
-    private def mkMiddle = cubes.map(_(1))
-
-    private def mkEdge = SideEdge(this, _: List[CubeSide[T]])
+    def snapshot = get
   }
-*/
-//  case class SideEdge[T](side: Side[T], edge: List[CubeSide[T]]){
-//    def left  = edge.head
-//    def right = edge(2)
-//    def middle = edge(1)
-//  }
+
 }
