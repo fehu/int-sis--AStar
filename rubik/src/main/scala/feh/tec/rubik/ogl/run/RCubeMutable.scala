@@ -10,6 +10,12 @@ import org.lwjgl.input.{Keyboard, Mouse}
 import org.lwjgl.opengl.{ContextAttribs, DisplayMode}
 import org.macrogl._
 
+object RCubeMutableRunner extends App{
+
+  PrepareNatives.andThen{ RCubeMutable.main(args) }
+
+}
+
 object RCubeMutable extends ShadersSupport with FlyingCamera with App3DExit{
 
   val displayX = 800
