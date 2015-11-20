@@ -1,4 +1,4 @@
-name := "A*-rubik"
+name := "A*-Rubik"
 
 version := "0.3-SNAPSHOT"
 
