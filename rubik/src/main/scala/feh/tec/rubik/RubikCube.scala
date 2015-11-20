@@ -22,7 +22,7 @@ trait RubikCube[T]{
   /** rotate a side 90 degrees clockwise */
   protected def rotateUpdate(sideName: SideName) =
     for ( (pos, (c, o)) <- sides(sideName) )
-      yield Update(c, o.rotate(sideName), MutableRubikCube.rotationPosChange(sideName, pos))
+      yield Update(c, o.rotate(sideName), Rotation.posChange(sideName, pos))
 
 
   protected case class Update(put: Cube[T], o: CubeOrientation, at: CubeId)
@@ -56,7 +56,7 @@ object RubikCube{
   case class CubeOrientation(o1: SideName, o2: SideName, o3: SideName){
 
     def rotate(r: SideName) = {
-      val rot = NextRotation.byName(r)
+      val rot = Rotation.next.byName(r)
       CubeOrientation(rot(o1), rot(o2), rot(o3))
     }
 
@@ -180,7 +180,28 @@ object RubikCube{
     )
   }
 
-    object NextRotation{
+  object Rotation {
+
+    def posChange(side: SideName, pos: (Int, Int)): CubeId =
+      sideCubes(side)(posChangeInt(pos))
+
+    def posChange(side: SideName, pos: CubeId): CubeId =
+      posChange(side, sidePositions(side)(pos))
+
+    lazy val posChangeInt = Map(
+      (0, 2) -> (2, 2),
+      (1, 2) -> (2, 1),
+      (2, 2) -> (2, 0),
+      (2, 1) -> (1, 0),
+      (2, 0) -> (0, 0),
+      (1, 0) -> (0, 1),
+      (0, 0) -> (0, 2),
+      (0, 1) -> (1, 2),
+      (1, 1) -> (1, 1)
+    )
+
+    object next {
+
       import SideName._
 
       val rotationMapCache = mutable.HashMap.empty[(Int, Boolean), Map[SideName, SideName]]
@@ -225,6 +246,8 @@ object RubikCube{
         mm.withDefault(identity)
       }
     }
+
+  }
 }
 
 

@@ -77,7 +77,7 @@ trait RubikCubeTestGL[T] extends ShadersSupport with FlyingCamera with App3DExit
 
 
   object Shaders{
-    private lazy val pathRoot = Path("/org/macrogl/examples/", '/')
+    private lazy val pathRoot = Path("/feh/tec/rubik/shader", '/')
 
     def forGLSL(v: String, extra: Map[String, Any] = Map()) = new ShaderProg(
       pathRoot / v / "BasicLighting.vert",

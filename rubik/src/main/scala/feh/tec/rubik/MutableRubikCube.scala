@@ -1,7 +1,6 @@
 package feh.tec.rubik
 
 import feh.tec.rubik.RubikCube._
-import feh.tec.rubik.ogl.Utils.Angle0
 import feh.util._
 
 import scala.collection.immutable.Iterable
@@ -69,27 +68,4 @@ class MutableRubikCube[T: WithSideName](initialCubes: Set[Cube[T]]) extends Rubi
     }: _*)
 
   def snapshot = RubikCubeInstance[T](cubes.mapKeys(RubikCube.cubeAt), None, "")
-}
-
-object MutableRubikCube{
-  
-  def rotationPosChange(side: SideName, pos: (Int, Int)): CubeId =
-    sideCubes(side)(rotationIntPosChange(pos))
-
-  def rotationPosChange(side: SideName, pos: CubeId): CubeId =
-    rotationPosChange(side, sidePositions(side)(pos))
-  
-  lazy val rotationIntPosChange = Map(
-    (0, 2) -> (2, 2),
-    (1, 2) -> (2, 1),
-    (2, 2) -> (2, 0),
-    (2, 1) -> (1, 0),
-    (2, 0) -> (0, 0),
-    (1, 0) -> (0, 1),
-    (0, 0) -> (0, 2),
-    (0, 1) -> (1, 2),
-    (1, 1) -> (1, 1)
-  )
-
-
 }
