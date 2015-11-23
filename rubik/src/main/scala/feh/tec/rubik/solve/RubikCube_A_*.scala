@@ -39,15 +39,20 @@ object RubikCubeHeuristics{
 
   }
 
-  implicit class RubikHeuristicsHelper[T](r: RubikCube[T]){
+  implicit class RubikHeuristicsHelper[T: WithSideName](r: RubikCube[T]){
     
     object select{
       
-      def cubes(ids: Set[CubeId]): CubesSelection = ???
-      def cubes(ids: (Int, Int, Int)): CubesSelection = ???
-      def cubes(ids: Map[SideName, Set[(Int, Int)]]): CubesSelection = ???
-      def cubes(sideNames: SideName*): CubesSelection = ???
-
+      def cubes(ids: Set[CubeId]): CubesSelection = CubesSelection(r.cubeById.filterKeys(ids.contains))
+      def cubes(ids: (Int, Int, Int)*): CubesSelection = cubes(ids.toSet.map(cubeAt))
+      def cubes(ids: Map[SideName, Set[(Int, Int)]]): CubesSelection =
+        cubes( ids.flatMap{ case (id, ps) => ps.map(sideCubes(id)) }.toSet )
+//      def cubes(sideNames: SideName*): CubesSelection = cubes(sideNames.toSet.map(sideCubes).flatMap(_.values))
+//
+//      def sides(sideNames: SideName*): CubesSideSelection = {
+//        val cs = cubes(sideNames: _*)
+//        CubesSideSelection(sideNames.flatMap(cs.fromSide _ andThen (_.sel)).toMap)
+//      }
     }
     
     trait Selection[A]{
@@ -58,12 +63,18 @@ object RubikCubeHeuristics{
       def fold[R](r0: R)(f: (R, (CubeId, A)) => R): R = sel.foldLeft(r0)(f)
     }
     
-    case class CubeSide(correct: SideName, current: SideName){ 
-      def correctlySet = correct == current 
+    case class CubeSide(side: SideName, current: SideName){
+      def correctlySet = side == current
     }
     
-    case class CubesSelection(sel: Map[CubeId, CubeSide]) extends Selection[CubeSide]{
-      def fromSide(sideName: SideName): CubesSideSelection = ???
+    case class CubesSelection(sel: Map[CubeId, CubeWithOrientation[T]])
+      extends Selection[CubeWithOrientation[T]]
+    {
+      def fromSide(sideName: SideName): CubesSideSelection = CubesSideSelection(
+        sel
+          .withFilter(_._2._2.toSeq contains sideName)
+          .map{ case (id, (c, o)) => id -> CubeSide(sideName, c.labels(o.toSeq.indexOf(sideName)).side) }
+      )
     }
     case class CubesSideSelection(sel: Map[CubeId, CubeSide]) extends Selection[CubeSide]
   }
