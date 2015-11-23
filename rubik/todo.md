@@ -6,7 +6,3 @@ TODO
 - [x] Rotation for immutable cube.
 - [ ] Heuristics for immutable cube instances.
 - [x] Bugs on sub-cubes rotation
-
-#### Rubik's cube visualization
-- [x] Sub-cubes orientation. 
-- [ ] Rotation animation.
