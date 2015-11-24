@@ -43,6 +43,14 @@ object RubikCube{
     def side = implicitly[WithSideName[T]].side(t)
   }
 
+  implicit class CubeSideIdWrapper[T: WithSideName](t: Cube[T]){
+    def cubeId: CubeId = t.labels.map(_.side).toSet
+  }
+
+  implicit class CubeWithOrientationWrapper[T](cwo: CubeWithOrientation[T]){
+    def colorFrom(orientation: SideName): T = cwo._1.labels(cwo._2.toSeq.indexOf(orientation))
+  }
+
   /** A smaller cube, that the Rubik's Cube is composed of. */
   sealed trait Cube[T] {
     def labels: Seq[T]
