@@ -66,6 +66,15 @@ object RubikCube{
 
   object SideName extends Enumeration{
     val Front, Right, Left, Up, Down, Back = Value
+
+    def fromString(str: String): Value = str.trim.toLowerCase match {
+      case "front" => Front
+      case "right" => Right
+      case "left"  => Left
+      case "up"    => Up
+      case "down"  => Down
+      case "back"  => Back
+    }
   }
   type SideName = SideName.Value
 
