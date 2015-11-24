@@ -42,7 +42,7 @@ trait A_*[T] {
   /** Lists the next possible states.*/
   def transformations: T => Seq[T]
 
-  /** Heuristic value fir a state. */
+  /** Heuristic value for a state. */
   def heuristic: T => Heuristic
 
   /** Is the given state a solution? */
