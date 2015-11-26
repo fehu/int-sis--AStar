@@ -113,7 +113,7 @@ trait A_*[T] {
   }
 
   /** List state's parents. */
-  protected def listParents: T => Seq[T]
+  def listParents: T => Seq[T]
 
 
   /** Recursive A* generic implementation.

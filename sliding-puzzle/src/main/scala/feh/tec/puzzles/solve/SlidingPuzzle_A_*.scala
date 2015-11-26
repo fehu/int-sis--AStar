@@ -21,7 +21,7 @@ trait SlidingPuzzle_A_*[Piece] extends A_*[SlidingPuzzleInstance[Piece]]{
 
   def description = _.description
 
-  protected def listParents = _.pathFromRoot
+  def listParents = _.pathFromRoot
 }
 
 object SlidingPuzzle_A_*{

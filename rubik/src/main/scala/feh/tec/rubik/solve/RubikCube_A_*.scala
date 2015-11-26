@@ -15,7 +15,7 @@ trait RubikCube_A_*[T] extends A_*[RubikCubeInstance[T]]{
   def isSolution = _.cubeById.forall{ case (_, (c, o)) => c.labels == o.toSeq }
 
   /** List state's parents. */
-  protected def listParents: RubikCubeInstance[T] => Seq[RubikCubeInstance[T]] = c => c.parent match {
+  def listParents: RubikCubeInstance[T] => Seq[RubikCubeInstance[T]] = c => c.parent match {
     case Some(p) => p +: listParents(p)
     case _       => Stream.empty
   }
