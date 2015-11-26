@@ -1,4 +1,4 @@
-name := "A*-root"
+name := "a-star-root"
 
 publishArtifact := false
 

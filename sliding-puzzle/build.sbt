@@ -1,4 +1,4 @@
-name := "A*-sliding-puzzle"
+name := "a-star-sliding-puzzle"
 
 version := "0.6"
 

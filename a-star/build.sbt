@@ -1,4 +1,4 @@
-name := "A*"
+name := "a-star"
 
 version := "0.6"
 
