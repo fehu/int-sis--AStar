@@ -1,6 +1,6 @@
 name := "a-star"
 
-version := "0.6"
+version := "0.7-SNAPSHOT"
 
 CommonSettings()
 

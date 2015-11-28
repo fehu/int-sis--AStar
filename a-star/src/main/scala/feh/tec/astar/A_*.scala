@@ -15,6 +15,8 @@ import scala.util.{Failure, Success, Try}
 trait A_*[T] {
   import A_*._
 
+   var DEBUG = false
+
   /** Return type of the heuristic(s) used. */
   type Heuristic
 
@@ -132,9 +134,14 @@ trait A_*[T] {
                                   open: SortedPossibilities[Heuristic, T],
                                   closed: HashSet[T],
                                   history: History[T] ): SearchInnerResult = {
+    debug("rec. depth: " + count)
+    debug("opening state: " + description(state))
+
     val parents   = listParents(state).toSet
     val newStates = transformations(state) filterNot parents.contains
     val newOpen   = open ++ newStates
+
+    debug(s"new states: ${newStates.size}; new open: ${newOpen.size}")
 
     def extract(from: SortedPossibilities[Heuristic, T]): ExtractedOpt = extractTheBest(from) match{
       case Some((best, opn)) if closed contains best => extract(opn)
@@ -142,6 +149,8 @@ trait A_*[T] {
     }
 
     val extracted    = extract(newOpen)
+    debug("h(extracted) = " + extracted.map(heuristic apply _._1).getOrElse(""))
+
     val makeDecision = Seq(caseSolution, searchInnerExtraLogic, recursion).map(_(count)).reduceLeft(_ orElse _)
 
     val newHist = HistoryEntry(state, newStates.zipMap(_ => false).toMap)
@@ -159,6 +168,8 @@ trait A_*[T] {
       case Some(other)                         => other.changeHistory(newHist :: history)
     }
   }
+
+   private def debug(msg: String) = if (DEBUG) println("[A* DEBUG] " + msg)
 }
 
 object A_*{
