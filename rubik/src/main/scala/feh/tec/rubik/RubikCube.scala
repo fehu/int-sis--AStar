@@ -48,7 +48,10 @@ object RubikCube{
   }
 
   implicit class CubeWithOrientationWrapper[T](cwo: CubeWithOrientation[T]){
-    def colorFrom(orientation: SideName): T = cwo._1.labels(cwo._2.toSeq.indexOf(orientation))
+    def colorFrom(orientation: SideName): Option[T] = cwo._2.toSeq.indexOf(orientation) match {
+      case -1 => None
+      case  x => Some(cwo._1.labels(x))
+    }
   }
 
   /** A smaller cube, that the Rubik's Cube is composed of. */
@@ -69,6 +72,18 @@ object RubikCube{
     }
 
     def toSeq = Seq(o1, o2, o3)
+
+  }
+
+  object CubeOrientation{
+
+    def fromSeq(seq: Seq[SideName]): CubeOrientation = seq.size match {
+      case 1 => CubeOrientation(seq.head, null, null)
+      case 2 => CubeOrientation(seq.head, seq(1), null)
+      case 3 => CubeOrientation(seq.head, seq(1), seq(2))
+      case _ => throw new IllegalArgumentException
+    }
+
   }
 
 

@@ -102,7 +102,7 @@ object RubikCubeHeuristics{
         def fromSide(sideName: SideName): CubesSideSelection = CubesSideSelection(
           sel
             .withFilter(_._2._2.toSeq contains sideName)
-            .map{ case (id, cwo) => id -> CubeSide(sideName, cwo.colorFrom(sideName).side) }
+            .map{ case (id, cwo) => id -> CubeSide(sideName, cwo.colorFrom(sideName).get.side) }
         )
       }
 
@@ -166,7 +166,7 @@ object RubikCubeHeuristics{
           
       cwo => 
         expected.get(cwo._1.cubeId)
-          .map{ exp => if (cwo.colorFrom(exp) == exp) 1 else -1 }
+          .map{ exp => if (cwo.colorFrom(exp) contains exp) 1 else -1 }
           .getOrElse(0)
     } 
 
