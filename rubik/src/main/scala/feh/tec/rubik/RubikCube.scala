@@ -6,13 +6,17 @@ import feh.util._
 import scala.collection.mutable
 import scala.language.implicitConversions
 
-trait RubikCube[T]{
-  type ThisType <: RubikCube[T]
+trait RubikCube[T, C <: RubikCube[T, C]]{
+  self: C =>
+//  type ThisType <: RubikCube[T]
 
   def cubeById: Map[CubeId, CubeWithOrientation[T]]
 
   /** rotate a side 90 degrees clockwise */
-  def rotate(sideName: SideName): ThisType
+  def rotate(sideName: SideName): C
+
+  /** rotate a side 90 degrees clockwise */
+  def rotate(sideNames: SideName*): C = (this /: sideNames)(_ rotate _)
 
 
   def cubes: Map[(Int, Int, Int), CubeWithOrientation[T]] = cubeById.mapKeys(RubikCube.cubePosition)

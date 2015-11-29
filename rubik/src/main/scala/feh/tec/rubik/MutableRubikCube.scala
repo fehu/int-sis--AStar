@@ -7,7 +7,7 @@ import scala.collection.immutable.Iterable
 import scala.collection.mutable
 
 /** Mutable Rubik's Cube */
-class MutableRubikCube[T: WithSideName](initialCubes: Set[Cube[T]]) extends RubikCube[T]
+class MutableRubikCube[T: WithSideName](initialCubes: Set[Cube[T]]) extends RubikCube[T, MutableRubikCube[T]]
 {
 
   type ThisType = MutableRubikCube[T]

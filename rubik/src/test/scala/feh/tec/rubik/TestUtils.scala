@@ -3,24 +3,28 @@ package feh.tec.rubik
 import feh.tec.rubik.RubikCube.{WithSideName, CubeId, SideName}
 import feh.tec.rubik.RubikCube.SideName._
 
+import scala.language.higherKinds
+
 object TestUtils {
 
   type SomeCubeDescriptor[+T] = Map[SideName, Map[(Int, Int), T]]
   type CubeDescriptor = SomeCubeDescriptor[SideName]
 
-  trait MkCube[C[_] <: RubikCube[_]]{ def mkCube[T: WithSideName](mp: SomeCubeDescriptor[T]): C[T] }
+  trait MkCube[T, C <: RubikCube[T, C]]{ def mkCube(mp: SomeCubeDescriptor[T])(implicit wsn: WithSideName[T]): C }
 
   object MkCube{
 
-    implicit object RubikInstance extends MkCube[RubikCubeInstance]{
-      def mkCube[T: WithSideName](mp: SomeCubeDescriptor[T]): RubikCubeInstance[T] =
+    implicit def RubikInstance[T]: MkCube[T, RubikCubeInstance[T]] = new MkCube[T, RubikCubeInstance[T]]{
+      def mkCube(mp: SomeCubeDescriptor[T])(implicit wsn: WithSideName[T]): RubikCubeInstance[T] =
         CreateRubikInstance(mp, None, RubikCubeInstance.NoDescription)
     }
 
   }
 
 
-  def mkCube[T: WithSideName, C[_] <: RubikCube[_]: MkCube](mp: SomeCubeDescriptor[T]) = implicitly[MkCube[C]].mkCube(mp)
+  def mkCube[T: WithSideName, C <: RubikCube[T, C]](mp: SomeCubeDescriptor[T])
+                                                   (implicit iMkCube: MkCube[T, C]) =
+    implicitly[MkCube[T, C]].mkCube(mp)
 
   lazy val solvedCube: CubeDescriptor = Map(
     Front -> Map(

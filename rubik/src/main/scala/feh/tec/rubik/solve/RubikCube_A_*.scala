@@ -68,7 +68,7 @@ object RubikCubeHeuristics{
 //
 //  }
 
-  implicit class RubikHeuristicsHelper[T: WithSideName](r: RubikCube[T]){
+  implicit class RubikHeuristicsHelper[T: WithSideName, C <: RubikCube[T, C]](r: RubikCube[T, C]){
     
     object select{
       

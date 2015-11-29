@@ -8,7 +8,7 @@ import feh.util._
 case class RubikCubeInstance[T] (cubeById: Map[CubeId, CubeWithOrientation[T]],
                                  parent: Option[RubikCubeInstance[T]],
                                  description: RubikCubeInstance.Description )
-  extends RubikCube[T]
+  extends RubikCube[T, RubikCubeInstance[T]]
 {
   type ThisType = RubikCubeInstance[T]
 
@@ -55,7 +55,7 @@ object RubikCubeInstance{
 
 
 
-  class MutableContainer[T](protected var instance: RubikCubeInstance[T]) extends RubikCube[T]
+  class MutableContainer[T](protected var instance: RubikCubeInstance[T]) extends RubikCube[T, MutableContainer[T]]
   {
     type ThisType = MutableContainer[T]
 

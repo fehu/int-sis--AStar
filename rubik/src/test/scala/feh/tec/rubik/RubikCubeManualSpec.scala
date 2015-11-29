@@ -9,7 +9,11 @@ import org.specs2.Specification
 import scala.collection.mutable
 import scala.language.higherKinds
 
-abstract class RubikCubeManualSpec[C[_] <: RubikCube[_]: MkCube](name: String) extends Specification { def is = s2"""
+abstract class RubikCubeManualSpec[C <: RubikCube[SideName, C]](name: String)
+                                                               (implicit iMkCube: MkCube[SideName, C])
+  extends Specification
+{
+  def is = s2"""
   ${("Rubik's Cube representation: " + name).name}
 
   -- Tests Predefined Examples --
@@ -64,13 +68,11 @@ abstract class RubikCubeManualSpec[C[_] <: RubikCube[_]: MkCube](name: String) e
   def test_G_DM_08 = tstDistanceMeasure(RotationManualTest.rotation_7, 30 + 7 + 1 + 2 + 1 + 2 + 2 + 1)
 
 
-  private lazy val cubesHash = mutable.HashMap.empty[CubeDescriptor, C[SideName]]
-  private def mkCubeH(cd: CubeDescriptor): C[SideName] = cubesHash.getOrElseUpdate(cd, mkCube(cd))
+  private lazy val cubesHash = mutable.HashMap.empty[CubeDescriptor, C]
+  private def mkCubeH(cd: CubeDescriptor): C = cubesHash.getOrElseUpdate(cd, mkCube(cd))
 
   private def tstCube(exp: CubeDescriptor, rots: SideName*) = {
-    val r = (initialCubeInstance /: rots){ case (c, s) => c.rotate(s).asInstanceOf[C[SideName]] }
-
-    r === mkCubeH(exp)
+    initialCubeInstance.rotate(rots: _*) === mkCubeH(exp)
   }
 
   private def tstDistanceMeasure(cd: CubeDescriptor, exp: Int) = (0 /: mkCubeH(cd).cubeById){
@@ -81,4 +83,4 @@ abstract class RubikCubeManualSpec[C[_] <: RubikCube[_]: MkCube](name: String) e
 
 
 class RubikCubeInstanceManualSpec
-  extends RubikCubeManualSpec[RubikCubeInstance]("RubikCubeInstance")
+  extends RubikCubeManualSpec[RubikCubeInstance[SideName]]("RubikCubeInstance")
