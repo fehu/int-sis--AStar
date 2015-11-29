@@ -12,7 +12,7 @@ trait RubikCube_A_*[T] extends A_*[RubikCubeInstance[T]]{
   def transformations = c => SideName.values.toSeq.map(c.rotate)
 
   /** Is the given state a solution? */
-  def isSolution = _.cubeById.forall{ case (_, (c, o)) => c.labels == o.toSeq }
+  def isSolution = _.cubeById.forall{ case (_, CubeWithOrientation(c, o)) => c.labels == o.toSeq }
 
   /** List state's parents. */
   def listParents: RubikCubeInstance[T] => Seq[RubikCubeInstance[T]] = c => c.parent match {
@@ -59,8 +59,8 @@ object RubikCubeHeuristics{
     
     def apply[T: WithSideName](c: CubeWithOrientation[T]): CorrectOrientation =
       CorrectOrientation(
-        c._1.labels.map(_.side).zip(c._2.toSeq).count{ case (x,y) => x == y },
-        c._1.labels.size
+        c.cube.labels.map(_.side).zip(c.o.toSeq).count{ case (x,y) => x == y },
+        c.cube.labels.size
       )
 
     def apply[T: WithSideName](c: Iterable[CubeWithOrientation[T]]): Iterable[CorrectOrientation] = c.map(apply[T])
@@ -101,7 +101,7 @@ object RubikCubeHeuristics{
       {
         def fromSide(sideName: SideName): CubesSideSelection = CubesSideSelection(
           sel
-            .withFilter(_._2._2.toSeq contains sideName)
+            .withFilter(_._2.o.toSeq contains sideName)
             .map{ case (id, cwo) => id -> CubeSide(sideName, cwo.colorFrom(sideName).get.side) }
         )
       }
@@ -165,7 +165,7 @@ object RubikCubeHeuristics{
         .toMap
           
       cwo => 
-        expected.get(cwo._1.cubeId)
+        expected.get(cwo.cube.cubeId)
           .map{ exp => if (cwo.colorFrom(exp) contains exp) 1 else -1 }
           .getOrElse(0)
     } 
@@ -185,7 +185,7 @@ object RubikCubeHeuristics{
 
     /** TODO: it seems to include also the the 'orientation distance' */
     def moveDistance[T: WithSideName]: Heuristic[T] = {
-      case (c, o) => (c.labels.map(_.side).toSet -- o.toSeq.toSet).size
+      case CubeWithOrientation(c, o) => (c.labels.map(_.side).toSet -- o.toSeq.toSet).size
     }
 
   }

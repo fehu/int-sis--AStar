@@ -41,7 +41,7 @@ class MutableRubikCube[T: WithSideName](initialCubes: Set[Cube[T]]) extends Rubi
           .collectFirst{ case c: Corner[T] if id == cubeId(c) => c }
           .get
 
-        id -> (c, CubeOrientation(c.label1.side, c.label2.side, c.label3.side))
+        id -> CubeWithOrientation(c, CubeOrientation(c.label1.side, c.label2.side, c.label3.side))
     }: _*
   )
 
@@ -53,7 +53,7 @@ class MutableRubikCube[T: WithSideName](initialCubes: Set[Cube[T]]) extends Rubi
           .collectFirst{ case m: Middle[T] if id == cubeId(m) => m }
           .get
 
-        id -> (c, CubeOrientation(c.label1.side, c.label2.side, null))
+        id -> CubeWithOrientation(c, CubeOrientation(c.label1.side, c.label2.side, null))
     }: _*
   )
 
@@ -64,7 +64,7 @@ class MutableRubikCube[T: WithSideName](initialCubes: Set[Cube[T]]) extends Rubi
           .collectFirst{ case c@Center(l) if l.side == side => c }
           .get
         
-        Set(side) -> (c, CubeOrientation(side, null, null))
+        Set(side) -> CubeWithOrientation(c, CubeOrientation(side, null, null))
     }: _*)
 
   def snapshot = RubikCubeInstance[T](cubes.mapKeys(RubikCube.cubeAt), None, "")

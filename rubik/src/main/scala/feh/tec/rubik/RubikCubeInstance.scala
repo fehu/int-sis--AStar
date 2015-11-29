@@ -16,7 +16,7 @@ case class RubikCubeInstance[T] (cubeById: Map[CubeId, CubeWithOrientation[T]],
 
 
   def rotate(side: SideName): RubikCubeInstance[T] = {
-    val upd = rotateUpdate(side).map{ case Update(c, o, pos) => pos -> (c, o) }
+    val upd = rotateUpdate(side).map{ case Update(c, o, pos) => pos -> CubeWithOrientation(c, o) }
     RubikCubeInstance(cubeById ++ upd, Some(this), "rotate " + side.toString + " 90° clockwise")
   }
 

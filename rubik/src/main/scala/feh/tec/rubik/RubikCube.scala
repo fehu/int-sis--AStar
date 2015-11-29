@@ -4,6 +4,7 @@ import feh.tec.rubik.RubikCube._
 import feh.util._
 
 import scala.collection.mutable
+import scala.language.implicitConversions
 
 trait RubikCube[T]{
   type ThisType <: RubikCube[T]
@@ -21,7 +22,7 @@ trait RubikCube[T]{
 
   /** rotate a side 90 degrees clockwise */
   protected def rotateUpdate(sideName: SideName) =
-    for ( (pos, (c, o)) <- sides(sideName) )
+    for ( (pos, CubeWithOrientation(c, o)) <- sides(sideName) )
       yield Update(c, o.rotate(sideName), Rotation.posChange(sideName, pos))
 
 
@@ -35,7 +36,17 @@ object RubikCube{
 
   type CubeId = Set[SideName]
 
-  type CubeWithOrientation[T] = (Cube[T], CubeOrientation)
+  case class CubeWithOrientation[T](cube: Cube[T], o: CubeOrientation){
+
+    override def equals(obj: scala.Any) = canEqual(obj) && (obj match{
+      case that: CubeWithOrientation[T] =>
+        CubeWithOrientation.coSet(this) == CubeWithOrientation.coSet(that)
+    })
+  }
+
+  object CubeWithOrientation{
+    protected def coSet[T](cwo: CubeWithOrientation[T]) = cwo.cube.labels.zip(cwo.o.toSeq).toSet
+  }
 
   trait WithSideName[T] { def side: T => SideName }
 
@@ -48,15 +59,22 @@ object RubikCube{
   }
 
   implicit class CubeWithOrientationWrapper[T](cwo: CubeWithOrientation[T]){
-    def colorFrom(orientation: SideName): Option[T] = cwo._2.toSeq.indexOf(orientation) match {
+    def colorFrom(orientation: SideName): Option[T] = cwo.o.toSeq.indexOf(orientation) match {
       case -1 => None
-      case  x => Some(cwo._1.labels(x))
+      case  x => Some(cwo.cube.labels(x))
     }
   }
 
+  implicit def CubeWithOrientationFromPair[T](p: (Cube[T], CubeOrientation)): CubeWithOrientation[T] =
+    (CubeWithOrientation.apply[T] _).tupled(p)
+
   /** A smaller cube, that the Rubik's Cube is composed of. */
-  sealed trait Cube[T] {
+  sealed trait Cube[T] extends Equals{
     def labels: Seq[T]
+
+    override def equals(obj: scala.Any): Boolean = canEqual(obj) && (obj match{
+      case that: Cube[T] => this.labels.toSet == that.labels.toSet
+    })
   }
 
   case class Center[T: WithSideName](label: T) extends Cube[T] { def labels = label :: Nil }
