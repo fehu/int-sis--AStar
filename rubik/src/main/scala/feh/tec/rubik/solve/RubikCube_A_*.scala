@@ -53,19 +53,19 @@ object RubikCube_A_*{
 
 object RubikCubeHeuristics{
 
-  case class CorrectOrientation protected (n: Int, of: Int)
-  
-  object CorrectOrientation{
-    
-    def apply[T: WithSideName](c: CubeWithOrientation[T]): CorrectOrientation =
-      CorrectOrientation(
-        c.cube.labels.map(_.side).zip(c.o.toSeq).count{ case (x,y) => x == y },
-        c.cube.labels.size
-      )
-
-    def apply[T: WithSideName](c: Iterable[CubeWithOrientation[T]]): Iterable[CorrectOrientation] = c.map(apply[T])
-
-  }
+//  case class CorrectOrientation protected (n: Int, of: Int)
+//
+//  object CorrectOrientation{
+//
+//    def apply[T: WithSideName](c: CubeWithOrientation[T]): CorrectOrientation =
+//      CorrectOrientation(
+//        c.cube.labels.map(_.side).zip(c.o.toSeq).count{ case (x,y) => x == y },
+//        c.cube.labels.size
+//      )
+//
+//    def apply[T: WithSideName](c: Iterable[CubeWithOrientation[T]]): Iterable[CorrectOrientation] = c.map(apply[T])
+//
+//  }
 
   implicit class RubikHeuristicsHelper[T: WithSideName](r: RubikCube[T]){
     
@@ -185,7 +185,15 @@ object RubikCubeHeuristics{
 
     /** TODO: it seems to include also the the 'orientation distance' */
     def moveDistance[T: WithSideName]: Heuristic[T] = {
-      case CubeWithOrientation(c, o) => (c.labels.map(_.side).toSet -- o.toSeq.toSet).size
+      case CubeWithOrientation(c, o) => {
+        val abs = (0 /: c.labels.zip(o.toSeq)){
+          case (acc, (x, side)) => acc + (if (x.side == side) 0 else 1)
+        }
+        val rel = (c.labels.map(_.side).toSet -- o.toSeq.toSet).size
+
+//        println(s"abs=$abs, rel=$rel")
+        abs + rel
+      }
     }
 
   }
