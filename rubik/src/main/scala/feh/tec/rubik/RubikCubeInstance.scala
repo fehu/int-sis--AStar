@@ -21,6 +21,10 @@ case class RubikCubeInstance[T] (cubeById: Map[CubeId, CubeWithOrientation[T]],
   }
 
   def snapshot = this
+
+  override def equals(obj: scala.Any) = canEqual(obj) && (obj match{
+    case that: RubikCubeInstance[T] => this.cubeById == that.cubeById
+  })
 }
 
 
