@@ -13,7 +13,8 @@ object TestUtils {
   object MkCube{
 
     implicit object RubikInstance extends MkCube[RubikCubeInstance]{
-      def mkCube[T: WithSideName](mp: SomeCubeDescriptor[T]): RubikCubeInstance[T] = CreateRubikInstance(mp, None, "")
+      def mkCube[T: WithSideName](mp: SomeCubeDescriptor[T]): RubikCubeInstance[T] =
+        CreateRubikInstance(mp, None, RubikCubeInstance.NoDescription)
     }
 
   }

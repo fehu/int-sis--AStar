@@ -8,13 +8,13 @@ object CreateRubikInstance {
 
   def fromRaw[T, C](sidesMap: Map[SideName, Map[(Int, Int), T]],
                     parent: Option[RubikCubeInstance[C]],
-                    description: String)
+                    description: RubikCubeInstance.Description)
                    (implicit cm: ColorMap[T, C], wsn: WithSideName[C]): RubikCubeInstance[C] =
     apply(sidesMap.mapValues(_.mapValues(cm.colorFor)), parent, description)
 
   def apply[T: WithSideName](sidesMap: Map[SideName, Map[(Int, Int), T]],
                              parent: Option[RubikCubeInstance[T]],
-                             description: String): RubikCubeInstance[T] =
+                             description: RubikCubeInstance.Description): RubikCubeInstance[T] =
   {
     val idsO = sidesMap.flatMap{
       case (side, tMap) =>
@@ -30,12 +30,13 @@ object CreateRubikInstance {
 
   def apply[T](cubes: Map[CubeId, CubeWithOrientation[T]],
                parent: Option[RubikCubeInstance[T]],
-               description: String): RubikCubeInstance[T] = RubikCubeInstance(cubes, parent, description)
+               description: RubikCubeInstance.Description): RubikCubeInstance[T] =
+    RubikCubeInstance(cubes, parent, description)
 
 
   def apply[T: WithSideName](img: RubikCubeImage[T],
                              parent: Option[RubikCubeInstance[T]],
-                             description: String)
+                             description: RubikCubeInstance.Description)
                             (implicit sMap: SidesMap): RubikCubeInstance[T] =
     RubikCubeInstance(RubikCubeImage.readCubes(img), parent, description)
 

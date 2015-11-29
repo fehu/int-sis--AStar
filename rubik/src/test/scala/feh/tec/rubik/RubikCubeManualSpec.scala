@@ -7,6 +7,7 @@ import feh.tec.rubik.solve.RubikCubeHeuristics.DistanceMeasure
 import org.specs2.Specification
 
 import scala.collection.mutable
+import scala.language.higherKinds
 
 abstract class RubikCubeManualSpec[C[_] <: RubikCube[_]: MkCube](name: String) extends Specification { def is = s2"""
   ${("Rubik's Cube representation: " + name).name}

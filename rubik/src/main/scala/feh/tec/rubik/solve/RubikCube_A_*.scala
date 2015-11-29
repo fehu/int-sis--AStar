@@ -12,7 +12,8 @@ trait RubikCube_A_*[T] extends A_*[RubikCubeInstance[T]]{
   def transformations = c => SideName.values.toSeq.map(c.rotate)
 
   /** Is the given state a solution? */
-  def isSolution = _.cubeById.forall{ case (_, CubeWithOrientation(c, o)) => c.labels == o.toSeq }
+  def isSolution = heuristic andThen (_ == 0)
+//    _.cubeById.forall{ case (_, CubeWithOrientation(c, o)) => c.labels == o.toSeq }
 
   /** List state's parents. */
   def listParents: RubikCubeInstance[T] => Seq[RubikCubeInstance[T]] = c => c.parent match {
@@ -21,7 +22,7 @@ trait RubikCube_A_*[T] extends A_*[RubikCubeInstance[T]]{
   }
 
   /** A human readable description for a state. */
-  def description = _.description
+  def description = _.description.toString
 }
 
 
@@ -30,7 +31,7 @@ trait RubikCube_A_*[T] extends A_*[RubikCubeInstance[T]]{
 object RubikCube_A_*{
 
   class WithTricks[T: WithSideName](val stage: RubikCubeHeuristics.SomeTricks.Stage)
-    extends RubikCube_A_*[T] with A_*.MaximizingHeuristic[RubikCubeInstance[T]]
+    extends RubikCube_A_*[T] with A_*.MinimizingHeuristic[RubikCubeInstance[T]]
   {
     type Heuristic = Int
     implicit def heuristicOrdering = Ordering.Int
@@ -38,7 +39,7 @@ object RubikCube_A_*{
     /** Heuristic value for a state. */
     lazy val heuristic: RubikCubeInstance[T] => Heuristic = _
       .cubeById.values
-      .map( RubikCubeHeuristics.SomeTricks.chain(stage, RubikCubeHeuristics.DistanceMeasure.moveDistance) )
+      .map( RubikCubeHeuristics.DistanceMeasure.moveDistance ) // RubikCubeHeuristics.SomeTricks.chain(stage, )
       .sum
   }
 
