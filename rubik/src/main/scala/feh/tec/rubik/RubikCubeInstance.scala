@@ -51,6 +51,8 @@ object RubikCubeInstance{
     def asString = "rotated: " + side.toString + " " + RotationAngle.toStr(angle)
   }
   case object NoDescription extends Description { def asString = "" }
+  case class InitialDescription(asString: String) extends Description
+
 
 
   class MutableContainer[T](protected var instance: RubikCubeInstance[T]) extends RubikCube[T]
