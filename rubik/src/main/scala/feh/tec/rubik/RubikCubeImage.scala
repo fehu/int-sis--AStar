@@ -40,7 +40,7 @@ object RubikCubeImage{
     def id = cubeId -> orientation
   }
 
-  def groupCubes[T: WithSideName](cubesSides: Map[CubeId, (SideName, T)]): Map[CubeId, CubeWithOrientation[T]] =
+  def groupCubes[T: WithSideName](cubesSides: Iterable[(CubeId, (SideName, T))]): Map[CubeId, CubeWithOrientation[T]] =
     groupCubes(
       cubesSides.toSeq.map{
         case (id,(o, c)) => CubeSide(id, o, c)

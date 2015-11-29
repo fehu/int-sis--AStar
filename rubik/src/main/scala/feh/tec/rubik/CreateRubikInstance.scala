@@ -23,10 +23,11 @@ object CreateRubikInstance {
     }
     val grouped = RubikCubeImage groupCubes idsO.groupBy(_._1).values.flatMap(_.map{
       case ((id, side), x) => id -> (side, x)
-    }).toMap
+    })
 
     apply(grouped, parent, description)
   }
+
   def apply[T](cubes: Map[CubeId, CubeWithOrientation[T]],
                parent: Option[RubikCubeInstance[T]],
                description: String): RubikCubeInstance[T] = RubikCubeInstance(cubes, parent, description)
