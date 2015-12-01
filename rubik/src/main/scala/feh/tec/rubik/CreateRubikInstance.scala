@@ -38,6 +38,10 @@ object CreateRubikInstance {
                              parent: Option[RubikCubeInstance[T]],
                              description: RubikCubeInstance.Description)
                             (implicit sMap: SidesMap): RubikCubeInstance[T] =
-    RubikCubeInstance(RubikCubeImage.readCubes(img), parent, description)
+    RubikCubeInstance(RubikCubeImage.readCubesWithMap(img), parent, description)
 
+  def fromSnapshot[T: WithSideName](img: RubikCubeImage[T],
+                                    parent: Option[RubikCubeInstance[T]],
+                                    description: RubikCubeInstance.Description): RubikCubeInstance[T] =
+    RubikCubeInstance(RubikCubeImage.readCubes(img), parent, description)
 }
