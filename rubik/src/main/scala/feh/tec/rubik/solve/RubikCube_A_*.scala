@@ -3,6 +3,7 @@ package feh.tec.rubik.solve
 import feh.tec.astar.A_*
 import feh.tec.astar.A_*.SortedPossibilities
 import feh.tec.rubik.RubikCube._
+import feh.tec.rubik.solve.RubikCubeHeuristics.{DistanceMeasure, SomeTricks}
 import feh.tec.rubik.{RubikCube, RubikCubeInstance}
 
 /** Implements A* methods related to [[RubikCubeInstance]]s.
@@ -39,7 +40,7 @@ object RubikCube_A_*{
     /** Heuristic value for a state. */
     lazy val heuristic: RubikCubeInstance[T] => Heuristic = _
       .cubeById.values
-      .map( RubikCubeHeuristics.DistanceMeasure.moveDistance ) // RubikCubeHeuristics.SomeTricks.chain(stage, )
+      .map(SomeTricks.filtering(stage, DistanceMeasure.moveDistance))
       .sum
   }
 
@@ -155,8 +156,8 @@ object RubikCubeHeuristics{
       def avoidRotating = Set()
     }
     
-    def heuristic[T: WithSideName](stage: Stage): Heuristic[T] = {
-      val expected = stage.expectedSides
+    def filterFunc[T: WithSideName](stage: Stage)(cwo: CubeWithOrientation[T]): Boolean = {
+      val considered = stage.expectedSides
         .flatMap(
           _ .right.map(s => sideCubes(s.side).map(s.side -> _._2).toSet)
             .left.map(Set(_))
@@ -164,19 +165,12 @@ object RubikCubeHeuristics{
         )
         .map(_.swap)
         .toMap
-          
-      cwo => 
-        expected.get(cwo.cube.cubeId)
-          .map{ exp => if (cwo.colorFrom(exp) contains exp) 1 else -1 }
-          .getOrElse(0)
-    } 
 
-    def chain[T: WithSideName](stage: Stage, next: Heuristic[T]): Heuristic[T] =
-      cwo => heuristic(stage) apply cwo match {
-        case 0  => 0
-        case 1  => 1
-        case -1 => - next(cwo)
-      }
+        considered contains cwo.cube.cubeId
+    }
+
+    def filtering[T: WithSideName](stage: Stage, h: Heuristic[T]): Heuristic[T] =
+      cwo => if(filterFunc(stage)(cwo)) h(cwo) else 0
   }
 
 
