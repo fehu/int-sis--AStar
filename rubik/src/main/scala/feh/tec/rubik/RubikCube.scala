@@ -21,12 +21,12 @@ trait RubikCube[T, C <: RubikCube[T, C]]{
 
   def cubes: Map[(Int, Int, Int), CubeWithOrientation[T]] = cubeById.mapKeys(RubikCube.cubePosition)
 
-  def sides(sideName: SideName): Map[(Int, Int), CubeWithOrientation[T]] =
+  def side(sideName: SideName): Map[(Int, Int), CubeWithOrientation[T]] =
     RubikCube.sideCubes(sideName).mapValues(cubeById)
 
   /** rotate a side 90 degrees clockwise */
   protected def rotateUpdate(sideName: SideName) =
-    for ( (pos, CubeWithOrientation(c, o)) <- sides(sideName) )
+    for ( (pos, CubeWithOrientation(c, o)) <- side(sideName) )
       yield Update(c, o.rotate(sideName), Rotation.posChange(sideName, pos))
 
 
@@ -46,6 +46,13 @@ object RubikCube{
       case that: CubeWithOrientation[T] =>
         CubeWithOrientation.coSet(this) == CubeWithOrientation.coSet(that)
     })
+
+    def trySelectSide(side: SideName) = o.toSeq.indexOf(side) match {
+      case -1 => None
+      case  i => Some(cube.labels(i))
+    }
+
+    def selectSide(side: SideName) = trySelectSide(side).get
   }
 
   object CubeWithOrientation{

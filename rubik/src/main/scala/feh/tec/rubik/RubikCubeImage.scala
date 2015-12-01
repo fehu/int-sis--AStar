@@ -9,12 +9,12 @@ case class RubikCubeImage[T](sides: Seq[Side[T]]){
   def map[R](f: T => R): RubikCubeImage[R] = copy(sides.map(_.map(f)))
 
   def merge[T2](that: RubikCubeImage[T2]): RubikCubeImage[(T, T2)] = RubikCubeImage(
-    this.sides zip that.sides map { case (Side(c1), Side(c2)) => Side(c1 zipByKey c2) }
+    this.sides zip that.sides map { case (Side(c1, _), Side(c2, _)) => Side(c1 zipByKey c2) }
   )
 }
 
 object RubikCubeImage{
-  case class Side[T](colors: Map[(Int, Int), T]){
+  case class Side[T](colors: Map[(Int, Int), T], name: Option[SideName] = None){
     def map[R](f: T => R): Side[R] = copy(colors.mapValues(f))
   }
 
@@ -40,6 +40,22 @@ object RubikCubeImage{
     def id = cubeId -> orientation
   }
 
+
+  def apply[T](inst: RubikCubeInstance[T]): RubikCubeImage[T] = RubikCubeImage(
+    inst.rawSides.toSeq.map{
+      case (side, contents) => Side(contents.mapValues(_.selectSide(side)), Some(side))
+    }
+  )
+
+  // todo: SidesMap not always needed
+  def toString[T](img: RubikCubeImage[T])(implicit sm: SidesMap) =
+    img.sides.zip(implicitly[SidesMap].readOrder).flatMap{
+      case (RubikCubeImage.Side(colors, nameOpt), readSide) =>
+        val cStrs = colors.toSeq.map{ case ((x, y), color) => Seq(x, y, color).mkString(", ") }
+        ("-- " + nameOpt.getOrElse(readSide.name)) +: cStrs
+    }.mkString("\n")
+
+
   def groupCubes[T: WithSideName](cubesSides: Iterable[(CubeId, (SideName, T))]): Map[CubeId, CubeWithOrientation[T]] =
     groupCubes(
       cubesSides.toSeq.map{
@@ -56,6 +72,7 @@ object RubikCubeImage{
         Center(c) -> CubeOrientation(o, null, null)
     }
 
+  // todo: SidesMap not always used
   def readCubes[C: WithSideName](img: RubikCubeImage[C])
                                 (implicit sMap: SidesMap): Map[CubeId, CubeWithOrientation[C]] =
   {
@@ -69,11 +86,11 @@ object RubikCubeImage{
 
     val cubesSides = sMap.readOrder zip sides flatMap {
 
-      case (ReadSide(side, false, false, false), Side(colors)) =>
-        mkSide(side, colors)
+      case (ReadSide(side, false, false, false), Side(colors, sideOpt)) =>
+        mkSide(sideOpt getOrElse side, colors)
 
-      case (ReadSide(side, flipX, flipY, transpose), Side(colors)) =>
-        val idsMap = sideCubes(side)
+      case (ReadSide(side, flipX, flipY, transpose), Side(colors, sideOpt)) =>
+        val idsMap = sideCubes(sideOpt getOrElse side)
         val flipped =
           if(flipX || flipY) colors.mapKeys{
             case (x, y) => (if (flipX) flip(x) else x, if (flipY) flip(y) else y )
@@ -84,7 +101,7 @@ object RubikCubeImage{
           if(transpose) flipped.mapKeys(_.swap)
           else flipped
 
-        mkSide(side, transposed)
+        mkSide(sideOpt getOrElse side, transposed)
     }
 
     groupCubes(cubesSides)

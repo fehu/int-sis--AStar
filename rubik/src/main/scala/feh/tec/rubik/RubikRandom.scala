@@ -16,4 +16,11 @@ object RubikRandom {
 
   def randomRotationCube[T, C <: RubikCube[T, C]](c: C, n: Int): C = c.rotate(randomSides(n): _*)
 
+  implicit class CubeRandomWrapper[T, C <: RubikCube[T, C]](c: C){
+    def randomRotations(n: Int = CubeRandomWrapper.maxRandomRotations): C = randomRotationCube[T, C](c, n)
+  }
+  object CubeRandomWrapper {
+    val maxRandomRotations = 100
+  }
+
 }
