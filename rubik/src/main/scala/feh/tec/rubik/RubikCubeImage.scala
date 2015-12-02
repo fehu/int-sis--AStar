@@ -47,14 +47,19 @@ object RubikCubeImage{
     }
   )
 
-  // todo: SidesMap not always needed
-  def toString[T](img: RubikCubeImage[T])(implicit sm: SidesMap) =
-    img.sides.zip(implicitly[SidesMap].readOrder).flatMap{
-      case (RubikCubeImage.Side(colors, nameOpt), readSide) =>
+  def toString[T](img: RubikCubeImage[T], sm: SidesMap) =
+    img.sides.zip(sm.readOrder).flatMap{
+      case (RubikCubeImage.Side(colors, _), readSide) =>
         val cStrs = colors.toSeq.map{ case ((x, y), color) => Seq(x, y, color).mkString(", ") }
-        ("-- " + nameOpt.getOrElse(readSide.name)) +: cStrs
+        ("-- " + readSide.name) +: cStrs
     }.mkString("\n")
 
+  def toString[T](img: RubikCubeImage[T]) =
+    img.sides.flatMap{
+      case RubikCubeImage.Side(colors, Some(name)) =>
+        val cStrs = colors.toSeq.map{ case ((x, y), color) => Seq(x, y, color).mkString(", ") }
+        ("-- " + name) +: cStrs
+    }.mkString("\n")
 
   def groupCubes[T: WithSideName](cubesSides: Iterable[(CubeId, (SideName, T))]): Map[CubeId, CubeWithOrientation[T]] =
     groupCubes(
@@ -78,7 +83,6 @@ object RubikCubeImage{
     val RubikCubeImage(sides) = img
 
     val cubesSides = sides flatMap {
-      case Side(colors, Some(side)) => mkSide(side, colors)
       case Side(colors, Some(side)) => mkSide(side, colors)
     }
 
