@@ -60,7 +60,7 @@ object RubikCube_A_*{
     def heuristic: RubikCubeInstance[T] => Heuristic = inst =>
       currentHeuristic(inst) match {
         case Int.MaxValue => Int.MaxValue
-        case h => h*2 + solutionLengthHeuristic(inst)
+        case h => h + solutionLengthHeuristic(inst)
       }
 
     def mkHeuristic(stage: RubikCubeHeuristics.SomeTricks.Stage): RubikCubeInstance[T] => Heuristic =
@@ -117,7 +117,7 @@ object RubikCubeHeuristics{
       def expectedSides[T: WithSideName, C <: RubikCube[T, C]]: RubikCube[T, C] => ExpectedSides[T]
     }
 
-    def stages: Seq[Stage] = Seq(Stage1) // , Stage2)
+    def stages: Seq[Stage] = Seq(Stage1, Stage2)
 
 
     import SideName._
@@ -217,17 +217,17 @@ object RubikCubeHeuristics{
     protected def sideRotatingPartialDistance[T: WithSideName](from: SideName,
                                                                to: SideName,
                                                                rotating: SideName): Measure =
-      if (from == to) Measured(0)
-      else Y[(SideName, Int), Measure](
+//      if (from == to) Measured(0)
+      Y[(SideName, Int), Measure](
         rec => {
           case (prev, c) =>
             val next = Rotation.next.byName(rotating)(prev)
-            if      (prev == next) Never
+            if      (prev == to)   Measured(c)
+            else if (prev == next) Never
             else if (c > 3)        Never
-            else if (next == to)   Measured(c)
             else                   rec(next, c+1)
           }
-      )(from -> 1)
+      )(from -> 0)
 
     def defaultMeasure[T: WithSideName]: MeasureFunc[T] = MeasureFunc(calcDistanceToGoal[T])
 
@@ -250,9 +250,9 @@ object RubikCubeHeuristics{
     object select{
 
       def positions(ids: Set[CubeId]): CubesSelection[T] = CubesSelection(r.cubesPositions.filterKeys(ids.contains))
-      def positions(ids: (Int, Int, Int)*): CubesSelection[T] = cubes(ids.toSet.map(cubeAt))
+      def positions(ids: (Int, Int, Int)*): CubesSelection[T] = positions(ids.toSet.map(cubeAt))
       def positions(ids: Map[SideName, Set[(Int, Int)]]): CubesSelection[T] =
-        cubes( ids.flatMap{ case (id, ps) => ps.map(sideCubes(id)) }.toSet )
+        positions( ids.flatMap{ case (id, ps) => ps.map(sideCubes(id)) }.toSet )
 
       def cubes(ids: Set[CubeId]): CubesSelection[T] =
         CubesSelection(r.cubesPositions.filter(ids contains _._2.cube.cubeId))
