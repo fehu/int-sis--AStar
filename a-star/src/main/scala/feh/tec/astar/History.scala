@@ -26,6 +26,12 @@ trait History[T] {
   def last = toList.head
   /** Get the last [[HistoryEntry]] safely. */
   def lastOption = toList.headOption
+
+  def ++ (that: History[T]): History[T]
+}
+
+object History{
+  def empty[T]: History[T] = HistoryRecord(Nil)
 }
 
 /** A history entry, describing one [[A_*.searchInner]] execution.
@@ -50,6 +56,7 @@ object HistoryEntry{
 case class SolutionHistoryRecord[T](toList: List[HistoryEntry[T]], solution: T, overflowed: Boolean) extends History[T]{
   def prepend(entry: HistoryEntry[T]): History[T] = this
   def map(f: (HistoryEntry[T]) => HistoryEntry[T]): History[T] = copy(toList.map(f))
+  def ++(that: History[T]) = copy(that.toList ++ toList)
 }
 
 /** The normal implementation of [[History]]. */
@@ -57,6 +64,7 @@ case class HistoryRecord[T](toList: List[HistoryEntry[T]]) extends History[T]{
   def overflowed = false
   def prepend(entry: HistoryEntry[T]) = copy(entry :: toList)
   def map(f: HistoryEntry[T] => HistoryEntry[T]) = copy(toList.map(f))
+  def ++(that: History[T]) = copy(that.toList ++ toList)
 }
 
 /** An implementation of overflown [[History]], can no longer append more entries. */
@@ -64,6 +72,7 @@ case class HistoryOverflow[T](toList: List[HistoryEntry[T]]) extends History[T]{
   def overflowed = true
   def prepend(entry: HistoryEntry[T]) = this
   def map(f: HistoryEntry[T] => HistoryEntry[T]) = copy(toList.map(f))
+  def ++(that: History[T]) = copy(that.toList ++ toList)
 }
 
 /** Disabled history. */
@@ -72,4 +81,5 @@ case class NoHistory[T]() extends History[T]{
   def toList = Nil
   def prepend(entry: HistoryEntry[T]) = this
   def map(f: HistoryEntry[T] => HistoryEntry[T]) = this
+  def ++(that: History[T]) = that
 }
