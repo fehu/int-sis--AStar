@@ -122,3 +122,27 @@ faced by the given sub-cube's side at the moment. Orientation is uniquely define
 The heuristic works under assumptions that a sub-cube may be moved to any valid position by rotations of only the sides that it's currently on. That yield maximum 2 sides to rotate for "crosses" and 3 for corners. Maximum 3 rotations per side. Heuristic's range (for a single sub-cube) is [0, 9].
 
 
+### Solution Stages
+`RubikCubeHeuristics.SomeTricks.Stage`
+
+A stage defines which sub-cubes should be considered by the heuristic.
+
+It uses `CubesSelection` mechanizm, that I won't describe here. Better some examples:
+
+```scala
+object Stage1 extends Stage{
+  def expectedSides[T: WithSideName, C <: RubikCube[T, C]] =
+    _.select.cubes(Set(
+        Set(Up, Front),
+        Set(Up, Right),
+        Set(Up, Back),
+        Set(Up, Left)
+      ))
+}
+
+object Stage2 extends Stage{
+  def expectedSides[T: WithSideName, C <: RubikCube[T, C]] = _.select.cubesForming(Up)
+}
+```
+
+
