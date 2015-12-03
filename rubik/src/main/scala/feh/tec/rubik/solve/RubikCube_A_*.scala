@@ -1,6 +1,6 @@
 package feh.tec.rubik.solve
 
-import feh.tec.astar.A_*
+import feh.tec.astar.{HistoryRecord, History, A_*}
 import feh.tec.rubik.RubikCube._
 import feh.tec.rubik.solve.RubikCubeHeuristics.DistanceMeasure.{MeasureFunc, Measured, Never}
 import feh.tec.rubik.{RubikCube, RubikCubeInstance}
@@ -8,6 +8,7 @@ import feh.tec.rubik.solve.RubikCubeHeuristics.{DistanceMeasure, DistanceMeasure
 import feh.util._
 
 import scala.collection.mutable
+import scala.util.Success
 
 /** Implements A* methods related to [[RubikCubeInstance]]s.
   */
@@ -37,8 +38,10 @@ trait RubikCube_A_*[T] extends A_*[RubikCubeInstance[T]]{
 
 object RubikCube_A_*{
 
-  class WithTricksStage[T: WithSideName](val stage: RubikCubeHeuristics.SomeTricks.Stage,
-                                         implicit val measureFunc: MeasureFunc[T])
+  /**
+    */
+  class WithTricksStages[T: WithSideName](val stages: Seq[RubikCubeHeuristics.SomeTricks.Stage],
+                                          implicit val measureFunc: MeasureFunc[T])
     extends RubikCube_A_*[T] with A_*.MinimizingHeuristic[RubikCubeInstance[T]]
   {
     type Heuristic = Int
@@ -46,15 +49,40 @@ object RubikCube_A_*{
 
     implicit lazy val distanceCache = new DistanceMeasure.Cache[T]
 
+    protected var currentHeuristic: RubikCubeInstance[T] => Heuristic = null
 
     /** Heuristic value for a state. */
-    lazy val heuristic: RubikCubeInstance[T] => Heuristic = stage.expectedSides[T, RubikCubeInstance[T]] andThen {
-      expected =>
-        DistanceMeasure.distance(expected.sel.values) match {
-          case Never       => Int.MaxValue
-          case Measured(i) => i
+    def heuristic: RubikCubeInstance[T] => Heuristic = currentHeuristic
+
+    def mkHeuristic(stage: RubikCubeHeuristics.SomeTricks.Stage): RubikCubeInstance[T] => Heuristic =
+      stage.expectedSides[T, RubikCubeInstance[T]] andThen {
+        expected =>
+          DistanceMeasure.distance(expected.sel.values) match {
+            case Never       => Int.MaxValue
+            case Measured(i) => i
+          }
+      }
+
+    /** Searches for a solution.
+      * Is based on [[searchInner]],
+      * @param initial The initial state.
+      * @return `Some(solution)` or `None` if the solution wasn't found.
+      */
+    override def search(initial: RubikCubeInstance[T]) =
+      Y[(Seq[RubikCubeHeuristics.SomeTricks.Stage], RubikCubeInstance[T], History[RubikCubeInstance[T]]), Result]{
+        rec => {
+          case (Seq(stage, rest@ _*), lastRes, hist) =>
+            currentHeuristic = mkHeuristic(stage)
+            val (res, newHist) = super.search(lastRes)
+            res match {
+              case Success(newRes) => rec((rest, newRes, hist ++ newHist))
+              case fail            => (fail, hist ++ newHist)
+            }
+          case (Seq(), lastRes, hist) =>
+            currentHeuristic = null
+            Success(lastRes) -> hist
         }
-    }
+      }((stages, initial, History.empty))
   }
 
 }
@@ -79,6 +107,8 @@ object RubikCubeHeuristics{
     trait Stage{
       def expectedSides[T: WithSideName, C <: RubikCube[T, C]]: RubikCube[T, C] => ExpectedSides[T]
     }
+
+    def stages: Seq[Stage] = Seq(Stage1) // , Stage2)
 
 
     import SideName._
