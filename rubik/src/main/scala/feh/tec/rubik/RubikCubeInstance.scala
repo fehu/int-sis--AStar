@@ -4,7 +4,7 @@ import feh.tec.rubik.RubikCube._
 import feh.util._
 
 /** Immutable Rubik's Cube */
-case class RubikCubeInstance[T] (cubeById: Map[CubeId, CubeWithOrientation[T]],
+case class RubikCubeInstance[T] (cubesPositions: Map[CubeId, CubeWithOrientation[T]],
                                  parent: Option[RubikCubeInstance[T]],
                                  description: RubikCube.Description )
   extends RubikCube[T, RubikCubeInstance[T]]
@@ -12,18 +12,18 @@ case class RubikCubeInstance[T] (cubeById: Map[CubeId, CubeWithOrientation[T]],
   type ThisType = RubikCubeInstance[T]
 
   def rawSides: Map[SideName, Map[(Int, Int), CubeWithOrientation[T]]] =
-    SideName.values.toSeq.zipMap{ sideName => RubikCube.sideCubes(sideName).mapValues(cubeById) }.toMap
+    SideName.values.toSeq.zipMap{ sideName => RubikCube.sideCubes(sideName).mapValues(cubesPositions) }.toMap
 
 
   def rotate(side: SideName): RubikCubeInstance[T] = {
     val upd = rotateUpdate(side).map{ case Update(c, o, pos) => pos -> CubeWithOrientation(c, o) }
-    RubikCubeInstance(cubeById ++ upd, Some(this), RubikCube.Rotation(RotationAngle.Rot90, side))
+    RubikCubeInstance(cubesPositions ++ upd, Some(this), RubikCube.Rotation(RotationAngle.Rot90, side))
   }
 
   def snapshot = this
 
   override def equals(obj: scala.Any) = canEqual(obj) && (obj match{
-    case that: RubikCubeInstance[T] => this.cubeById == that.cubeById
+    case that: RubikCubeInstance[T] => this.cubesPositions == that.cubesPositions
   })
 }
 
@@ -43,7 +43,7 @@ object RubikCubeInstance{
       this
     }
 
-    def cubeById = instance.cubeById
+    def cubesPositions = instance.cubesPositions
 
     def snapshot = get
   }

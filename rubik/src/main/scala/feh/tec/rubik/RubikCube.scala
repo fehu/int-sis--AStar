@@ -9,7 +9,7 @@ import scala.language.implicitConversions
 trait RubikCube[T, C <: RubikCube[T, C]]{
   self: C =>
 
-  def cubeById: Map[CubeId, CubeWithOrientation[T]]
+  def cubesPositions: Map[CubeId, CubeWithOrientation[T]]
 
   /** rotate a side 90 degrees clockwise */
   def rotate(sideName: SideName): C
@@ -18,10 +18,10 @@ trait RubikCube[T, C <: RubikCube[T, C]]{
   def rotate(sideNames: SideName*): C = (this /: sideNames)(_ rotate _)
 
 
-  def cubes: Map[(Int, Int, Int), CubeWithOrientation[T]] = cubeById.mapKeys(RubikCube.cubePosition)
+  def cubes: Map[(Int, Int, Int), CubeWithOrientation[T]] = cubesPositions.mapKeys(RubikCube.cubePosition)
 
   def side(sideName: SideName): Map[(Int, Int), CubeWithOrientation[T]] =
-    RubikCube.sideCubes(sideName).mapValues(cubeById)
+    RubikCube.sideCubes(sideName).mapValues(cubesPositions)
 
   /** rotate a side 90 degrees clockwise */
   protected def rotateUpdate(sideName: SideName) =

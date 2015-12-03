@@ -77,7 +77,7 @@ abstract class RubikCubeManualSpec[C <: RubikCube[SideName, C]](name: String)
 
 //  private lazy val cache = new DistanceMeasure.Cache[SideName]
 
-  private def tstDistanceMeasure(cd: CubeDescriptor, exp: Int) = (0 /: mkCubeH(cd).cubeById){
+  private def tstDistanceMeasure(cd: CubeDescriptor, exp: Int) = (0 /: mkCubeH(cd).cubesPositions){
     case (acc, (_, cwo: CubeWithOrientation[SideName])) => acc + DistanceMeasureOLD.moveDistance.apply(cwo) // DistanceMeasure.distance()
   } === exp
 

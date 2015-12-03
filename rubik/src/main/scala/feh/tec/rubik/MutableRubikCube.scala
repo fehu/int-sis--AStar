@@ -12,7 +12,7 @@ class MutableRubikCube[T: WithSideName](initialCubes: Set[Cube[T]]) extends Rubi
 
   type ThisType = MutableRubikCube[T]
 
-  def cubeById = cubesHeap.toMap
+  def cubesPositions = cubesHeap.toMap
 
   /** rotate a side 90 degrees clockwise */
   def rotate(sideName: SideName) = { bulkUpdate(rotateUpdate(sideName)); this }
