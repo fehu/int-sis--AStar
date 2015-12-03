@@ -25,6 +25,8 @@ case class RubikCubeInstance[T] (cubesPositions: Map[CubeId, CubeWithOrientation
   override def equals(obj: scala.Any) = canEqual(obj) && (obj match{
     case that: RubikCubeInstance[T] => this.cubesPositions == that.cubesPositions
   })
+
+  override def hashCode() = cubesPositions.hashCode()
 }
 
 
