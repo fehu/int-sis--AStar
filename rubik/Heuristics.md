@@ -38,7 +38,7 @@ faced by the given sub-cube's side at the moment. Orientation is uniquely define
   1. **Zip** the sequence of sides with the previously fixed poses.
   2. **Foreach** element 
      *(rotating side, sub-cube side's current orientation, sub-cube side's expected orientation)* of the resulting sequence, 
-     **try** to calculate *rotating distance* for given sub-cube using only rotations of the provided *rotating side*:
+     **calculate** *rotating distance* for given sub-cube using only rotations of the provided *rotating side*:
     1. Using _*_, get the axis side that would be faced by the given sub-cube's side on the next rotation.
     2. **Case** it's euqal to the goal axis, **then** return the accumulated number of rotations.
     3. **Case** it's equal to the current one, **then** the rotation has no effect; return **Never**.
