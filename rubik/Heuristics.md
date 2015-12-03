@@ -118,3 +118,7 @@ faced by the given sub-cube's side at the moment. Orientation is uniquely define
           }
         }
 ```
+##### Comment
+The heuristic works under assumptions that a sub-cube may be moved to any valid position by rotations of only the sides that it's currently on. That yield maximum 2 sides to rotate for "crosses" and 3 for corners. Maximum 3 rotations per side. Heuristic's range (for a single sub-cube) is [0, 9].
+
+
