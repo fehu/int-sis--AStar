@@ -17,7 +17,7 @@ trait RubikCube_A_*[T] extends A_*[RubikCubeInstance[T]]{
   def transformations = c => SideName.values.toSeq.map(c.rotate)
 
   /** Is the given state a solution? */
-  def isSolution = heuristic andThen (_ == 0)
+  def isSolution = inst => heuristic(inst) == solutionLengthHeuristic(inst)
 //    _.cubeById.forall{ case (_, CubeWithOrientation(c, o)) => c.labels == o.toSeq }
 
   /** List state's parents. */
@@ -30,6 +30,8 @@ trait RubikCube_A_*[T] extends A_*[RubikCubeInstance[T]]{
   def description = _.description.toString
 
   def fullDescription: RubikCubeInstance[T] => RubikCube.Description = _.description
+
+  def solutionLengthHeuristic: RubikCubeInstance[T] => Heuristic
 
 }
 
@@ -44,15 +46,22 @@ object RubikCube_A_*{
                                           implicit val measureFunc: MeasureFunc[T])
     extends RubikCube_A_*[T] with A_*.MinimizingHeuristic[RubikCubeInstance[T]]
   {
-    type Heuristic = Int
-    implicit def heuristicOrdering = Ordering.Int
+    type Heuristic = Float
+    implicit def heuristicOrdering = Ordering.Float
 
     implicit lazy val distanceCache = new DistanceMeasure.Cache[T]
 
     protected var currentHeuristic: RubikCubeInstance[T] => Heuristic = null
 
+
+    def solutionLengthHeuristic = inst => listParents(inst).length
+
     /** Heuristic value for a state. */
-    def heuristic: RubikCubeInstance[T] => Heuristic = currentHeuristic
+    def heuristic: RubikCubeInstance[T] => Heuristic = inst =>
+      currentHeuristic(inst) match {
+        case Int.MaxValue => Int.MaxValue
+        case h => h*2 + solutionLengthHeuristic(inst)
+      }
 
     def mkHeuristic(stage: RubikCubeHeuristics.SomeTricks.Stage): RubikCubeInstance[T] => Heuristic =
       stage.expectedSides[T, RubikCubeInstance[T]] andThen {
@@ -215,7 +224,7 @@ object RubikCubeHeuristics{
             val next = Rotation.next.byName(rotating)(prev)
             if      (prev == next) Never
             else if (c > 3)        Never
-            else if (prev == to) Measured(c)
+            else if (next == to)   Measured(c)
             else                   rec(next, c+1)
           }
       )(from -> 1)
