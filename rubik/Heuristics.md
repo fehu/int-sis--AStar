@@ -15,9 +15,7 @@ The length of instance's parents chain. Not negative integer. This is *cost* heu
 
 The shortest route (sequence of sides rotations) from current *sub-cube*'s pose to the correct one.
 
-##### Distance Measure Calculation
-**Concept:**
-
+##### Concept
 A *sub-cube* is uniquely defined by a set of sides colors, 
 while it's *pose* can be defined by the same set, but zipped with the corresponding *orientations*.
 Orientation is the Rubik's side (global axes, connected to the immobile sides' centers) 
@@ -38,8 +36,7 @@ faced by the given sub-cube's side at the moment. Orientation is uniquely define
   4. **Filter** out **Never** results.
 3. **If** the resulting sequence isn't empty, select the **minimum**, **otherwise** return **Never**.
 
-**Code:**
-
+##### Code
 ```scala
         protected def calcDistanceToGoal[T: WithSideName](k: CacheKey[T]): Measure = {
 /* 1 */   val sidesSeq = k.from zip k.to
