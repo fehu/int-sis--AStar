@@ -111,7 +111,13 @@ object RubikCube{
   }
 
   object CubeWithOrientation{
-    protected def coSet[T](cwo: CubeWithOrientation[T]) = cwo.cube.labels.zip(cwo.o.toSeq).toSet
+    protected def coSeq[T](cwo: CubeWithOrientation[T]) = cwo.cube.labels.zip(cwo.o.toSeq)
+    protected def coSet[T](cwo: CubeWithOrientation[T]) = coSeq(cwo).toSet
+
+    implicit class CoSetWrapper[T](cwo: CubeWithOrientation[T]){
+      def coSeq = CubeWithOrientation.coSeq(cwo)
+      def coSet = CubeWithOrientation.coSet(cwo)
+    }
   }
 
 

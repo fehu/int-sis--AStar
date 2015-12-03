@@ -2,6 +2,7 @@ package feh.tec.rubik.solve
 
 import feh.tec.astar.A_*
 import feh.tec.rubik.RubikCube._
+import feh.tec.rubik.solve.RubikCubeHeuristics.DistanceMeasure.{MeasureFunc, Measured, Never}
 import feh.tec.rubik.{RubikCube, RubikCubeInstance}
 import feh.tec.rubik.solve.RubikCubeHeuristics.{DistanceMeasure, DistanceMeasureOLD, SomeTricks}
 import feh.util._
@@ -36,18 +37,24 @@ trait RubikCube_A_*[T] extends A_*[RubikCubeInstance[T]]{
 
 object RubikCube_A_*{
 
-  class WithTricks[T: WithSideName](val stage: RubikCubeHeuristics.SomeTricks.Stage)
+  class WithTricks[T: WithSideName](val stage: RubikCubeHeuristics.SomeTricks.Stage,
+                                    implicit val measureFunc: MeasureFunc[T])
     extends RubikCube_A_*[T] with A_*.MinimizingHeuristic[RubikCubeInstance[T]]
   {
     type Heuristic = Int
     implicit def heuristicOrdering = Ordering.Int
 
+    implicit lazy val distanceCache = new DistanceMeasure.Cache[T]
+
+
     /** Heuristic value for a state. */
-    lazy val heuristic: RubikCubeInstance[T] => Heuristic = _
-      .cubeById.values
-//      .map( DistanceMeasure.distance() )
-      .map(SomeTricks.filtering(stage, DistanceMeasureOLD.moveDistance))
-      .sum
+    lazy val heuristic: RubikCubeInstance[T] => Heuristic = _.cubeById.values |> {
+      cMap =>
+        DistanceMeasure.distance(cMap) match {
+          case Never       => Int.MaxValue
+          case Measured(i) => i
+        }
+    }
   }
 
 }
@@ -143,17 +150,40 @@ object RubikCubeHeuristics{
       def get(k: CacheKey[T]): Measure = cache.getOrElseUpdate(k, measure(k))
     }
 
-    def distance[T: Cache: WithSideName](cube: CubeWithOrientation[T],
+    def distance[T: Cache: WithSideName](cwo: CubeWithOrientation[T],
                                          square: SideName,
-                                         rotating: SideName) = implicitly[Cache[T]].get(CacheKey(cube, square, rotating))
+                                         rotating: SideName): Measure =
+      implicitly[Cache[T]].get(CacheKey(cwo, square, rotating))
 
+
+    def distance[T: Cache: WithSideName](cwo: CubeWithOrientation[T]): Measure = {
+      val dists = for {
+        (c, o)  <- cwo.coSeq
+        rotSide <- cwo.o.toSeq
+
+        if rotSide != null
+        key  = CacheKey(cwo, o, rotSide)
+        dist = implicitly[Cache[T]] get key
+      } yield dist.toOption getOrElse 0
+
+      Measured(dists.sum)
+    }
+
+    def distance[T: Cache: WithSideName](cwos: Iterable[CubeWithOrientation[T]]): Measure =
+      ((Measured(0): Measure) /: cwos.map(distance(_: CubeWithOrientation[T]))) {
+        case (Measured(acc), Measured(r)) => Measured(acc + r)
+        case (Never, _) => Never
+        case (_, Never) => Never
+      }
 
     protected def calcDistanceToGoal[T: WithSideName](k: CacheKey[T]) =
-      Y[(SideName, Int), Measure](
+      if (k.from == k.to) Measured(0)
+      else Y[(SideName, Int), Measure](
         rec => {
           case (prev, c) =>
             val next = Rotation.next.byName(k.rotating)(prev)
             if      (prev == next) Never
+            else if (c > 4)        Never
             else if (prev == k.to) Measured(c)
             else                   rec(next, c+1)
           }
