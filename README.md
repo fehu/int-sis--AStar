@@ -19,6 +19,11 @@ Includes two applications that make use of A*: [sliding puzzle](sliding-puzzle/)
 
 ---
 
+Rubik's Cube: [Heuristics](/rubik/Heuristics.md)
+
+---
+
 This project uses [simple build tool (SBT)](http://www.scala-sbt.org/). 
 
 [Using SBT](http://www.scala-sbt.org/0.13/tutorial/)
+
