@@ -29,7 +29,7 @@ The shortest route (sequence of sides rotations) from current *sub-cube*'s pose 
 
 ##### Concept
 A *sub-cube* is uniquely defined by a set of sides colors, 
-while it's *pose* can be defined by the same set, but zipped with the corresponding *orientations*.
+while it's *pose* can be defined by the same set, zipped with the corresponding *orientations*.
 Orientation is the Rubik's side (global axes, connected to the immobile sides' centers) 
 faced by the given sub-cube's side at the moment. Orientation is uniquely defined by the same set as a sub-cube.
 
