@@ -1,6 +1,18 @@
 Heuristics Used
 ===============
 
+#### Table of Contents
+  * [Solution Length](#solution-length)
+  * [Distance Measure](#distance-measure)
+      * [Concept](#concept)
+      * [Code](#code)
+      * [Comment](#comment)
+  * [Solution Stages](#solution-stages)
+
+<sup>*Created by [gh-md-toc](https://github.com/ekalinin/github-markdown-toc)*</sup>
+
+---
+
 The heuristics are defiened in [RubikCube_A_*.scala](/rubik/src/main/scala/feh/tec/rubik/solve/RubikCube_A_*.scala).
 
 **Target:** Minimize
