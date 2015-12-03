@@ -1,10 +1,12 @@
 package feh.tec.rubik.solve
 
 import feh.tec.astar.A_*
-import feh.tec.astar.A_*.SortedPossibilities
 import feh.tec.rubik.RubikCube._
-import feh.tec.rubik.solve.RubikCubeHeuristics.{DistanceMeasure, SomeTricks}
 import feh.tec.rubik.{RubikCube, RubikCubeInstance}
+import feh.tec.rubik.solve.RubikCubeHeuristics.{DistanceMeasure, DistanceMeasureOLD, SomeTricks}
+import feh.util._
+
+import scala.collection.mutable
 
 /** Implements A* methods related to [[RubikCubeInstance]]s.
   */
@@ -24,6 +26,9 @@ trait RubikCube_A_*[T] extends A_*[RubikCubeInstance[T]]{
 
   /** A human readable description for a state. */
   def description = _.description.toString
+
+  def fullDescription: RubikCubeInstance[T] => RubikCube.Description = _.description
+
 }
 
 
@@ -40,7 +45,8 @@ object RubikCube_A_*{
     /** Heuristic value for a state. */
     lazy val heuristic: RubikCubeInstance[T] => Heuristic = _
       .cubeById.values
-      .map(SomeTricks.filtering(stage, DistanceMeasure.moveDistance))
+//      .map( DistanceMeasure.distance() )
+      .map(SomeTricks.filtering(stage, DistanceMeasureOLD.moveDistance))
       .sum
   }
 
@@ -54,6 +60,106 @@ object RubikCube_A_*{
 
 
 object RubikCubeHeuristics{
+
+  type Heuristic[T] = CubeWithOrientation[T] => Int
+
+
+  /** From [[http://www.rubikaz.com]]. */
+  object SomeTricks{
+
+    case class CubesSideSelector(side: SideName)
+
+    type SideColor = SideName
+    type ExpectedSides = Set[Either[(SideName, CubeId), CubesSideSelector]]
+
+    trait Stage{
+      def expectedSides: ExpectedSides
+      def avoidRotating: Set[SideName]
+    }
+
+
+    import SideName._
+/*
+    TODO: stages should filter the cubes by their COLOR, not position
+ */
+    object Stage1 extends Stage{
+      lazy val expectedSides: ExpectedSides = Set(
+        Up    -> Set(Up, Front),
+        Front -> Set(Up, Front),
+        Up    -> Set(Up, Right),
+        Right -> Set(Up, Right),
+        Up    -> Set(Up, Left),
+        Up    -> Set(Up, Back)
+      ).map(scala.Left(_))
+      def avoidRotating = Set()
+    }
+
+
+    object Stage2 extends Stage{
+      def expectedSides: ExpectedSides =  Stage1.expectedSides + scala.Right(CubesSideSelector(Up)) ++ Set(
+        Front -> Set(Front, Left, Up),
+        Front -> Set(Front, Right, Up),
+        Right -> Set(Front, Right, Up),
+        Right -> Set(Back , Right, Up)
+      ).map(scala.Left(_))
+      def avoidRotating = Set()
+    }
+
+    def filterFunc[T: WithSideName](stage: Stage)(cwo: CubeWithOrientation[T]): Boolean = {
+      val considered = stage.expectedSides
+        .flatMap(
+          _ .right.map(s => sideCubes(s.side).map(s.side -> _._2).toSet)
+            .left.map(Set(_))
+            .merge
+        )
+        .map(_.swap)
+        .toMap
+
+        considered contains cwo.cube.cubeId
+    }
+
+    def filtering[T: WithSideName](stage: Stage, h: Heuristic[T]): Heuristic[T] =
+      cwo => if(filterFunc(stage)(cwo)) h(cwo) else 0
+  }
+
+
+
+  /** Measures the "distance" between subcubes current positions and their goals. */
+  object DistanceMeasure{
+    case class CacheKey[T: WithSideName](cube: CubeWithOrientation[T], square: SideName, rotating: SideName){
+      def from: SideName = cube.selectSide(square).side
+      def to  : SideName = cube.selectOrientation(square)
+    }
+
+    sealed trait Measure { def toOption: Option[Int] }
+    case class Measured(rotations: Int) extends Measure{ def toOption = Some(rotations) }
+    case object Never                   extends Measure{ def toOption = None }
+
+    case class MeasureFunc[T](func: CacheKey[T] => Measure)
+    def measure[T: MeasureFunc](k: CacheKey[T]): Measure = implicitly[MeasureFunc[T]].func(k)
+
+    class Cache[T: MeasureFunc]{
+      protected val cache: mutable.HashMap[CacheKey[T], Measure] = mutable.HashMap.empty
+      def get(k: CacheKey[T]): Measure = cache.getOrElseUpdate(k, measure(k))
+    }
+
+    def distance[T: Cache: WithSideName](cube: CubeWithOrientation[T],
+                                         square: SideName,
+                                         rotating: SideName) = implicitly[Cache[T]].get(CacheKey(cube, square, rotating))
+
+
+    protected def calcDistanceToGoal[T: WithSideName](k: CacheKey[T]) =
+      Y[(SideName, Int), Measure](
+        rec => {
+          case (prev, c) =>
+            val next = Rotation.next.byName(k.rotating)(prev)
+            if      (prev == next) Never
+            else if (prev == k.to) Measured(c)
+            else                   rec(next, c+1)
+          }
+      )(k.from -> 1)
+
+    def defaultMeasure[T: WithSideName]: MeasureFunc[T] = MeasureFunc(calcDistanceToGoal[T])
 
 //  case class CorrectOrientation protected (n: Int, of: Int)
 //
@@ -69,10 +175,11 @@ object RubikCubeHeuristics{
 //
 //  }
 
+/*
   implicit class RubikHeuristicsHelper[T: WithSideName, C <: RubikCube[T, C]](r: RubikCube[T, C]){
-    
+
     object select{
-      
+
       def cubes(ids: Set[CubeId]): CubesSelection = CubesSelection(r.cubeById.filterKeys(ids.contains))
       def cubes(ids: (Int, Int, Int)*): CubesSelection = cubes(ids.toSet.map(cubeAt))
       def cubes(ids: Map[SideName, Set[(Int, Int)]]): CubesSelection =
@@ -112,71 +219,11 @@ object RubikCubeHeuristics{
     }
 
   }
+*/
 
-  
-  type Heuristic[T] = CubeWithOrientation[T] => Int
-  
-
-  /** From [[http://www.rubikaz.com]]. */
-  object SomeTricks{
-
-    case class CubesSideSelector(side: SideName)
-
-    type SideColor = SideName
-    type ExpectedSides = Set[Either[(SideName, CubeId), CubesSideSelector]]
-
-    trait Stage{
-      def expectedSides: ExpectedSides
-      def avoidRotating: Set[SideName]
-    }
-    
-
-    import SideName._
-
-    object Stage1 extends Stage{
-      lazy val expectedSides: ExpectedSides = Set(
-        Up    -> Set(Up, Front),
-        Front -> Set(Up, Front),
-        Up    -> Set(Up, Right),
-        Right -> Set(Up, Right),
-        Up    -> Set(Up, Left),
-        Up    -> Set(Up, Back)
-      ).map(scala.Left(_))
-      def avoidRotating = Set()
-    }
-
-
-    object Stage2 extends Stage{
-      def expectedSides: ExpectedSides =  Stage1.expectedSides + scala.Right(CubesSideSelector(Up)) ++ Set(
-        Front -> Set(Front, Left, Up),
-        Front -> Set(Front, Right, Up),
-        Right -> Set(Front, Right, Up),
-        Right -> Set(Back , Right, Up)
-      ).map(scala.Left(_))
-      def avoidRotating = Set()
-    }
-    
-    def filterFunc[T: WithSideName](stage: Stage)(cwo: CubeWithOrientation[T]): Boolean = {
-      val considered = stage.expectedSides
-        .flatMap(
-          _ .right.map(s => sideCubes(s.side).map(s.side -> _._2).toSet)
-            .left.map(Set(_))
-            .merge
-        )
-        .map(_.swap)
-        .toMap
-
-        considered contains cwo.cube.cubeId
-    }
-
-    def filtering[T: WithSideName](stage: Stage, h: Heuristic[T]): Heuristic[T] =
-      cwo => if(filterFunc(stage)(cwo)) h(cwo) else 0
   }
 
-
-
-  /** Measures the "distance" between subcubes and their goals. */
-  object DistanceMeasure{
+  object DistanceMeasureOLD{
 
     /** TODO: it seems to include also the the 'orientation distance' */
     def moveDistance[T: WithSideName]: Heuristic[T] = {

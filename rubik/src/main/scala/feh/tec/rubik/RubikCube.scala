@@ -8,7 +8,6 @@ import scala.language.implicitConversions
 
 trait RubikCube[T, C <: RubikCube[T, C]]{
   self: C =>
-//  type ThisType <: RubikCube[T]
 
   def cubeById: Map[CubeId, CubeWithOrientation[T]]
 
@@ -38,47 +37,6 @@ trait RubikCube[T, C <: RubikCube[T, C]]{
 
 object RubikCube{
 
-  type CubeId = Set[SideName]
-
-  case class CubeWithOrientation[T](cube: Cube[T], o: CubeOrientation){
-
-    override def equals(obj: scala.Any) = canEqual(obj) && (obj match{
-      case that: CubeWithOrientation[T] =>
-        CubeWithOrientation.coSet(this) == CubeWithOrientation.coSet(that)
-    })
-
-    def trySelectSide(side: SideName) = o.toSeq.indexOf(side) match {
-      case -1 => None
-      case  i => Some(cube.labels(i))
-    }
-
-    def selectSide(side: SideName) = trySelectSide(side).get
-  }
-
-  object CubeWithOrientation{
-    protected def coSet[T](cwo: CubeWithOrientation[T]) = cwo.cube.labels.zip(cwo.o.toSeq).toSet
-  }
-
-  trait WithSideName[T] { def side: T => SideName }
-
-  implicit class WithSideNameWrapper[T: WithSideName](t: T){
-    def side = implicitly[WithSideName[T]].side(t)
-  }
-
-  implicit class CubeSideIdWrapper[T: WithSideName](t: Cube[T]){
-    def cubeId: CubeId = t.labels.map(_.side).toSet
-  }
-
-  implicit class CubeWithOrientationWrapper[T](cwo: CubeWithOrientation[T]){
-    def colorFrom(orientation: SideName): Option[T] = cwo.o.toSeq.indexOf(orientation) match {
-      case -1 => None
-      case  x => Some(cwo.cube.labels(x))
-    }
-  }
-
-  implicit def CubeWithOrientationFromPair[T](p: (Cube[T], CubeOrientation)): CubeWithOrientation[T] =
-    (CubeWithOrientation.apply[T] _).tupled(p)
-
   /** A smaller cube, that the Rubik's Cube is composed of. */
   sealed trait Cube[T] extends Equals{
     def labels: Seq[T]
@@ -92,6 +50,7 @@ object RubikCube{
   case class Middle[T: WithSideName](label1: T, label2: T) extends Cube[T]{ def labels = label1 :: label2 :: Nil }
   case class Corner[T: WithSideName](label1: T, label2: T, label3: T) extends Cube[T]{ def labels = label1 :: label2 :: label3 :: Nil }
 
+ /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
   case class CubeOrientation(o1: SideName, o2: SideName, o3: SideName){
 
@@ -115,6 +74,7 @@ object RubikCube{
 
   }
 
+ /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
   object SideName extends Enumeration{
     val Front, Right, Left, Up, Down, Back = Value
@@ -130,11 +90,90 @@ object RubikCube{
   }
   type SideName = SideName.Value
 
+ /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+
+  case class CubeWithOrientation[T](cube: Cube[T], o: CubeOrientation){
+
+    override def equals(obj: scala.Any) = canEqual(obj) && (obj match{
+      case that: CubeWithOrientation[T] =>
+        CubeWithOrientation.coSet(this) == CubeWithOrientation.coSet(that)
+    })
+
+    def selectAt(side: SideName) = selectSide(side) -> selectOrientation(side)
+    def selectSide(side: SideName) = trySelect(side, cube.labels).get
+    def selectOrientation(side: SideName) = trySelect(side, o.toSeq).get
+
+    protected def trySelect[X](side: SideName, from: Seq[X]) = o.toSeq.indexOf(side) match {
+      case -1 => None
+      case  i if i < from.size => Some(from(i))
+      case  _ => None
+    }
+  }
+
+  object CubeWithOrientation{
+    protected def coSet[T](cwo: CubeWithOrientation[T]) = cwo.cube.labels.zip(cwo.o.toSeq).toSet
+  }
+
+
+  implicit class CubeWithOrientationWrapper[T](cwo: CubeWithOrientation[T]){
+    def colorFrom(orientation: SideName): Option[T] = cwo.o.toSeq.indexOf(orientation) match {
+      case -1 => None
+      case  x => Some(cwo.cube.labels(x))
+    }
+  }
+
+  implicit def CubeWithOrientationFromPair[T](p: (Cube[T], CubeOrientation)): CubeWithOrientation[T] =
+    (CubeWithOrientation.apply[T] _).tupled(p)
+
+ /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+
+  type CubeId = Set[SideName]
+
+  implicit class CubeSideIdWrapper[T: WithSideName](t: Cube[T]){
+    def cubeId: CubeId = t.labels.map(_.side).toSet
+  }
+
+ /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+
+
+  trait WithSideName[T] { def side: T => SideName }
+
+  implicit class WithSideNameWrapper[T: WithSideName](t: T){
+    def side = implicitly[WithSideName[T]].side(t)
+  }
+
+ /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+
   object EdgeName extends Enumeration {
     val Left, Right, Top, Bottom = Value
   }
   type EdgeName = EdgeName.Value
 
+ /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+
+  sealed trait Description{
+    def asString: String
+    override def toString: String = asString
+  }
+
+  object RotationAngle extends Enumeration{
+    val Rot90, Rot180, Rot270 = Value
+
+    def toStr(a: RotationAngle): String = a match {
+      case RotationAngle.Rot90  => "90° clockwise"
+      case RotationAngle.Rot180 => "180°"
+      case RotationAngle.Rot270 => "90° counter-clockwise"
+    }
+  }
+  type RotationAngle = RotationAngle.Value
+
+  case class Rotation(angle: RotationAngle, side: SideName) extends Description{
+    def asString = "rotated: " + side.toString + " " + RotationAngle.toStr(angle)
+  }
+  case object NoDescription extends Description { def asString = "" }
+  case class InitialDescription(asString: String) extends Description
+
+ /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
   lazy val cubePosition = cubeAt.map(_.swap)
   lazy val cubeAt: Map[(Int, Int, Int), CubeId] = {

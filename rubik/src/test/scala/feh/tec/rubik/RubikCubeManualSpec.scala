@@ -3,7 +3,7 @@ package feh.tec.rubik
 import feh.tec.rubik.RubikCube.{CubeWithOrientation, SideName}
 import feh.tec.rubik.TestUtils._
 import feh.tec.rubik.RubikSubCubesDefault.WithSideNameIdentity
-import feh.tec.rubik.solve.RubikCubeHeuristics.DistanceMeasure
+import feh.tec.rubik.solve.RubikCubeHeuristics.{DistanceMeasure, DistanceMeasureOLD}
 import org.specs2.Specification
 
 import scala.collection.mutable
@@ -75,8 +75,10 @@ abstract class RubikCubeManualSpec[C <: RubikCube[SideName, C]](name: String)
     initialCubeInstance.rotate(rots: _*) === mkCubeH(exp)
   }
 
+//  private lazy val cache = new DistanceMeasure.Cache[SideName]
+
   private def tstDistanceMeasure(cd: CubeDescriptor, exp: Int) = (0 /: mkCubeH(cd).cubeById){
-    case (acc, (_, cwo: CubeWithOrientation[SideName])) => acc + DistanceMeasure.moveDistance.apply(cwo)
+    case (acc, (_, cwo: CubeWithOrientation[SideName])) => acc + DistanceMeasureOLD.moveDistance.apply(cwo) // DistanceMeasure.distance()
   } === exp
 
 }

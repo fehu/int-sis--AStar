@@ -4,8 +4,7 @@ import java.text.DateFormat
 import java.util.Date
 
 import feh.tec.rubik.RubikCube.SideName
-import feh.tec.rubik.RubikCubeImage.{SidesMap, Side}
-import feh.util.{FileNameUtils, Path}
+import feh.tec.rubik.RubikCubeImage.{Side, SidesMap}
 import feh.util.file._
 
 

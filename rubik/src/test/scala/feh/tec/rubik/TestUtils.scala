@@ -16,7 +16,7 @@ object TestUtils {
 
     implicit def RubikInstance[T]: MkCube[T, RubikCubeInstance[T]] = new MkCube[T, RubikCubeInstance[T]]{
       def mkCube(mp: SomeCubeDescriptor[T])(implicit wsn: WithSideName[T]): RubikCubeInstance[T] =
-        CreateRubikInstance(mp, None, RubikCubeInstance.NoDescription)
+        CreateRubikInstance(mp, None, RubikCube.NoDescription)
     }
 
   }
