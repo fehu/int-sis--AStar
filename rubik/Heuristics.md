@@ -40,9 +40,9 @@ faced by the given sub-cube's side at the moment. Orientation is uniquely define
      *(rotating side, sub-cube side's current orientation, sub-cube side's expected orientation)* of the resulting sequence, 
      **calculate** *rotating distance* for given sub-cube using only rotations of the provided *rotating side*:
     1. Using _*_, get the axis side that would be faced by the given sub-cube's side on the next rotation.
-    2. **Case** it's euqal to the goal axis, **then** return the accumulated number of rotations.
+    2. **Case** it's equal to the goal axis, **then** return the accumulated number of rotations.
     3. **Case** it's equal to the current one, **then** the rotation has no effect; return **Never**.
-    4. **Case** the number of rotations tried exceeds 3, then the rotation has no effect; return **Never**.
+    4. **Case** the number of rotations tried exceeds 3, **then** the rotation has no effect; return **Never**.
     5. **Otherwise** go to *a*, incrementing the rotations accumulator.
   3. **Sum** the results, considering that `Never + ? == Never`.
   4. **Filter** out **Never** results.
@@ -128,7 +128,7 @@ faced by the given sub-cube's side at the moment. Orientation is uniquely define
         }
 ```
 ##### Comment
-The heuristic works under assumptions that a sub-cube may be moved to any valid position by rotations of only the sides that it's currently on. That yield maximum 2 sides to rotate for "crosses" and 3 for corners. Maximum 3 rotations per side. Heuristic's range (for a single sub-cube) is [0, 9].
+The heuristic works under assumption that a sub-cube may be moved to any valid position by rotating only the sides that it's currently on. That yields maximum 2 sides to rotate for "crosses" and 3 for corners; maximum 3 rotations per side. Heuristic's range (for a single sub-cube) is [0, 9].
 
 
 ### Solution Stages
