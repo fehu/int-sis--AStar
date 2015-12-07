@@ -43,7 +43,7 @@ object RubikCubeImage{
 
   def apply[T](inst: RubikCubeInstance[T]): RubikCubeImage[T] = RubikCubeImage(
     inst.rawSides.toSeq.map{
-      case (side, contents) => Side(contents.mapValues(_.selectSide(side)), Some(side))
+      case (side, contents) => Side(contents.mapValues(_.selectSideByOrientation(side)), Some(side))
     }
   )
 

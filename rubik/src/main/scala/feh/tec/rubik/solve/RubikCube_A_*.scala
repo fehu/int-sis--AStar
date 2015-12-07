@@ -63,14 +63,14 @@ object RubikCube_A_*{
         case h => h + solutionLengthHeuristic(inst)
       }
 
-    def mkHeuristic(stage: RubikCubeHeuristics.SomeTricks.Stage): RubikCubeInstance[T] => Heuristic =
-      stage.expectedSides[T, RubikCubeInstance[T]] andThen {
-        expected =>
-          DistanceMeasure.distance(expected.sel.values) match {
-            case Never       => Int.MaxValue
+    def mkHeuristic(stage: RubikCubeHeuristics.SomeTricks.Stage): RubikCubeInstance[T] => Heuristic = {
+      inst =>
+        val expected = stage.expectedSides[T, RubikCubeInstance[T]] apply inst
+          DistanceMeasure.distance(expected.sel.values, inst) match {
+            case Never => Int.MaxValue
             case Measured(i) => i
           }
-      }
+    }
 
     /** Searches for a solution.
       * Is based on [[searchInner]],
@@ -120,10 +120,8 @@ object RubikCubeHeuristics{
     def stages: Seq[Stage] = Seq(Stage1, Stage2)
 
 
-    import SideName._
-/*
-    TODO: stages should filter the cubes by their COLOR, not position
- */
+  import SideName._
+
   object Stage1 extends Stage{
     def expectedSides[T: WithSideName, C <: RubikCube[T, C]] =
       _.select.cubes(Set(
@@ -149,6 +147,8 @@ object RubikCubeHeuristics{
 
   /** Measures the "distance" between subcubes current positions and their goals. */
   object DistanceMeasure{
+    var DEBUG = false
+
     case class CacheKey[T: WithSideName](cwo: CubeWithOrientation[T]){
       def from: Seq[SideName] = cwo.o.toSeq.filter(_ != null)
       def to  : Seq[SideName] = cwo.cube.labels.map(_.side)
@@ -175,49 +175,78 @@ object RubikCubeHeuristics{
       def flatMap(f: Int => Measure) = Never
     }
 
-    case class MeasureFunc[T](func: CacheKey[T] => Measure)
-    def measure[T: MeasureFunc](k: CacheKey[T]): Measure = implicitly[MeasureFunc[T]].func(k)
+    case object Zero extends Measure{
+      def toOption = None
+      def map(f: Int => Int) = Measured(f(0))
+      def flatMap(f: Int => Measure) = f(0)
+    }
+
+    case class MeasureFunc[T](func: (RubikCubeInstance[T], CacheKey[T]) => Measure)
+    def measure[T: MeasureFunc](inst: RubikCubeInstance[T], k: CacheKey[T]): Measure =
+      implicitly[MeasureFunc[T]].func(inst, k)
 
     class Cache[T: MeasureFunc]{
       protected val cache: mutable.HashMap[CacheKey[T], Measure] = mutable.HashMap.empty
-      def get(k: CacheKey[T]): Measure = cache.getOrElseUpdate(k, measure(k))
+      def get(k: CacheKey[T], inst: RubikCubeInstance[T]): Measure = cache.getOrElseUpdate(k, measure(inst, k))
     }
 
-    def distance[T: Cache: WithSideName](cwo: CubeWithOrientation[T]): Measure = implicitly[Cache[T]].get(CacheKey(cwo))
+    def distance[T: Cache: WithSideName](cwo: CubeWithOrientation[T], inst: RubikCubeInstance[T]): Measure =
+      implicitly[Cache[T]].get(CacheKey(cwo), inst)
 
-    def distance[T: Cache: WithSideName](cwos: Iterable[CubeWithOrientation[T]]): Measure =
-      ((Measured(0): Measure) /: cwos.map(distance(_: CubeWithOrientation[T]))) {
-        case (Measured(acc), Measured(r)) => Measured(acc + r)
-        case (Never, _) => Never
-        case (_, Never) => Never
+    def distance[T: Cache: WithSideName](cwos: Iterable[CubeWithOrientation[T]], inst: RubikCubeInstance[T]): Measure =
+      ((Zero: Measure) /: cwos.map(distance(_: CubeWithOrientation[T], inst))) { case (acc, r) => acc + r } match {
+        case Zero => Never
+        case m    => m
       }
 
     /** Foreach possible rotation sequence*, find which ones lead to goal position and select the shortest one.
      *  * A 'rotation sequence' here is the sequence of rotated sides (can be any number of side's rotations:, 0-3).
      */
-    protected def calcDistanceToGoal[T: WithSideName](k: CacheKey[T]): Measure = {
-      val sidesSeq = k.from zip k.to
-
-      val yieldRotations = Y[Seq[(SideName, (SideName, SideName))], Measure](
-        rec => {
-          case Seq((rotSide, (from, to)), tail@ _*) => sideRotatingPartialDistance(from, to, rotSide) + rec(tail)
-          case Nil => Measured(0)
-        }
-      )
-
+    protected def calcDistanceToGoal[T: WithSideName](inst: RubikCubeInstance[T], k: CacheKey[T]): Measure = {
       val routes: Seq[Int] = for{
         rotSeq  <- k.from.permutations.toStream
-        measure <- yieldRotations(rotSeq zip sidesSeq).toOption
+        measure <- sideRotatingDistance(inst, k.cwo.cube.cubeId, k.to, rotSeq, 0).toOption
         } yield measure
+
+      if (DEBUG) {
+        println("measures for " + k)
+        println(routes.toList)
+        println()
+      }
 
       if(routes.isEmpty) Never
       else Measured(routes.min)
     }
 
+
+    protected def sideRotatingDistance[T: WithSideName](inst: RubikCubeInstance[T],
+                                                        cId: CubeId,
+                                                        cubeSideSeq: Seq[SideName],
+                                                        sideRotSeq: Seq[SideName],
+                                                        rotAcc: Int): Measure =
+      cubeSideSeq -> sideRotSeq match {
+        case (Seq(cSide, cTail@ _*), Seq(rSide, rTail@ _*)) =>
+          val Some(cwo) = inst.findCubeById(cId)
+          val from = cwo.selectOrientationBySide(cSide)
+          val dist = sideRotatingPartialDistance(from, cSide, rSide)
+
+          if (DEBUG) println(s"sideRotatingDistance: from=$from, to=$cSide, rSide=$rSide, dist=$dist")
+
+          dist match {
+            case Measured(n) =>
+              val newInst = (inst /: (1 to n)){ case (i, _) => i.rotate(rSide) }
+              sideRotatingDistance(newInst, cId, cTail, rTail, rotAcc + n)
+            case Never => Never
+          }
+        case (Seq(), Seq()) => Measured(rotAcc)
+      }
+
+
+
+
     protected def sideRotatingPartialDistance[T: WithSideName](from: SideName,
                                                                to: SideName,
                                                                rotating: SideName): Measure =
-//      if (from == to) Measured(0)
       Y[(SideName, Int), Measure](
         rec => {
           case (prev, c) =>
@@ -228,6 +257,7 @@ object RubikCubeHeuristics{
             else                   rec(next, c+1)
           }
       )(from -> 0)
+
 
     def defaultMeasure[T: WithSideName]: MeasureFunc[T] = MeasureFunc(calcDistanceToGoal[T])
 

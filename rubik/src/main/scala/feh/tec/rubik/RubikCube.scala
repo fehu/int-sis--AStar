@@ -92,18 +92,17 @@ object RubikCube{
 
  /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-  case class CubeWithOrientation[T](cube: Cube[T], o: CubeOrientation){
+  case class CubeWithOrientation[T: WithSideName](cube: Cube[T], o: CubeOrientation){
 
     override def equals(obj: scala.Any) = canEqual(obj) && (obj match{
       case that: CubeWithOrientation[T] =>
         CubeWithOrientation.coSet(this) == CubeWithOrientation.coSet(that)
     })
 
-    def selectAt(side: SideName) = selectSide(side) -> selectOrientation(side)
-    def selectSide(side: SideName) = trySelect(side, cube.labels).get
-    def selectOrientation(side: SideName) = trySelect(side, o.toSeq).get
+    def selectSideByOrientation(side: SideName) = trySelect(o.toSeq, side, cube.labels).get
+    def selectOrientationBySide(side: SideName) = trySelect(cube.labels.map(_.side), side, o.toSeq).get
 
-    protected def trySelect[X](side: SideName, from: Seq[X]) = o.toSeq.indexOf(side) match {
+    protected def trySelect[X](indx: Seq[SideName], side: SideName, from: Seq[X]) = indx.toSeq.indexOf(side) match {
       case -1 => None
       case  i if i < from.size => Some(from(i))
       case  _ => None
@@ -128,7 +127,7 @@ object RubikCube{
     }
   }
 
-  implicit def CubeWithOrientationFromPair[T](p: (Cube[T], CubeOrientation)): CubeWithOrientation[T] =
+  implicit def CubeWithOrientationFromPair[T: WithSideName](p: (Cube[T], CubeOrientation)): CubeWithOrientation[T] =
     (CubeWithOrientation.apply[T] _).tupled(p)
 
  /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */

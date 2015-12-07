@@ -25,12 +25,12 @@ object CreateRubikInstance {
       case ((id, side), x) => id -> (side, x)
     })
 
-    apply(grouped, parent, description)
+    fromCubes(grouped, parent, description)
   }
 
-  def apply[T](cubes: Map[CubeId, CubeWithOrientation[T]],
-               parent: Option[RubikCubeInstance[T]],
-               description: RubikCube.Description): RubikCubeInstance[T] =
+  def fromCubes[T: WithSideName](cubes: Map[CubeId, CubeWithOrientation[T]],
+                                 parent: Option[RubikCubeInstance[T]],
+                                 description: RubikCube.Description): RubikCubeInstance[T] =
     RubikCubeInstance(cubes, parent, description)
 
 
