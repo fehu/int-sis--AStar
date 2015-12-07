@@ -81,6 +81,8 @@ object RubikCube_A_*{
       Y[(Seq[RubikCubeHeuristics.SomeTricks.Stage], RubikCubeInstance[T], History[RubikCubeInstance[T]]), Result]{
         rec => {
           case (Seq(stage, rest@ _*), lastRes, hist) =>
+            println("Entering stage " + (stage.expectedSides[T, RubikCubeInstance[T]] apply lastRes))
+            Thread.sleep(5000)
             currentHeuristic = mkHeuristic(stage)
             val (res, newHist) = super.search(lastRes)
             res match {
@@ -117,7 +119,7 @@ object RubikCubeHeuristics{
       def expectedSides[T: WithSideName, C <: RubikCube[T, C]]: RubikCube[T, C] => ExpectedSides[T]
     }
 
-    def stages: Seq[Stage] = Seq(Stage1, Stage2)
+    def stages: Seq[Stage] = Seq(Stage1, Stage2, Stage3, Stage4)
 
 
   import SideName._
@@ -136,6 +138,25 @@ object RubikCubeHeuristics{
       def expectedSides[T: WithSideName, C <: RubikCube[T, C]] = _.select.cubesForming(Up)
     }
 
+//    object Stage3 extends Stage{
+//      def expectedSides[T: WithSideName, C <: RubikCube[T, C]] = i =>
+//        i.select.cubesForming(Up) ++
+//        i.select.cubesForming(Left, Front)
+//          .filterNot(_ contains SideName.Down )
+//    }
+
+    object Stage3 extends Stage{
+      def expectedSides[T: WithSideName, C <: RubikCube[T, C]] = i =>
+        i.select.cubesForming(Left, Right, Front, Back)
+          .filterNot(_ contains SideName.Down )
+    }
+
+    object Stage4 extends Stage{
+      def expectedSides[T: WithSideName, C <: RubikCube[T, C]] = i =>
+        i.select.cubesForming(Up) ++
+        i.select.cubesForming(Left, Right, Front, Back)
+          .filterNot(_ contains SideName.Down )
+    }
 
     def selectCubes[T: WithSideName, C <: RubikCube[T, C]](stage: Stage)
                                                           (rubik: RubikCube[T, C]): Iterable[CubeWithOrientation[T]] =
@@ -204,7 +225,7 @@ object RubikCubeHeuristics{
      */
     protected def calcDistanceToGoal[T: WithSideName](inst: RubikCubeInstance[T], k: CacheKey[T]): Measure = {
       val routes: Seq[Int] = for{
-        rotSeq  <- k.from.permutations.toStream
+        rotSeq  <- SideName.values.toList.permutations.toStream //k.from.permutations.toStream
         measure <- sideRotatingDistance(inst, k.cwo.cube.cubeId, k.to, rotSeq, 0).toOption
         } yield measure
 
@@ -214,7 +235,7 @@ object RubikCubeHeuristics{
         println()
       }
 
-      if(routes.isEmpty) Never
+      if(routes.isEmpty) sys.error("no route found for " + k.cwo)
       else Measured(routes.min)
     }
 
@@ -224,7 +245,8 @@ object RubikCubeHeuristics{
                                                         cubeSideSeq: Seq[SideName],
                                                         sideRotSeq: Seq[SideName],
                                                         rotAcc: Int): Measure =
-      cubeSideSeq -> sideRotSeq match {
+      if(cId.size == 1) Measured(0)
+      else cubeSideSeq -> sideRotSeq match {
         case (Seq(cSide, cTail@ _*), Seq(rSide, rTail@ _*)) =>
           val Some(cwo) = inst.findCubeById(cId)
           val from = cwo.selectOrientationBySide(cSide)
@@ -238,7 +260,7 @@ object RubikCubeHeuristics{
               sideRotatingDistance(newInst, cId, cTail, rTail, rotAcc + n)
             case Never => Never
           }
-        case (Seq(), Seq()) => Measured(rotAcc)
+        case (Seq(), _) => Measured(rotAcc)
       }
 
 
@@ -273,6 +295,12 @@ object RubikCubeHeuristics{
 
   case class CubesSelection[T: WithSideName](sel: Map[CubeId, CubeWithOrientation[T]])
     extends Selection[CubeWithOrientation[T]]
+  {
+    def filter(f: CubeId => Boolean) = copy(sel.filterKeys(f))
+    def filterNot(f: CubeId => Boolean) = copy(sel.filterKeys(not compose f))
+
+    def ++ (that: CubesSelection[T]) = copy(this.sel ++ that.sel)
+  }
 
 
   implicit class RubikHeuristicsHelper[T: WithSideName, C <: RubikCube[T, C]](r: RubikCube[T, C]){
