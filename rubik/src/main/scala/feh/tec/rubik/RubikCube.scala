@@ -309,8 +309,6 @@ object RubikCube{
 
       import SideName._
 
-      val rotationMapCache = mutable.HashMap.empty[(Int, Boolean), Map[SideName, SideName]]
-
       def byName(sideName: SideName) = sideName match {
         case Front => front
         case Back  => back

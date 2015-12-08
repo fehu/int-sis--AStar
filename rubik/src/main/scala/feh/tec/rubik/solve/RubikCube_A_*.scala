@@ -2,7 +2,7 @@ package feh.tec.rubik.solve
 
 import feh.tec.astar.{HistoryRecord, History, A_*}
 import feh.tec.rubik.RubikCube._
-import feh.tec.rubik.solve.RubikCubeHeuristics.DistanceMeasure.{MeasureFunc, Measured, Never}
+import feh.tec.rubik.solve.RubikCubeHeuristics.DistanceMeasure._
 import feh.tec.rubik.{RubikCube, RubikCubeInstance}
 import feh.tec.rubik.solve.RubikCubeHeuristics.{DistanceMeasure, DistanceMeasureOLD, SomeTricks}
 import feh.util._
@@ -43,6 +43,7 @@ object RubikCube_A_*{
   /**
     */
   class WithTricksStages[T: WithSideName](val stages: Seq[RubikCubeHeuristics.SomeTricks.Stage],
+                                          val concentratedSearchDepth: Int,
                                           implicit val measureFunc: MeasureFunc[T])
     extends RubikCube_A_*[T] with A_*.MinimizingHeuristic[RubikCubeInstance[T]]
   {
@@ -57,11 +58,40 @@ object RubikCube_A_*{
     def solutionLengthHeuristic = inst => listParents(inst).length
 
     /** Heuristic value for a state. */
-    def heuristic: RubikCubeInstance[T] => Heuristic = inst =>
+    def heuristic = heuristicSingle
+
+    def heuristicSingle: RubikCubeInstance[T] => Heuristic = inst =>
       currentHeuristic(inst) match {
         case Int.MaxValue => Int.MaxValue
-        case h => h + solutionLengthHeuristic(inst)
+        case h => h*2 + solutionLengthHeuristic(inst)
       }
+
+//    /** A version of `heuristic` that takes into account `` */
+//    def inertialHeuristic(depth: Int): RubikCubeInstance[T] => Heuristic = {
+//      inst =>
+//        val ps = listParents(inst)
+//        val rest = if(depth > ps.length) ps else ps.take(depth)
+//        (0f /: (inst +: rest)){
+//          case (acc, next) => acc + heuristicSingle.apply(next)
+//        } / (rest.length + 1)
+//    }
+
+    /** Extra logic ([[Decide]]) for [[searchInner]]. Intended to be overridden. */
+    override protected def searchInnerExtraLogic = count =>{
+      case Some((best, opn)) =>
+        val newOpen = opn.extraData.get("depth to go") match {
+          case None =>
+            opn
+              .changeExtraData(_ + ("depth to go" -> concentratedSearchDepth))
+          case Some(0) =>
+            opn
+              .mergeToZeroPriority(opn.highestPriority._1)
+              .changeExtraData(_ - "depth to go")
+          case Some(i: Int) => opn
+            .changeExtraData(_ + ("depth to go" -> (i-1)))
+        }
+        SearchInnerRecCall(best, count + 1, newOpen)
+    }
 
     def mkHeuristic(stage: RubikCubeHeuristics.SomeTricks.Stage): RubikCubeInstance[T] => Heuristic = {
       inst =>
@@ -119,7 +149,7 @@ object RubikCubeHeuristics{
       def expectedSides[T: WithSideName, C <: RubikCube[T, C]]: RubikCube[T, C] => ExpectedSides[T]
     }
 
-    def stages: Seq[Stage] = Seq(Stage1, Stage2, Stage3, Stage4)
+    def stages: Seq[Stage] = Seq(Stage1, Stage2, Stage3)
 
 
   import SideName._
@@ -147,7 +177,9 @@ object RubikCubeHeuristics{
 
     object Stage3 extends Stage{
       def expectedSides[T: WithSideName, C <: RubikCube[T, C]] = i =>
+        i.select.cubesForming(Up) ++
         i.select.cubesForming(Left, Right, Front, Back)
+            //        i.select.cubesForming(Left, Front)
           .filterNot(_ contains SideName.Down )
     }
 
@@ -156,6 +188,36 @@ object RubikCubeHeuristics{
         i.select.cubesForming(Up) ++
         i.select.cubesForming(Left, Right, Front, Back)
           .filterNot(_ contains SideName.Down )
+    }
+
+    object NewStages{
+      def apply() = Seq(Stage1, Stage2, Stage3, Stage4, Stage5)
+
+      def Stage1 = SomeTricks.Stage1
+      def Stage2 = SomeTricks.Stage2
+
+      object Stage3 extends Stage{
+        def expectedSides[T: WithSideName, C <: RubikCube[T, C]] =
+          i =>
+            i.select.cubesForming(Up) ++
+            i.select.cubes(Set(
+              Set(Down, Front),
+              Set(Down, Right),
+              Set(Down, Back),
+              Set(Down, Left)
+            ))
+      }
+      object Stage4 extends Stage{
+        def expectedSides[T: WithSideName, C <: RubikCube[T, C]] =
+          i =>
+            i.select.cubesForming(Up) ++
+            i.select.cubesForming(Down)
+      }
+
+      object Stage5 extends Stage{
+        def expectedSides[T: WithSideName, C <: RubikCube[T, C]] = i =>
+          i.select.cubesForming(Up, Down, Front, Back)
+      }
     }
 
     def selectCubes[T: WithSideName, C <: RubikCube[T, C]](stage: Stage)
