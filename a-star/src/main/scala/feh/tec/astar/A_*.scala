@@ -189,7 +189,7 @@ object A_*{
 
   object SortedPossibilities{
     def empty[H, T](implicit ord: Ordering[H], heuristic: HeuristicContainer[T, H]) =
-      new SortedPossibilities(new TreeMap[H, List[T]]())
+      new SortedPossibilities(Map( 1 -> new TreeMap[H, List[T]]() ), Map())
   }
 
   /** A class for implementing a sorted 'open' list (immutable).
@@ -201,15 +201,21 @@ object A_*{
     * @tparam H heuristic value type.
     * @tparam T state type.
     */
-  class SortedPossibilities[H, T](val underlying: SortedMap[H, List[T]])
+  class SortedPossibilities[H, T](val underlying: Map[Int, SortedMap[H, List[T]]],
+                                  val extraData: Map[String, Any])
                                  (implicit ord: Ordering[H], heuristic: HeuristicContainer[T, H])
   {
 
-    /** Make a copy of this [[SortedPossibilities]], adding the given states. */
-    def +(ts: T*) = ++(ts)
+    def changeExtraData(f: Map[String, Any] => Map[String, Any]) = new SortedPossibilities(underlying, f(extraData))
 
     /** Make a copy of this [[SortedPossibilities]], adding the given states. */
-    def ++(ts: Traversable[T]) = new SortedPossibilities(insert(ts.toList, underlying))
+    def +(ts: T*): SortedPossibilities[H, T] = ++(ts)
+    def +(priority: Int, ts: T*): SortedPossibilities[H, T] = ++(priority, ts)
+
+    /** Make a copy of this [[SortedPossibilities]], adding the given states. */
+    def ++(ts: Traversable[T]): SortedPossibilities[H, T] = withHighestPrioritySortedPossibilities(insert(ts.toList, _))
+
+    def ++(p: Int, ts: Traversable[T]): SortedPossibilities[H, T] = withGivenPrioritySortedPossibilities(p, insert(ts.toList, _))
 
     /** Insert a list of states into a [[SortedMap]]. */
     protected def insert(ts: List[T], into: SortedMap[H, List[T]]): SortedMap[H, List[T]] = ts match {
@@ -221,35 +227,65 @@ object A_*{
         insert(tail, mp)
     }
 
+    def withPriority(p: Int) = underlying(p)
+    def highestPriority = underlying.maxBy(_._1)
+
+    def mergeToZeroPriority(p: Int) = {
+      val m = underlying(p)
+      val z = underlying.getOrElse(0, new TreeMap())
+      val newZ = z ++ m
+      new SortedPossibilities(underlying - p + (0 -> newZ), extraData)
+    }
+
+    protected def withGivenPriority[R](p: Int, f: SortedMap[H, List[T]] => R): R = f(underlying(p))
+    protected def withHighestPriority[R](f: SortedMap[H, List[T]] => R): R = withGivenPriority(underlying.keys.max, f)
+
+    protected def withGivenPrioritySortedPossibilities(p: Int,
+                                                       f: SortedMap[H, List[T]] => SortedMap[H, List[T]]): SortedPossibilities[H, T] = {
+      val pMap = underlying.getOrElse(p, new TreeMap())
+      val newPMap = f(pMap)
+      new SortedPossibilities(
+        if (newPMap.nonEmpty) underlying + (p -> newPMap)
+        else underlying,
+        extraData
+      )
+    }
+
+    protected def withHighestPrioritySortedPossibilities(f: SortedMap[H, List[T]] => SortedMap[H, List[T]]): SortedPossibilities[H, T] =
+      withGivenPrioritySortedPossibilities(highestPriority._1, f)
+
     /** Make a copy of this [[SortedPossibilities]], replacing the states with given [[H]] by the given list. */
-    def replace(h: H, by: List[T]) = new SortedPossibilities( underlying + (h -> by) )
+    def replace(h: H, by: List[T]) = withHighestPrioritySortedPossibilities(_ + (h -> by))
     /** Make a copy of this [[SortedPossibilities]], removing the states with given [[H]]. */
-    def remove(h: H*) = new SortedPossibilities( underlying -- h )
+    def remove(h: H*) = withHighestPrioritySortedPossibilities( _ -- h )
 
     /** The states with the _smallest_ [[H]]. */
-    def head       = underlying.head
+    def head       = withHighestPriority(_.head)
     /** The states with the _smallest_ [[H]]. */
-    def headOption = underlying.headOption
+    def headOption = withHighestPriority(_.headOption)
     /** Make a copy of this [[SortedPossibilities]], removing the states with _smallest_ [[H]]. */
-    def tail       = new SortedPossibilities(underlying.tail)
+    def tail       = withHighestPrioritySortedPossibilities(_.tail)
 
     /** The states with the _greatest_ [[H]]. */
-    def last       = underlying.last
+    def last       = withHighestPriority(_.last)
     /** The states with the _greatest_ [[H]]. */
-    def lastOption = underlying.lastOption
+    def lastOption = withHighestPriority(_.lastOption)
     /** Make a copy of this [[SortedPossibilities]], removing the states with _greatest_ [[H]]. */
-    def init       = new SortedPossibilities(underlying.init)
+    def init       = withHighestPrioritySortedPossibilities(_.init)
 
     override def toString() = underlying.toString()
 
     /** Make a copy of this [[SortedPossibilities]], applying a function th the underlying [[SortedMap]]. */
-    def transform(f: SortedMap[H, List[T]] => SortedMap[H, List[T]]) = new SortedPossibilities[H, T](f(underlying))
+    def transform(f: SortedMap[H, List[T]] => SortedMap[H, List[T]]) = withHighestPrioritySortedPossibilities(f)
 
     /** The number of different [[H]] in the [[SortedPossibilities]]. */
-    def size = underlying.size
+    def size = underlying.map(_._2.size).sum
 
     /** Contains the state? */
-    def contains(t: T): Boolean = underlying.get(heuristic(t)).exists(_.contains(t))
+    def contains(t: T): Boolean = {
+      val h = heuristic(t)
+      underlying.exists{ case (_, u) => u.lift(h).exists(_.contains(t)) }
+    }
 
   }
 
