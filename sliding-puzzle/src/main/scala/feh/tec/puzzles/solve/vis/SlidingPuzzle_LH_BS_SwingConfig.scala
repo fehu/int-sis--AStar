@@ -320,7 +320,7 @@ object SlidingPuzzle_LH_BS_Solver_SwingConfig{
     sps =>
       val bestH = sps.head._1
       val take = math.floor(sps.size * pruneDeepSearchTakePercent).toInt
-      sps.underlying.take(if (take == 0) 1 else take).toMap.mapValues(_.toSet)
+      sps.highestPriority._2.take(if (take == 0) 1 else take).toMap.mapValues(_.toSet)
   }
 
 }
